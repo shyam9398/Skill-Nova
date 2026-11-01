@@ -1,7 +1,7 @@
 import type {
   User, UserRole, Course, CourseModule, Topic, SaturdaySpecial, Opportunity,
   CareerBlueprint, AIGenerationJob, Notification, Flashcard, QuizQuestion, QuizAttempt, StudentProgress, InterviewQuestion,
-  DiscussionPost, DiscussionReply, MentorRequest, MentorRequestReply, PracticalSubmission
+  DiscussionPost, DiscussionReply, MentorRequest, MentorRequestReply, PracticalSubmission, AuditLogEntry
 } from '../types';
 import {
   INITIAL_USERS, INITIAL_COURSES, INITIAL_MODULES, INITIAL_TOPICS,
@@ -33,6 +33,7 @@ class DataService {
   private discussionReplies: DiscussionReply[] = [];
   private mentorRequests: MentorRequest[] = [];
   private codingSubmissions: PracticalSubmission[] = [];
+  private auditLogs: AuditLogEntry[] = [];
   private currentUser: User | null = null;
 
   constructor() {
@@ -69,6 +70,18 @@ class DataService {
       this.discussionReplies = getOrInit('discussionReplies', INITIAL_DISCUSSIONS_REPLIES);
       this.mentorRequests = getOrInit('mentorRequests', INITIAL_MENTOR_REQUESTS);
       this.codingSubmissions = getOrInit('codingSubmissions', []);
+      this.auditLogs = getOrInit('auditLogs', [
+        {
+          id: 'log-seed-1',
+          action: 'release',
+          resource_id: 'top-101',
+          resource_title: 'Full Stack Architecture & Microservices Overview',
+          course_id: 'course-fs-101',
+          performed_by: 'Lead Instructor',
+          timestamp: new Date(Date.now() - 86400000).toISOString(),
+          details: 'Directly released to cohort feed'
+        }
+      ]);
 
       // Default active user is the student Aarav Sharma for instant preview,
       // or whatever user was stored
@@ -303,6 +316,19 @@ class DataService {
     this.saveToStorage('courses', this.courses);
   }
 
+  public updateCourse(courseId: string, updates: Partial<Course>): Course | undefined {
+    let updated: Course | undefined;
+    this.courses = this.courses.map(c => {
+      if (c.id === courseId) {
+        updated = { ...c, ...updates, updated_at: new Date().toISOString() };
+        return updated;
+      }
+      return c;
+    });
+    this.saveToStorage('courses', this.courses);
+    return updated;
+  }
+
   // --- Modules & Topics ---
   public getModulesForCourse(courseId: string): CourseModule[] {
     const courseMods = this.modules
@@ -381,11 +407,35 @@ class DataService {
     this.topics.unshift(newTopic);
     this.saveToStorage('topics', this.topics);
 
+    this.addAuditLogEntry({
+      action: isReleased ? 'release' : (releaseStatus === 'scheduled' ? 'reschedule' : 'publish'),
+      resource_id: newTopic.id,
+      resource_title: newTopic.title,
+      course_id: newTopic.course_id,
+      performed_by: newTopic.released_by || 'Administrator',
+      details: `Resource created with initial status: ${releaseStatus}`
+    });
+
     if (isReleased) {
       this.notifyEnrolledStudents(newTopic);
     }
 
     return newTopic;
+  }
+
+  public addAuditLogEntry(entry: Omit<AuditLogEntry, 'id' | 'timestamp'>): AuditLogEntry {
+    const newLog: AuditLogEntry = {
+      id: `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      timestamp: new Date().toISOString(),
+      ...entry,
+    };
+    this.auditLogs.unshift(newLog);
+    this.saveToStorage('auditLogs', this.auditLogs);
+    return newLog;
+  }
+
+  public getAuditLogs(): AuditLogEntry[] {
+    return [...this.auditLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   }
 
   private notifyEnrolledStudents(topic: Topic) {
@@ -411,6 +461,16 @@ class DataService {
     topic.released_at = new Date().toISOString();
     topic.released_by = releasedBy;
     this.saveToStorage('topics', this.topics);
+
+    this.addAuditLogEntry({
+      action: 'release',
+      resource_id: topic.id,
+      resource_title: topic.title,
+      course_id: topic.course_id,
+      performed_by: releasedBy,
+      details: 'Immediately released to student cohort feed'
+    });
+
     this.notifyEnrolledStudents(topic);
     return topic;
   }
@@ -418,19 +478,60 @@ class DataService {
   public holdTopic(topicId: string, scheduledIsoDate?: string, heldBy = 'Administrator'): Topic | undefined {
     const topic = this.topics.find(t => t.id === topicId);
     if (!topic) return undefined;
-    topic.release_status = scheduledIsoDate ? 'scheduled' : 'held';
+    const isScheduled = Boolean(scheduledIsoDate);
+    topic.release_status = isScheduled ? 'scheduled' : 'held';
     topic.is_published = false;
     topic.scheduled_release_at = scheduledIsoDate;
     this.saveToStorage('topics', this.topics);
+
+    this.addAuditLogEntry({
+      action: isScheduled ? 'reschedule' : 'hold',
+      resource_id: topic.id,
+      resource_title: topic.title,
+      course_id: topic.course_id,
+      performed_by: heldBy,
+      details: isScheduled
+        ? `Scheduled for automatic release at ${new Date(scheduledIsoDate!).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} (IST)`
+        : 'Placed on indefinite hold; hidden from student workspace'
+    });
+
     return topic;
   }
 
-  public archiveTopic(topicId: string): Topic | undefined {
+  public archiveTopic(topicId: string, archivedBy = 'Administrator'): Topic | undefined {
     const topic = this.topics.find(t => t.id === topicId);
     if (!topic) return undefined;
     topic.release_status = 'archived';
     topic.is_published = false;
     this.saveToStorage('topics', this.topics);
+
+    this.addAuditLogEntry({
+      action: 'archive',
+      resource_id: topic.id,
+      resource_title: topic.title,
+      course_id: topic.course_id,
+      performed_by: archivedBy,
+      details: 'Resource archived from active student curriculum'
+    });
+
+    return topic;
+  }
+
+  public updateTopic(topicId: string, updates: Partial<Topic>, editor = 'Administrator'): Topic | undefined {
+    const topic = this.topics.find(t => t.id === topicId);
+    if (!topic) return undefined;
+    Object.assign(topic, updates);
+    this.saveToStorage('topics', this.topics);
+
+    this.addAuditLogEntry({
+      action: 'edit',
+      resource_id: topic.id,
+      resource_title: topic.title,
+      course_id: topic.course_id,
+      performed_by: editor,
+      details: 'Resource metadata and URLs updated'
+    });
+
     return topic;
   }
 

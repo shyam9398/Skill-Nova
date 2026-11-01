@@ -359,3 +359,13 @@ export interface MentorRequest {
   replies: MentorRequestReply[];
 }
 
+export interface AuditLogEntry {
+  id: string;
+  action: 'publish' | 'release' | 'hold' | 'reschedule' | 'archive' | 'edit';
+  resource_id: string;
+  resource_title: string;
+  course_id: string;
+  performed_by: string;
+  timestamp: string;
+  details?: string;
+}

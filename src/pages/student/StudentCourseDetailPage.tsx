@@ -3,23 +3,24 @@ import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Map, Layers, Video, FileText, Sparkles,
   CheckCircle2, Clock, Play, HelpCircle, ExternalLink,
-  Presentation, Download, BookOpen, Compass
+  Presentation, Download, BookOpen, Compass, Terminal, Code2
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { InteractiveRoadmapViewer } from '../../components/courses/InteractiveRoadmapViewer';
 import { InAppResourceViewer } from '../../components/resource/InAppResourceViewer';
 import { FlashcardDeck } from '../../components/practice/FlashcardDeck';
 import { QuizEngine } from '../../components/practice/QuizEngine';
+import { PythonCodingLab } from '../../components/coding/PythonCodingLab';
 import type { Topic } from '../../types';
 
 export const StudentCourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const course = dataService.getCourseById(courseId || '');
   const modules = dataService.getModules(courseId || '');
-  const topics = dataService.getTopics(courseId || '');
+  const topics = dataService.getReleasedTopics(courseId || '');
   const attempts = dataService.getQuizAttempts();
 
-  const [activeTab, setActiveTab] = useState<'feed' | 'roadmap' | 'practice' | 'quiz'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'python_lab' | 'roadmap' | 'practice' | 'quiz'>('feed');
 
   // In-App Viewer State
   const [viewerTopic, setViewerTopic] = useState<Topic | null>(null);
@@ -124,6 +125,21 @@ export const StudentCourseDetailPage: React.FC = () => {
           <span>Learning Resource Feed</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
             {topics.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('python_lab')}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'python_lab'
+              ? 'bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/25'
+              : 'text-[#15243B] hover:text-[#176BFF] hover:bg-[#F5F9FF]'
+          }`}
+        >
+          <Code2 className="w-4 h-4 text-[#00D9FF]" />
+          <span>Python Coding Lab</span>
+          <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-600 border border-emerald-500/30">
+            WASM
           </span>
         </button>
 
@@ -253,6 +269,13 @@ export const StudentCourseDetailPage: React.FC = () => {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Tab Content: In-Browser Python 3 Coding Lab (Monaco + Pyodide WebAssembly) */}
+      {activeTab === 'python_lab' && (
+        <div className="space-y-4 animate-in fade-in">
+          <PythonCodingLab courseId={course.id} courseTitle={course.title} />
         </div>
       )}
 

@@ -484,3 +484,77 @@ CREATE INDEX IF NOT EXISTS idx_quiz_topic ON public.quiz_questions(topic_id);
 CREATE INDEX IF NOT EXISTS idx_enrollments_student ON public.course_enrollments(student_id);
 CREATE INDEX IF NOT EXISTS idx_discussion_created ON public.discussion_posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_mentor_requests_student ON public.mentor_requests(student_id);
+
+-- ==============================================================================
+-- 27. TOPIC RELEASE STATUS & AUDIT LOGS
+-- ==============================================================================
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS release_status TEXT DEFAULT 'released' CHECK (release_status IN ('draft', 'held', 'scheduled', 'released', 'archived'));
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS scheduled_release_at TIMESTAMPTZ;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS released_at TIMESTAMPTZ;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS released_by TEXT;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS resource_category TEXT DEFAULT 'pdf';
+
+-- RLS: Enforce that students only see 'released' topics for enrolled courses
+ALTER TABLE public.topics ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Students read released topics" ON public.topics;
+CREATE POLICY "Students read released topics" ON public.topics
+    FOR SELECT TO authenticated USING (
+        public.is_sub_admin_or_admin(auth.uid()) OR (
+            release_status = 'released' AND 
+            EXISTS (
+                SELECT 1 FROM public.course_enrollments 
+                WHERE course_enrollments.course_id = topics.course_id 
+                AND course_enrollments.student_id = auth.uid()
+            )
+        )
+    );
+
+-- ==============================================================================
+-- 28. PRACTICAL SUBMISSIONS (Python Coding Lab Monaco + Pyodide WASM)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.practical_submissions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    course_id UUID NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+    practical_id TEXT NOT NULL,
+    code TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'reviewed')),
+    version INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.practical_submissions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Student manage own practical submissions" ON public.practical_submissions
+    FOR ALL TO authenticated USING (
+        student_id = auth.uid() OR public.is_sub_admin_or_admin(auth.uid())
+    ) WITH CHECK (
+        student_id = auth.uid() OR public.is_sub_admin_or_admin(auth.uid())
+    );
+
+-- ==============================================================================
+-- 29. AUDIT LOGS
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    action TEXT NOT NULL CHECK (action IN ('publish', 'release', 'hold', 'reschedule', 'archive', 'edit')),
+    resource_id TEXT NOT NULL,
+    resource_title TEXT NOT NULL,
+    course_id TEXT NOT NULL,
+    performed_by TEXT NOT NULL,
+    details TEXT,
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Staff read audit logs" ON public.audit_logs
+    FOR SELECT TO authenticated USING (public.is_sub_admin_or_admin(auth.uid()));
+
+CREATE POLICY "Staff insert audit logs" ON public.audit_logs
+    FOR INSERT TO authenticated WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+CREATE INDEX IF NOT EXISTS idx_practical_student ON public.practical_submissions(student_id);
+CREATE INDEX IF NOT EXISTS idx_practical_course ON public.practical_submissions(course_id);
+CREATE INDEX IF NOT EXISTS idx_audit_time ON public.audit_logs(timestamp DESC);

@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-light: #F5F9FF;
+    --bg-card: #FFFFFF;
+    --bg-soft: #EAF3FF;
+    --electric-blue: #176BFF;
+    --fluorescent-blue: #00A3FF;
+    --neon-cyan: #00D9FF;
+    --text-dark: #15243B;
+    --text-muted: #73839B;
+    --border-light: #DFE9F6;
+  }
+
+  body {
+    background-color: var(--bg-light);
+    color: var(--text-dark);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', 'Inter', sans-serif;
+  }
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F5F9FF;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DFE9F6;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00A3FF;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

@@ -7,7 +7,7 @@ interface MountainPathProps {
   autoStart?: boolean;
 }
 
-export const MILESTONES = [
+const MILESTONES = [
   { step: 1, name: 'LEARN', subtitle: 'Curated curriculum & grounded lectures', pos: 0.09, color: '#176BFF' },
   { step: 2, name: 'BUILD', subtitle: 'Production projects & verified code in browser', pos: 0.19, color: '#00A3FF' },
   { step: 3, name: 'EXPLORE', subtitle: 'Frameworks, microservices & architecture patterns', pos: 0.29, color: '#00D9FF' },

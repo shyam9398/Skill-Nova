@@ -15,7 +15,7 @@ interface PythonCodingLabProps {
   practicalId?: string;
 }
 
-export const STARTER_SNIPPETS = [
+const STARTER_SNIPPETS = [
   {
     title: 'Hello, World!',
     category: 'Basics',

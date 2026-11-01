@@ -1204,6 +1204,82 @@ class DataService {
     this.saveToStorage('mentorRequests', this.mentorRequests);
     return req;
   }
+
+  // --- Python Coding Lab & Practical Submissions ---
+  public saveStudentCode(courseIdOrSub: string | Partial<PracticalSubmission>, practicalId?: string, code?: string): PracticalSubmission {
+    let studentId = this.currentUser?.id || 'usr-student-1';
+    let cId = '';
+    let pId = '';
+    let sourceCode = '';
+    let studentName = this.currentUser?.full_name || 'Student';
+    let courseTitle = '';
+
+    if (typeof courseIdOrSub === 'object') {
+      studentId = courseIdOrSub.student_id || studentId;
+      studentName = courseIdOrSub.student_name || studentName;
+      cId = courseIdOrSub.course_id || '';
+      courseTitle = courseIdOrSub.course_title || '';
+      pId = courseIdOrSub.practical_id || '';
+      sourceCode = courseIdOrSub.source_code || courseIdOrSub.code || '';
+    } else {
+      cId = courseIdOrSub;
+      pId = practicalId || '';
+      sourceCode = code || '';
+    }
+
+    let sub = this.codingSubmissions.find(s => s.student_id === studentId && s.course_id === cId && s.practical_id === pId);
+    if (sub) {
+      sub.source_code = sourceCode;
+      sub.code = sourceCode;
+      sub.version = (sub.version || 1) + 1;
+      sub.updated_at = new Date().toISOString();
+    } else {
+      sub = {
+        id: `prac-${Date.now()}`,
+        student_id: studentId,
+        student_name: studentName,
+        course_id: cId,
+        course_title: courseTitle,
+        practical_id: pId,
+        source_code: sourceCode,
+        code: sourceCode,
+        status: 'saved',
+        version: 1,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      this.codingSubmissions.unshift(sub);
+    }
+    this.saveToStorage('codingSubmissions', this.codingSubmissions);
+    return sub;
+  }
+
+  public submitStudentPractical(courseIdOrSub: string | Partial<PracticalSubmission>, practicalId?: string, code?: string): PracticalSubmission {
+    const sub = this.saveStudentCode(courseIdOrSub, practicalId, code);
+    sub.status = 'submitted';
+    sub.submitted_at = new Date().toISOString();
+    sub.updated_at = new Date().toISOString();
+    this.saveToStorage('codingSubmissions', this.codingSubmissions);
+
+    this.createNotification({
+      user_id: sub.student_id,
+      title: 'Python Practical Submitted Successfully',
+      message: `Your code submission for practical ${sub.practical_id} has been securely archived for mentor review.`,
+      type: 'system',
+      link: `/student/courses/${sub.course_id}`
+    });
+
+    return sub;
+  }
+
+  public getStudentPracticalSubmissions(studentId?: string, courseId?: string): PracticalSubmission[] {
+    const sId = studentId || this.currentUser?.id || 'usr-student-1';
+    let list = this.codingSubmissions.filter(s => s.student_id === sId);
+    if (courseId) {
+      list = list.filter(s => s.course_id === courseId);
+    }
+    return list;
+  }
 }
 
 export const dataService = new DataService();

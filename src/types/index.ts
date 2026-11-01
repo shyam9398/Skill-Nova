@@ -96,10 +96,12 @@ export interface PracticalSubmission {
   course_title?: string;
   practical_id: string;
   source_code: string;
-  status: 'saved' | 'submitted' | 'graded';
+  code?: string;
+  status: 'saved' | 'submitted' | 'graded' | 'draft';
   grade?: string;
   mentor_feedback?: string;
-  submitted_at: string;
+  version?: number;
+  submitted_at?: string;
   created_at: string;
   updated_at: string;
 }

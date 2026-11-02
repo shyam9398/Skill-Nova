@@ -3,6 +3,9 @@ export type UserRole = 'admin' | 'sub_admin' | 'student';
 export interface User {
   id: string;
   email: string;
+  username?: string;
+  phone_number?: string;
+  phone?: string;
   full_name: string;
   fullName?: string;
   role: UserRole;
@@ -21,6 +24,7 @@ export interface User {
     can_generate_ai?: boolean;
     can_publish_opportunities?: boolean;
   };
+  theme_preference?: 'light' | 'dark';
 }
 
 export interface Course {
@@ -38,13 +42,28 @@ export interface Course {
   created_at: string;
   updated_at: string;
   is_published: boolean;
-  // Aliases
+  // Aliases & enhancements
   assignedMentor?: string;
   duration?: string;
   thumbnailUrl?: string;
   thumbnail_url?: string;
   roadmapImageUrl?: string;
   progressPercentage?: number;
+  curriculum_text?: string;
+  course_fee?: string | number;
+  fee?: string;
+  timeline?: string;
+  status?: 'active' | 'archived' | 'draft';
+}
+
+export interface CourseSubModule {
+  id: string;
+  module_id: string;
+  course_id: string;
+  title: string;
+  order_index: number;
+  description?: string;
+  created_at?: string;
 }
 
 export interface CourseModule {
@@ -53,13 +72,44 @@ export interface CourseModule {
   title: string;
   order_index: number;
   description?: string;
+  sub_modules?: CourseSubModule[];
   topics?: Topic[];
+}
+
+export interface PresentationSlideAllocation {
+  id: string;
+  presentation_id: string;
+  sub_module_id: string;
+  start_slide: number;
+  end_slide: number;
+  release_status: 'released' | 'locked' | 'scheduled';
+  scheduled_release_at?: string;
+  released_at?: string;
+  released_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Presentation {
+  id: string;
+  course_id: string;
+  module_id: string;
+  sub_module_id?: string;
+  title: string;
+  description?: string;
+  original_file_path?: string;
+  ppt_url?: string;
+  total_slides: number;
+  uploaded_by?: string;
+  created_at?: string;
+  allocations?: PresentationSlideAllocation[];
 }
 
 export interface Topic {
   id: string;
   module_id: string;
   moduleId?: string;
+  sub_module_id?: string;
   course_id: string;
   title: string;
   description: string;
@@ -86,6 +136,16 @@ export interface Topic {
   released_at?: string;
   released_by?: string;
   resource_category?: string;
+  // Specific Resource Types & Slide/Doc Ranges
+  resource_type?: 'drive_video' | 'ppt_presentation' | 'doc_questions' | 'flashcards' | 'quiz';
+  drive_video_url?: string;
+  total_slides?: number;
+  slide_start?: number;
+  slide_end?: number;
+  doc_url?: string;
+  doc_page_range?: string;
+  curriculum_name?: string;
+  timezone?: string;
 }
 
 export interface PracticalSubmission {
@@ -134,26 +194,116 @@ export interface Flashcard {
   source_ref: string;
 }
 
+export interface QuizQuestionItem {
+  id: string;
+  quiz_id?: string;
+  question: string;
+  options: ({ key: string; text: string } | string)[];
+  correct_answer: string;
+  explanation?: string;
+  marks: number;
+  order_index: number;
+}
+
+export interface Quiz {
+  id: string;
+  course_id?: string;
+  course_title?: string;
+  module_id?: string;
+  module_title?: string;
+  sub_module_id?: string;
+  title: string;
+  description: string;
+  total_marks: number;
+  duration_minutes: number;
+  start_time: string; // ISO string in UTC
+  end_time: string;   // ISO string in UTC
+  status: 'upcoming' | 'active' | 'closed';
+  questions?: QuizQuestionItem[];
+  created_at: string;
+  created_by?: string;
+  updated_at?: string;
+}
+
 export interface QuizQuestion {
   id: string;
-  topic_id: string;
+  topic_id?: string;
+  quiz_id?: string;
   topic_title?: string;
   question: string;
-  options: string[];
-  correct_index: number;
+  options: string[] | { key: string; text: string }[];
+  correct_index?: number;
+  correct_answer?: string;
   explanation: string;
-  source_ref: string;
+  source_ref?: string;
+  marks?: number;
 }
 
 export interface QuizAttempt {
   id: string;
   student_id: string;
-  topic_id: string;
+  student_name?: string;
+  topic_id?: string;
+  quiz_id?: string;
+  quiz_title?: string;
   course_id?: string;
   score: number;
-  total_questions: number;
-  percentage: number;
+  total_marks?: number;
+  total_questions?: number;
+  correct_count?: number;
+  incorrect_count?: number;
+  unanswered_count?: number;
+  accuracy?: number; // (correct / total) * 100
+  percentage?: number;
+  time_spent_seconds?: number;
+  answers?: Record<string, string>;
+  is_first_attempt?: boolean;
+  is_practice?: boolean;
+  status?: 'submitted' | 'timed_out' | 'in_progress' | 'completed';
   completed_at: string;
+}
+
+export interface QuizLeaderboardEntry {
+  rank: number;
+  student_id: string;
+  student_name: string;
+  score: number;
+  total_marks: number;
+  accuracy: number;
+  time_spent_seconds: number;
+  completed_at: string;
+  attempt_id?: string;
+  is_first_attempt?: boolean;
+}
+
+export interface PdfPageAllocation {
+  id: string;
+  topic_id?: string;
+  course_id?: string;
+  sub_module_id?: string;
+  title?: string;
+  pdf_url: string;
+  start_page: number;
+  end_page: number;
+  total_pages: number;
+  release_status: 'released' | 'locked' | 'scheduled';
+  scheduled_release_at?: string;
+  released_at?: string;
+  released_by?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentRoadmapProgress {
+  id?: string;
+  student_id: string;
+  course_id: string;
+  completed_sub_modules: string[];
+  current_stage?: string;
+  current_sub_module_id?: string;
+  progress_percentage: number;
+  last_activity_at?: string;
+  updated_at?: string;
 }
 
 export interface InterviewQuestion {
@@ -225,19 +375,23 @@ export interface Opportunity {
   category: 'internship' | 'job' | 'hackathon' | 'competition' | 'research';
   type?: string;
   description: string;
-  eligibility: string;
-  required_skills: string[];
+  eligibility?: string;
+  required_skills?: string[];
   requiredSkills?: string[];
+  tags?: string[];
   location: string;
-  is_remote: boolean;
+  is_remote?: boolean;
+  is_active?: boolean;
   stipend_salary?: string;
   stipendOrPrize?: string;
+  stipend_or_salary?: string;
   deadline: string;
-  apply_url: string;
+  apply_url?: string;
   applyUrl?: string;
-  published_at: string;
+  apply_link?: string;
+  published_at?: string;
   postedDate?: string;
-  is_featured: boolean;
+  is_featured?: boolean;
   bookmarked?: boolean;
 }
 
@@ -363,11 +517,73 @@ export interface MentorRequest {
 
 export interface AuditLogEntry {
   id: string;
-  action: 'publish' | 'release' | 'hold' | 'reschedule' | 'archive' | 'edit';
+  action: 'publish' | 'release' | 'hold' | 'reschedule' | 'archive' | 'edit' | 'create_student' | 'create_sub_admin' | 'reset_password' | 'delete_course' | 'delete_resource' | 'create_flashcard' | string;
   resource_id: string;
   resource_title: string;
-  course_id: string;
+  course_id?: string;
   performed_by: string;
   timestamp: string;
   details?: string;
 }
+
+export interface HomepageSettings {
+  id: string;
+  demo_video_url: string;
+  demo_video_title: string;
+  demo_video_description: string;
+  demo_video_is_active: boolean;
+  whatsapp_group_url: string;
+  whatsapp_qr_code_url: string;
+  whatsapp_is_active: boolean;
+  whatsapp_display_name: string;
+  instagram_url: string;
+  instagram_is_active: boolean;
+  instagram_display_name: string;
+  linkedin_url: string;
+  linkedin_is_active: boolean;
+  linkedin_display_name: string;
+  updated_at: string;
+}
+
+export interface HomepageCourse {
+  id: string;
+  title: string;
+  description: string;
+  thumbnail_url: string;
+  fee: string;
+  timeline: string;
+  curriculum_text: string;
+  whatsapp_enroll_url: string;
+  is_active: boolean;
+  order_index: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StudentAccessRequest {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  college: string;
+  branch: string;
+  year_of_study: string;
+  target_course: string;
+  payment_reference: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_note?: string;
+  assigned_batch?: string;
+  assigned_course_id?: string;
+  created_at: string;
+  reviewed_at?: string;
+  reviewed_by?: string;
+}
+
+export interface StudentAccessRequestEvent {
+  id: string;
+  request_id: string;
+  event_type: string;
+  details?: string;
+  created_at: string;
+}
+

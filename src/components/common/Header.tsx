@@ -23,9 +23,8 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
+  const handleLogout = () => {
+    logout(); // Triggers confirmation dialog
   };
 
   const handleSwitchRole = (newRole: 'admin' | 'sub_admin' | 'student') => {

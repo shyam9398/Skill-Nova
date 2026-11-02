@@ -394,7 +394,7 @@ export const AIContentGeneratorPage: React.FC = () => {
                                     : 'bg-[#080E1C] border-white/5 text-[#9BAAC2]'
                                 }`}
                               >
-                                <span>{String.fromCharCode(65 + optIdx)}. {opt}</span>
+                                <span>{String.fromCharCode(65 + optIdx)}. {typeof opt === 'string' ? opt : opt.text}</span>
                                 {optIdx === quiz.correct_index && (
                                   <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
                                 )}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Users, UserPlus, FileSpreadsheet, Search, CheckCircle, XCircle,
-  RotateCcw, BookOpen, Filter, Download, MoreVertical, ShieldAlert
+  Users, UserPlus, Search, CheckCircle, XCircle,
+  RotateCcw, BookOpen, Download, ShieldCheck, Key,
+  Phone, UserCheck, AlertCircle, X, ShieldAlert, Sparkles
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import type { User, Course } from '../../types';
@@ -14,28 +15,20 @@ export const StudentManagementPage: React.FC = () => {
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showCsvModal, setShowCsvModal] = useState(false);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<User | null>(null);
 
-  // Manual Add Form State
-  const [newStudent, setNewStudent] = useState({
-    full_name: '',
-    email: '',
-    college: 'Apex Institute of Technology',
-    branch: 'Computer Science & Engineering',
-    year_of_study: '3rd Year (Batch 2027)',
-    assigned_courses: ['course-fs-101'],
-  });
+  // Simplified Add Student Form State: ONLY 4 fields
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
 
-  // CSV State
-  const [csvText, setCsvText] = useState(
-    `name,email,college,branch,year\nDev Sharma,dev.sharma@skillnova.edu,National Institute of Tech,CSE,3rd Year\nSneha Patel,sneha.patel@skillnova.edu,Metropolitan College,IT,4th Year\nAnanya Rao,ananya.rao@skillnova.edu,Apex Tech,AI & Data Science,2nd Year`
-  );
-  const [csvMessage, setCsvMessage] = useState<string | null>(null);
-
-  // Reset alert
-  const [recoveryNotice, setRecoveryNotice] = useState<string | null>(null);
+  // Feedback banner
+  const [actionNotice, setActionNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -49,156 +42,191 @@ export const StudentManagementPage: React.FC = () => {
   const filteredStudents = students.filter(s => {
     const matchesSearch =
       s.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (s.username && s.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
       s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.college?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      s.branch?.toLowerCase().includes(searchQuery.toLowerCase());
+      (s.phone_number && s.phone_number.includes(searchQuery));
     const matchesStatus = statusFilter === 'all' || s.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleManualAdd = (e: React.FormEvent) => {
+  const handleCreateStudent = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newStudent.full_name || !newStudent.email) return;
+    setFormError(null);
+    setFormSuccess(null);
 
-    dataService.addStudent({
-      ...newStudent,
-      role: 'student',
-    });
-
-    setShowAddModal(false);
-    setNewStudent({
-      full_name: '',
-      email: '',
-      college: 'Apex Institute of Technology',
-      branch: 'Computer Science & Engineering',
-      year_of_study: '3rd Year (Batch 2027)',
-      assigned_courses: ['course-fs-101'],
-    });
-  };
-
-  const handleCsvImport = () => {
-    try {
-      const lines = csvText.trim().split('\n');
-      if (lines.length < 2) {
-        setCsvMessage('CSV must contain at least 1 header line and 1 data row.');
-        return;
-      }
-      const rows = lines.slice(1).map(line => {
-        const parts = line.split(',').map(p => p.trim());
-        return {
-          name: parts[0] || 'Student',
-          email: parts[1] || '',
-          college: parts[2] || 'Engineering Institute',
-          branch: parts[3] || 'CSE',
-          year: parts[4] || '3rd Year',
-        };
-      });
-
-      const count = dataService.importStudentsCSV(rows);
-      setCsvMessage(`Successfully enrolled ${count} students into SkillNova!`);
-      setTimeout(() => {
-        setShowCsvModal(false);
-        setCsvMessage(null);
-      }, 1200);
-    } catch {
-      setCsvMessage('Failed to parse CSV. Please verify column format.');
+    // Validation
+    const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    if (!cleanUser || cleanUser.length < 3) {
+      setFormError('Username must be at least 3 characters and contain only letters, numbers, or underscores.');
+      return;
     }
+    if (!password || password.length < 6) {
+      setFormError('Password must be at least 6 characters.');
+      return;
+    }
+    if (!fullName.trim()) {
+      setFormError('Full name is required.');
+      return;
+    }
+    if (!phoneNumber.trim() || phoneNumber.trim().length < 8) {
+      setFormError('Please enter a valid phone number (at least 8 digits).');
+      return;
+    }
+
+    const res = dataService.addStudent({
+      username: cleanUser,
+      password: password.trim(),
+      full_name: fullName.trim(),
+      phone_number: phoneNumber.trim(),
+    });
+
+    if (!res.success) {
+      setFormError(res.error || 'Failed to create student account.');
+      return;
+    }
+
+    setFormSuccess(`Student account created successfully for @${cleanUser}!`);
+    setTimeout(() => {
+      setShowAddModal(false);
+      setUsername('');
+      setPassword('');
+      setFullName('');
+      setPhoneNumber('');
+      setFormSuccess(null);
+      setActionNotice({
+        type: 'success',
+        message: `Student @${cleanUser} (${fullName}) enrolled. Mapped login: ${cleanUser}@student.skillnova.edu`
+      });
+      setTimeout(() => setActionNotice(null), 5000);
+    }, 1000);
   };
 
   const handleToggleStatus = (id: string) => {
     dataService.toggleUserStatus(id);
+    const updated = dataService.getUserById(id);
+    setActionNotice({
+      type: 'success',
+      message: `Account for ${updated?.full_name} is now ${updated?.status?.toUpperCase()}.`
+    });
+    setTimeout(() => setActionNotice(null), 4000);
   };
 
-  const handleResetAccess = (student: User) => {
-    setRecoveryNotice(`Secure credential recovery token generated for ${student.full_name}: SKILLNOVA-REC-${Math.floor(100000 + Math.random() * 900000)}. Instructions sent to ${student.email}.`);
-    setTimeout(() => setRecoveryNotice(null), 5000);
+  const handleResetPassword = (student: User) => {
+    const res = dataService.resetUserPassword(student.id);
+    setSelectedStudent(student);
+    setShowResetModal(true);
   };
 
   const handleSaveCourses = (courseIds: string[]) => {
     if (selectedStudent) {
       dataService.assignStudentCourses(selectedStudent.id, courseIds);
       setShowAssignModal(false);
+      setActionNotice({
+        type: 'success',
+        message: `Course assignments updated for ${selectedStudent.full_name}.`
+      });
+      setTimeout(() => setActionNotice(null), 4000);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header and Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black text-[#F0F5FF] flex items-center gap-2">
-            <Users className="w-6 h-6 text-[#397BFF]" />
-            Student Cohort Management
-          </h1>
-          <p className="text-xs text-[#9BAAC2] mt-0.5">
-            Initial cohort: 50 target students. Enforce enrollment, course scopes, and recovery.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setShowCsvModal(true)}
-            className="px-3.5 py-2 rounded-xl bg-[#15233A] hover:bg-[#1F2E47] border border-[#1F2E47] text-xs font-semibold text-[#F0F5FF] flex items-center gap-2 transition"
-          >
-            <FileSpreadsheet className="w-4 h-4 text-[#77B4FF]" />
-            <span>Import CSV</span>
+    <div className="space-y-6 animate-fadeIn pb-12">
+      {/* Action Notification */}
+      {actionNotice && (
+        <div
+          className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg animate-fadeIn ${
+            actionNotice.type === 'success'
+              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+              : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+          }`}
+        >
+          <div className="flex items-center gap-2.5 text-xs font-semibold">
+            {actionNotice.type === 'success' ? (
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-rose-400" />
+            )}
+            <span>{actionNotice.message}</span>
+          </div>
+          <button onClick={() => setActionNotice(null)} className="text-white/60 hover:text-white">
+            <X className="w-4 h-4" />
           </button>
-
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 rounded-xl bg-[#397BFF] hover:bg-[#2868ea] text-white text-xs font-bold shadow-lg shadow-[#397BFF]/30 flex items-center gap-2 transition"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Add Student</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Recovery notification banner */}
-      {recoveryNotice && (
-        <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
-          <CheckCircle className="w-4 h-4 shrink-0 text-emerald-400" />
-          <span>{recoveryNotice}</span>
         </div>
       )}
 
-      {/* Filters & Search Bar */}
-      <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-3">
-        <div className="relative w-full md:w-80">
-          <Search className="w-4 h-4 text-[#9BAAC2] absolute left-3.5 top-1/2 -translate-y-1/2" />
+      {/* Header and Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#397BFF]/20 text-[#77B4FF] border border-[#397BFF]/40">
+              ACADEMIC ADMISSIONS
+            </span>
+            <span className="text-xs text-[#9BAAC2] font-mono">
+              Total Enrolled: {students.length}
+            </span>
+          </div>
+          <h1 className="text-2xl font-black text-[#F0F5FF] flex items-center gap-2">
+            <Users className="w-6 h-6 text-[#397BFF]" />
+            Student Management
+          </h1>
+          <p className="text-xs text-[#9BAAC2] mt-0.5">
+            Simplified account creation: username, password, full name, and phone. Fully secure server-side provisioning.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            setFormError(null);
+            setFormSuccess(null);
+            setShowAddModal(true);
+          }}
+          className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] hover:opacity-95 text-white text-xs font-black shadow-lg shadow-[#00A3FF]/25 flex items-center gap-2 transition hover:scale-102"
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>+ Add Student</span>
+        </button>
+      </div>
+
+      {/* Filter and Search Bar */}
+      <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full md:w-96">
+          <Search className="w-4 h-4 text-[#9BAAC2] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by name, email, college, branch..."
+            placeholder="Search by username, full name, phone, or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl pl-9 pr-3 py-2 text-xs text-[#F0F5FF] placeholder-[#9BAAC2]/50 focus:border-[#397BFF] outline-none"
+            className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl pl-9 pr-4 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF] transition"
           />
         </div>
 
-        <div className="flex items-center gap-2 self-end md:self-auto">
-          <span className="text-xs text-[#9BAAC2]">Filter Status:</span>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-1.5 text-xs text-[#F0F5FF] outline-none"
-          >
-            <option value="all">All Statuses ({students.length})</option>
-            <option value="active">Active Only</option>
-            <option value="inactive">Inactive Only</option>
-          </select>
+        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto">
+          {(['all', 'active', 'inactive'] as const).map((filter) => (
+            <button
+              key={filter}
+              onClick={() => setStatusFilter(filter)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition ${
+                statusFilter === filter
+                  ? 'bg-[#397BFF] text-white shadow-md'
+                  : 'bg-[#15233A] text-[#9BAAC2] hover:text-[#F0F5FF]'
+              }`}
+            >
+              {filter} ({filter === 'all' ? students.length : students.filter(s => s.status === filter).length})
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Student Table */}
+      {/* Students Table */}
       <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="bg-[#15233A] border-b border-[#1F2E47] text-[#9BAAC2] uppercase font-bold text-[10px] tracking-wider">
-                <th className="py-3 px-4">Student Profile</th>
-                <th className="py-3 px-4">Academic Details</th>
+          <table className="w-full text-left text-xs text-[#9BAAC2]">
+            <thead className="bg-[#0A101D] text-[#77B4FF] uppercase text-[10px] tracking-wider border-b border-[#1F2E47]">
+              <tr>
+                <th className="py-3 px-4">Student & Username</th>
+                <th className="py-3 px-4">Contact Phone</th>
                 <th className="py-3 px-4">Enrolled Courses</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4">Account Status</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -206,7 +234,7 @@ export const StudentManagementPage: React.FC = () => {
               {filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-[#9BAAC2]">
-                    No students match the search criteria.
+                    No students match the criteria.
                   </td>
                 </tr>
               ) : (
@@ -215,29 +243,36 @@ export const StudentManagementPage: React.FC = () => {
 
                   return (
                     <tr key={student.id} className="hover:bg-[#15233A]/50 transition">
-                      {/* Name & Email */}
-                      <td className="py-3 px-4">
+                      {/* Name & Username */}
+                      <td className="py-3.5 px-4">
                         <div className="flex items-center gap-3">
                           <img
                             src={student.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
                             alt={student.full_name}
-                            className="w-8 h-8 rounded-full object-cover border border-[#397BFF]/30"
+                            className="w-9 h-9 rounded-full object-cover border border-[#397BFF]/30"
                           />
                           <div>
-                            <div className="font-bold text-[#F0F5FF]">{student.full_name}</div>
-                            <div className="text-[11px] text-[#77B4FF]">{student.email}</div>
+                            <div className="font-bold text-[#F0F5FF] text-sm">{student.full_name}</div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] font-mono text-[#00D4B8] font-semibold">
+                                @{student.username || student.email.split('@')[0]}
+                              </span>
+                              <span className="text-[10px] text-[#9BAAC2]">({student.email})</span>
+                            </div>
                           </div>
                         </div>
                       </td>
 
-                      {/* College & Branch */}
-                      <td className="py-3 px-4">
-                        <div className="text-[#F0F5FF] font-medium">{student.college}</div>
-                        <div className="text-[11px] text-[#9BAAC2]">{student.branch} • {student.year_of_study}</div>
+                      {/* Phone Number */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5 text-[#F0F5FF] font-mono">
+                          <Phone className="w-3.5 h-3.5 text-[#77B4FF]" />
+                          <span>{student.phone_number || student.phone || '+91 98765 43210'}</span>
+                        </div>
                       </td>
 
                       {/* Assigned Courses */}
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <div className="flex flex-wrap gap-1">
                           {studentCourses.length > 0 ? (
                             studentCourses.map(c => (
@@ -245,19 +280,19 @@ export const StudentManagementPage: React.FC = () => {
                                 key={c.id}
                                 className="text-[10px] px-2 py-0.5 rounded bg-[#397BFF]/20 text-[#77B4FF] border border-[#397BFF]/30 font-medium"
                               >
-                                {c.category}
+                                {c.title}
                               </span>
                             ))
                           ) : (
-                            <span className="text-[10px] text-[#9BAAC2]">No courses assigned</span>
+                            <span className="text-[10px] text-[#9BAAC2]">Default Track (FS-101)</span>
                           )}
                         </div>
                       </td>
 
                       {/* Status */}
-                      <td className="py-3 px-4">
+                      <td className="py-3.5 px-4">
                         <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${
                             student.status === 'active'
                               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
                               : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
@@ -269,7 +304,7 @@ export const StudentManagementPage: React.FC = () => {
                       </td>
 
                       {/* Actions */}
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3.5 px-4 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => {
@@ -277,17 +312,17 @@ export const StudentManagementPage: React.FC = () => {
                               setShowAssignModal(true);
                             }}
                             className="p-1.5 rounded-lg bg-[#15233A] hover:bg-[#1F2E47] text-[#77B4FF] border border-[#1F2E47] transition"
-                            title="Assign Courses & Batches"
+                            title="Assign Course Cohorts"
                           >
                             <BookOpen className="w-3.5 h-3.5" />
                           </button>
 
                           <button
-                            onClick={() => handleResetAccess(student)}
-                            className="p-1.5 rounded-lg bg-[#15233A] hover:bg-[#1F2E47] text-[#9BAAC2] hover:text-[#F0F5FF] border border-[#1F2E47] transition"
-                            title="Reset Access / Password Recovery"
+                            onClick={() => handleResetPassword(student)}
+                            className="p-1.5 rounded-lg bg-[#15233A] hover:bg-[#1F2E47] text-amber-400 border border-[#1F2E47] transition"
+                            title="Reset Credentials / Generate Recovery Token"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            <Key className="w-3.5 h-3.5" />
                           </button>
 
                           <button
@@ -297,7 +332,7 @@ export const StudentManagementPage: React.FC = () => {
                                 ? 'bg-rose-500/10 border-rose-500/20 text-rose-300 hover:bg-rose-500/20'
                                 : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20'
                             }`}
-                            title={student.status === 'active' ? 'Deactivate Account' : 'Activate Account'}
+                            title={student.status === 'active' ? 'Deactivate Student Account' : 'Activate Student Account'}
                           >
                             {student.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
                           </button>
@@ -312,87 +347,127 @@ export const StudentManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Manual Student Add Modal */}
+      {/* Simplified Add Student Modal: ONLY Username, Password, Full Name, Phone Number */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-base font-bold text-[#F0F5FF] mb-1 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-[#397BFF]" />
-              Add Student to SkillNova
-            </h3>
-            <p className="text-xs text-[#9BAAC2] mb-4">
-              Enter official student details. Student will be provisioned with default course roadmaps.
-            </p>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-scaleUp">
+            <button
+              onClick={() => setShowAddModal(false)}
+              className="absolute top-5 right-5 text-[#9BAAC2] hover:text-white"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-            <form onSubmit={handleManualAdd} className="space-y-3">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-[#397BFF]/20 text-[#397BFF] flex items-center justify-center border border-[#397BFF]/30">
+                <UserPlus className="w-5 h-5" />
+              </div>
               <div>
-                <label className="text-xs font-semibold text-[#9BAAC2] block mb-1">Full Name</label>
+                <h3 className="text-lg font-black text-[#F0F5FF]">Add Student</h3>
+                <p className="text-[11px] text-[#9BAAC2]">Simplified 4-field administrative enrollment</p>
+              </div>
+            </div>
+
+            {formError && (
+              <div className="mt-3 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{formError}</span>
+              </div>
+            )}
+
+            {formSuccess && (
+              <div className="mt-3 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 shrink-0" />
+                <span>{formSuccess}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateStudent} className="space-y-4 mt-4">
+              {/* Field 1: Username */}
+              <div>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">
+                  1. Username <span className="text-[#397BFF]">*</span>
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-mono text-[#77B4FF]">@</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. rahul.varma"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl pl-8 pr-4 py-2.5 text-xs text-[#F0F5FF] font-mono outline-none focus:border-[#397BFF] transition"
+                  />
+                </div>
+                <span className="text-[10px] text-[#9BAAC2] mt-1 block">
+                  Unique student identifier for login.
+                </span>
+              </div>
+
+              {/* Field 2: Password */}
+              <div>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">
+                  2. Password <span className="text-[#397BFF]">*</span>
+                </label>
+                <div className="relative">
+                  <Key className="w-3.5 h-3.5 text-[#9BAAC2] absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="password"
+                    required
+                    placeholder="Min. 6 characters (e.g. StudentPass@2026)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl pl-9 pr-4 py-2.5 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF] transition"
+                  />
+                </div>
+              </div>
+
+              {/* Field 3: Full Name */}
+              <div>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">
+                  3. Full Name <span className="text-[#397BFF]">*</span>
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Aarav Sharma"
-                  value={newStudent.full_name}
-                  onChange={(e) => setNewStudent({ ...newStudent, full_name: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-lg px-3 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  placeholder="e.g. Rahul Varma"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-4 py-2.5 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF] transition"
                 />
               </div>
 
+              {/* Field 4: Phone Number */}
               <div>
-                <label className="text-xs font-semibold text-[#9BAAC2] block mb-1">Email</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="student@skillnova.edu"
-                  value={newStudent.email}
-                  onChange={(e) => setNewStudent({ ...newStudent, email: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-lg px-3 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="text-xs font-semibold text-[#9BAAC2] block mb-1">College</label>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">
+                  4. Phone Number <span className="text-[#397BFF]">*</span>
+                </label>
+                <div className="relative">
+                  <Phone className="w-3.5 h-3.5 text-[#9BAAC2] absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
-                    type="text"
-                    value={newStudent.college}
-                    onChange={(e) => setNewStudent({ ...newStudent, college: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-lg px-3 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold text-[#9BAAC2] block mb-1">Branch</label>
-                  <input
-                    type="text"
-                    value={newStudent.branch}
-                    onChange={(e) => setNewStudent({ ...newStudent, branch: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-lg px-3 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    type="tel"
+                    required
+                    placeholder="e.g. +91 98765 43210"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl pl-9 pr-4 py-2.5 text-xs text-[#F0F5FF] font-mono outline-none focus:border-[#397BFF] transition"
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-semibold text-[#9BAAC2] block mb-1">Year of Study</label>
-                <input
-                  type="text"
-                  value={newStudent.year_of_study}
-                  onChange={(e) => setNewStudent({ ...newStudent, year_of_study: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-lg px-3 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
-                />
-              </div>
-
-              <div className="pt-3 flex items-center justify-end gap-2">
+              <div className="pt-2 flex items-center justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs text-[#9BAAC2] bg-[#15233A]"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A] hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#397BFF] text-white hover:bg-[#2868ea]"
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
                 >
-                  Create & Enroll
+                  Save & Provision Student
                 </button>
               </div>
             </form>
@@ -400,106 +475,97 @@ export const StudentManagementPage: React.FC = () => {
         </div>
       )}
 
-      {/* CSV Import Modal */}
-      {showCsvModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl p-6 max-w-lg w-full shadow-2xl">
-            <h3 className="text-base font-bold text-[#F0F5FF] mb-1 flex items-center gap-2">
-              <FileSpreadsheet className="w-5 h-5 text-[#77B4FF]" />
-              Import Students via CSV
-            </h3>
-            <p className="text-xs text-[#9BAAC2] mb-3">
-              Paste CSV records below or edit sample entries. Header format: <code className="text-[#77B4FF]">name,email,college,branch,year</code>.
+      {/* Password Reset Modal */}
+      {showResetModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#101A2D] border border-amber-500/30 rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl text-center space-y-4 animate-scaleUp">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center mx-auto border border-amber-500/30">
+              <Key className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-black text-[#F0F5FF]">Credential Recovery Token</h3>
+              <p className="text-xs text-[#9BAAC2] mt-1">
+                Issued for student <span className="text-[#F0F5FF] font-bold">{selectedStudent.full_name}</span> (@{selectedStudent.username || selectedStudent.email.split('@')[0]})
+              </p>
+            </div>
+
+            <div className="p-3 bg-[#15233A] rounded-xl border border-white/10 font-mono text-sm text-[#00D4B8] font-bold select-all">
+              SKILLNOVA-REC-{Math.floor(100000 + Math.random() * 900000)}
+            </div>
+
+            <p className="text-[11px] text-[#9BAAC2]">
+              Share this recovery authorization with the student or provide a direct password reset link.
             </p>
 
-            {csvMessage && (
-              <div className="p-3 mb-3 rounded-lg bg-[#397BFF]/20 text-[#77B4FF] text-xs font-semibold">
-                {csvMessage}
-              </div>
-            )}
-
-            <textarea
-              rows={6}
-              value={csvText}
-              onChange={(e) => setCsvText(e.target.value)}
-              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs font-mono text-[#F0F5FF] outline-none focus:border-[#397BFF]"
-            />
-
-            <div className="pt-3 flex items-center justify-between">
-              <span className="text-[11px] text-[#9BAAC2]">
-                {csvText.trim().split('\n').length - 1} records ready to import
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowCsvModal(false)}
-                  className="px-3 py-1.5 rounded-lg text-xs text-[#9BAAC2] bg-[#15233A]"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={handleCsvImport}
-                  className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#397BFF] text-white hover:bg-[#2868ea]"
-                >
-                  Execute Bulk Import
-                </button>
-              </div>
-            </div>
+            <button
+              onClick={() => setShowResetModal(false)}
+              className="w-full py-2.5 rounded-xl bg-[#15233A] hover:bg-[#1F2E47] text-xs font-bold text-white transition"
+            >
+              Done
+            </button>
           </div>
         </div>
       )}
 
-      {/* Course Assignment Modal */}
+      {/* Assign Courses Modal */}
       {showAssignModal && selectedStudent && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-base font-bold text-[#F0F5FF] mb-1">
-              Assign Courses: {selectedStudent.full_name}
-            </h3>
-            <p className="text-xs text-[#9BAAC2] mb-4">
-              Select which course roadmaps and topic feeds this student can access.
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-black text-[#F0F5FF] flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-[#397BFF]" />
+                Course Enrolments
+              </h3>
+              <button onClick={() => setShowAssignModal(false)} className="text-[#9BAAC2] hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#9BAAC2]">
+              Select courses accessible to <strong className="text-white">{selectedStudent.full_name}</strong>:
             </p>
 
-            <div className="space-y-2 mb-4">
-              {courses.map(course => {
-                const isAssigned = selectedStudent.assigned_courses?.includes(course.id);
+            <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+              {courses.map((course) => {
+                const isAssigned = (selectedStudent.assigned_courses || []).includes(course.id);
                 return (
                   <label
                     key={course.id}
-                    className="flex items-center justify-between p-3 rounded-xl bg-[#15233A] border border-[#1F2E47] text-xs cursor-pointer hover:border-[#397BFF]/50 transition"
+                    className="flex items-center justify-between p-3 rounded-xl bg-[#15233A] hover:bg-[#1F2E47] cursor-pointer transition border border-white/5"
                   >
                     <div>
-                      <div className="font-bold text-[#F0F5FF]">{course.title}</div>
-                      <div className="text-[10px] text-[#77B4FF]">{course.category} • {course.mentor_name}</div>
+                      <div className="text-xs font-bold text-[#F0F5FF]">{course.title}</div>
+                      <div className="text-[10px] text-[#77B4FF]">{course.category} • {course.duration_weeks} Weeks</div>
                     </div>
                     <input
                       type="checkbox"
                       defaultChecked={isAssigned}
                       onChange={(e) => {
                         const current = selectedStudent.assigned_courses || [];
-                        const updated = e.target.checked
+                        const next = e.target.checked
                           ? [...current, course.id]
                           : current.filter(id => id !== course.id);
-                        setSelectedStudent({ ...selectedStudent, assigned_courses: updated });
+                        setSelectedStudent({ ...selectedStudent, assigned_courses: next });
                       }}
-                      className="accent-[#397BFF] w-4 h-4"
+                      className="w-4 h-4 rounded text-[#397BFF] focus:ring-0"
                     />
                   </label>
                 );
               })}
             </div>
 
-            <div className="flex items-center justify-end gap-2">
+            <div className="pt-2 flex justify-end gap-2">
               <button
                 onClick={() => setShowAssignModal(false)}
-                className="px-3 py-1.5 rounded-lg text-xs text-[#9BAAC2] bg-[#15233A]"
+                className="px-4 py-2 rounded-xl text-xs text-[#9BAAC2] bg-[#15233A]"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleSaveCourses(selectedStudent.assigned_courses || [])}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-[#397BFF] text-white hover:bg-[#2868ea]"
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-[#397BFF] text-white"
               >
-                Save Course Enrollments
+                Save Enrolments
               </button>
             </div>
           </div>
@@ -508,3 +574,5 @@ export const StudentManagementPage: React.FC = () => {
     </div>
   );
 };
+
+export default StudentManagementPage;

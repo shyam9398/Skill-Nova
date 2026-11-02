@@ -1,27 +1,30 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCheck, BookOpen, UploadCloud,
   Briefcase, Calendar, MessageSquare, Rocket, Settings,
-  Shield, Sparkles
+  Shield, Sparkles, Globe, UserPlus, LogOut, ChevronRight, HelpCircle
 } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
+import { LogoutConfirmationModal } from '../components/common/LogoutConfirmationModal';
 
 export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { currentUser, role } = useAuth();
+  const { currentUser, role, logout } = useAuth();
 
   const isSuperAdmin = role === 'admin';
 
-  // Navigation configured per Section 11 requirements
+  // Navigation configured per Section 11 & Homepage Management requirements
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
+    { label: 'Homepage Management', icon: Globe, path: '/admin/homepage', badge: 'Public Hub' },
+    { label: 'Access Requests', icon: UserPlus, path: '/admin/access-requests', badge: 'Approval' },
     { label: 'Student Management', icon: Users, path: '/admin/students' },
     ...(isSuperAdmin ? [{ label: 'Sub-admin Management', icon: UserCheck, path: '/admin/subadmins' }] : []),
     { label: 'Course Management', icon: BookOpen, path: '/admin/courses' },
     { label: 'Learning Resources', icon: UploadCloud, path: '/admin/resources' },
-    { label: 'AI Content Generator', icon: Sparkles, path: '/admin/ai-generator', badge: 'AI' },
+    { label: 'Quiz Management', icon: HelpCircle, path: '/admin/quizzes', badge: 'Evaluations' },
     { label: 'Opportunities', icon: Briefcase, path: '/admin/opportunities' },
     { label: 'Saturday Special', icon: Calendar, path: '/admin/saturday-special' },
     { label: 'Discussion Management', icon: MessageSquare, path: '/admin/discussions', badge: 'Mentorship' },
@@ -90,9 +93,21 @@ export const AdminLayout: React.FC = () => {
             })}
           </nav>
 
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-[#DFE9F6] bg-[#F5F9FF]/60 text-xs text-[#73839B]">
-            <div className="flex items-center justify-between text-[11px]">
+          {/* Sidebar Footer with Logout Button */}
+          <div className="p-3 border-t border-[#DFE9F6] bg-white space-y-2">
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition"
+              title="Sign Out of Admin Portal"
+            >
+              <div className="flex items-center gap-2.5">
+                <LogOut className="w-4 h-4 text-red-600" />
+                <span>Logout Admin</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-red-400" />
+            </button>
+
+            <div className="px-2 pt-1 flex items-center justify-between text-[11px] text-[#73839B]">
               <span className="font-medium">SkillNova Admin Hub</span>
               <span className="text-[#176BFF] font-mono font-bold">SECURE</span>
             </div>
@@ -112,6 +127,10 @@ export const AdminLayout: React.FC = () => {
           <Outlet />
         </main>
       </div>
+
+      <LogoutConfirmationModal />
     </div>
   );
 };
+
+export default AdminLayout;

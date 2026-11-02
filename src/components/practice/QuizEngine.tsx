@@ -194,7 +194,7 @@ export const QuizEngine: React.FC<QuizEngineProps> = ({
                   <span className="w-6 h-6 rounded-lg bg-[#080E1C] border border-[#1F2E47] text-[11px] font-mono font-bold flex items-center justify-center shrink-0">
                     {String.fromCharCode(65 + idx)}
                   </span>
-                  <span>{option}</span>
+                  <span>{typeof option === 'string' ? option : option.text}</span>
                 </div>
 
                 {isAnswerSubmitted && idx === currentQ.correct_index && (

@@ -558,3 +558,485 @@ CREATE POLICY "Staff insert audit logs" ON public.audit_logs
 CREATE INDEX IF NOT EXISTS idx_practical_student ON public.practical_submissions(student_id);
 CREATE INDEX IF NOT EXISTS idx_practical_course ON public.practical_submissions(course_id);
 CREATE INDEX IF NOT EXISTS idx_audit_time ON public.audit_logs(timestamp DESC);
+
+-- ==============================================================================
+-- 30. COURSE CURRICULUM TEXT
+-- ==============================================================================
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS curriculum_text TEXT;
+
+-- ==============================================================================
+-- 31. HOMEPAGE SETTINGS (Demo Video, WhatsApp, Instagram, LinkedIn, QR)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.homepage_settings (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    demo_video_url TEXT,
+    demo_video_title TEXT DEFAULT 'SkillNova Learning Experience',
+    demo_video_description TEXT DEFAULT 'Watch how SkillNova transforms student careers through hands-on technical training, live mentor reviews, and production project builds.',
+    demo_video_is_active BOOLEAN DEFAULT true,
+    whatsapp_group_url TEXT DEFAULT 'https://chat.whatsapp.com/sample-skillnova',
+    whatsapp_qr_code_url TEXT DEFAULT '',
+    whatsapp_is_active BOOLEAN DEFAULT true,
+    whatsapp_display_name TEXT DEFAULT 'Official WhatsApp Community',
+    instagram_url TEXT DEFAULT 'https://instagram.com/skillnova_edu',
+    instagram_is_active BOOLEAN DEFAULT true,
+    instagram_display_name TEXT DEFAULT 'Instagram @skillnova_edu',
+    linkedin_url TEXT DEFAULT 'https://linkedin.com/company/skillnova',
+    linkedin_is_active BOOLEAN DEFAULT true,
+    linkedin_display_name TEXT DEFAULT 'LinkedIn @skillnova',
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.homepage_settings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read homepage settings" ON public.homepage_settings
+    FOR SELECT USING (true);
+
+CREATE POLICY "Staff manage homepage settings" ON public.homepage_settings
+    FOR ALL USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+-- ==============================================================================
+-- 32. HOMEPAGE COURSES (Fee, Timeline, WhatsApp Enroll, Floating Cards)
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.homepage_courses (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title TEXT NOT NULL,
+    description TEXT,
+    thumbnail_url TEXT,
+    fee TEXT NOT NULL DEFAULT '₹4,999',
+    timeline TEXT NOT NULL DEFAULT '8 Weeks Cohort',
+    curriculum_text TEXT,
+    whatsapp_enroll_url TEXT,
+    is_active BOOLEAN DEFAULT true,
+    order_index INT DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.homepage_courses ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public read active homepage courses" ON public.homepage_courses
+    FOR SELECT USING (is_active = true OR public.is_sub_admin_or_admin(auth.uid()));
+
+CREATE POLICY "Staff manage homepage courses" ON public.homepage_courses
+    FOR ALL USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+-- ==============================================================================
+-- 33. STUDENT ACCESS REQUESTS & WORKFLOW
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.student_access_requests (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    full_name TEXT NOT NULL,
+    email TEXT NOT NULL,
+    phone TEXT,
+    college TEXT NOT NULL,
+    branch TEXT NOT NULL,
+    year_of_study TEXT NOT NULL,
+    target_course TEXT,
+    payment_reference TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+    admin_note TEXT,
+    assigned_batch TEXT,
+    assigned_course_id UUID REFERENCES public.courses(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    reviewed_at TIMESTAMPTZ,
+    reviewed_by UUID REFERENCES public.profiles(id)
+);
+
+CREATE TABLE IF NOT EXISTS public.student_access_request_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    request_id UUID NOT NULL REFERENCES public.student_access_requests(id) ON DELETE CASCADE,
+    event_type TEXT NOT NULL,
+    details TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.student_access_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.student_access_request_events ENABLE ROW LEVEL SECURITY;
+
+-- Anyone can submit an access request from public homepage
+CREATE POLICY "Public insert access requests" ON public.student_access_requests
+    FOR INSERT WITH CHECK (true);
+
+-- Only admins/sub-admins and requester can read requests
+CREATE POLICY "Staff read access requests" ON public.student_access_requests
+    FOR SELECT USING (public.is_sub_admin_or_admin(auth.uid()) OR email = (SELECT email FROM public.profiles WHERE id = auth.uid()));
+
+CREATE POLICY "Staff update access requests" ON public.student_access_requests
+    FOR UPDATE USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+CREATE POLICY "Staff manage request events" ON public.student_access_request_events
+    FOR ALL USING (public.is_sub_admin_or_admin(auth.uid()));
+
+-- ==============================================================================
+-- 34. AUDIT LOGS FOR ADMINISTRATIVE MODIFICATIONS
+-- ==============================================================================
+CREATE TABLE IF NOT EXISTS public.audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES public.profiles(id),
+    performed_by TEXT NOT NULL,
+    action TEXT NOT NULL,
+    resource_id TEXT,
+    resource_title TEXT,
+    course_id TEXT,
+    details TEXT,
+    previous_value JSONB,
+    updated_value JSONB,
+    timestamp TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- =========================================================
+-- AUDIT LOGS: RLS POLICIES
+-- =========================================================
+
+ALTER TABLE public.audit_logs ENABLE ROW LEVEL SECURITY;
+
+-- Remove previous policy definitions before recreating them
+DROP POLICY IF EXISTS "Staff read audit logs"
+ON public.audit_logs;
+
+DROP POLICY IF EXISTS "Staff view audit logs"
+ON public.audit_logs;
+
+DROP POLICY IF EXISTS "Staff insert audit logs"
+ON public.audit_logs;
+
+DROP POLICY IF EXISTS "Staff read audit logs"
+ON public.audit_logs;
+
+DROP POLICY IF EXISTS "Admins and sub-admins can view audit logs"
+ON public.audit_logs;
+
+-- Staff can view audit logs
+CREATE POLICY "Staff read audit logs"
+ON public.audit_logs
+FOR SELECT
+TO authenticated
+USING (
+    public.is_sub_admin_or_admin(auth.uid())
+);
+
+-- Staff can insert audit logs
+CREATE POLICY "Staff insert audit logs"
+ON public.audit_logs
+FOR INSERT
+TO authenticated
+WITH CHECK (
+    public.is_sub_admin_or_admin(auth.uid())
+);
+-- Add course enhancements if not exists
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS course_fee TEXT;
+ALTER TABLE public.courses ADD COLUMN IF NOT EXISTS timeline TEXT;
+
+-- Add topic slide range and resource type enhancements if not exists
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS resource_type TEXT;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS total_slides INT;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS slide_start INT;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS slide_end INT;
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS doc_page_range TEXT;
+
+-- Modules table RLS policies
+ALTER TABLE public.modules ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage modules" ON public.modules;
+CREATE POLICY "Staff manage modules" ON public.modules
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Public read modules" ON public.modules;
+CREATE POLICY "Public read modules" ON public.modules
+    FOR SELECT
+    TO authenticated, anon
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.courses
+            WHERE courses.id = modules.course_id
+            AND (courses.is_published = true OR public.is_sub_admin_or_admin(auth.uid()))
+        )
+    );
+
+-- 23. SUB-MODULES
+CREATE TABLE IF NOT EXISTS public.sub_modules (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    module_id UUID NOT NULL REFERENCES public.modules(id) ON DELETE CASCADE,
+    course_id UUID NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.sub_modules ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage sub_modules" ON public.sub_modules;
+CREATE POLICY "Staff manage sub_modules" ON public.sub_modules
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Public read sub_modules" ON public.sub_modules;
+CREATE POLICY "Public read sub_modules" ON public.sub_modules
+    FOR SELECT
+    TO authenticated, anon
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.courses
+            WHERE courses.id = sub_modules.course_id
+            AND (courses.is_published = true OR public.is_sub_admin_or_admin(auth.uid()))
+        )
+    );
+
+-- 24. PRESENTATIONS
+CREATE TABLE IF NOT EXISTS public.presentations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    course_id UUID NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+    module_id UUID NOT NULL REFERENCES public.modules(id) ON DELETE CASCADE,
+    sub_module_id UUID REFERENCES public.sub_modules(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    original_file_path TEXT,
+    ppt_url TEXT,
+    total_slides INT NOT NULL DEFAULT 1,
+    uploaded_by UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.presentations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage presentations" ON public.presentations;
+CREATE POLICY "Staff manage presentations" ON public.presentations
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Public read presentations" ON public.presentations;
+CREATE POLICY "Public read presentations" ON public.presentations
+    FOR SELECT
+    TO authenticated, anon
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.courses
+            WHERE courses.id = presentations.course_id
+            AND (courses.is_published = true OR public.is_sub_admin_or_admin(auth.uid()))
+        )
+    );
+
+-- 25. PRESENTATION SLIDE ALLOCATIONS
+CREATE TABLE IF NOT EXISTS public.presentation_slide_allocations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    presentation_id UUID NOT NULL REFERENCES public.presentations(id) ON DELETE CASCADE,
+    sub_module_id UUID NOT NULL REFERENCES public.sub_modules(id) ON DELETE CASCADE,
+    start_slide INT NOT NULL,
+    end_slide INT NOT NULL,
+    release_status TEXT NOT NULL DEFAULT 'locked' CHECK (release_status IN ('released', 'locked', 'scheduled')),
+    scheduled_release_at TIMESTAMPTZ,
+    released_at TIMESTAMPTZ,
+    released_by UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.presentation_slide_allocations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage slide allocations" ON public.presentation_slide_allocations;
+CREATE POLICY "Staff manage slide allocations" ON public.presentation_slide_allocations
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Enrolled students read released slide allocations" ON public.presentation_slide_allocations;
+CREATE POLICY "Enrolled students read released slide allocations" ON public.presentation_slide_allocations
+    FOR SELECT
+    TO authenticated
+    USING (
+        release_status = 'released' OR public.is_sub_admin_or_admin(auth.uid())
+    );
+
+-- Add sub_module_id to topics if not exists
+ALTER TABLE public.topics ADD COLUMN IF NOT EXISTS sub_module_id UUID REFERENCES public.sub_modules(id) ON DELETE SET NULL;
+
+-- 26. THEME PREFERENCE ON PROFILES
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS theme_preference TEXT DEFAULT 'light' CHECK (theme_preference IN ('light', 'dark'));
+
+-- 27. QUIZZES
+CREATE TABLE IF NOT EXISTS public.quizzes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+    module_id UUID REFERENCES public.modules(id) ON DELETE SET NULL,
+    sub_module_id UUID REFERENCES public.sub_modules(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    total_marks INT NOT NULL DEFAULT 10,
+    duration_minutes INT NOT NULL DEFAULT 15,
+    start_time TIMESTAMPTZ NOT NULL,
+    end_time TIMESTAMPTZ NOT NULL,
+    status TEXT NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'active', 'closed')),
+    created_by UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage quizzes" ON public.quizzes;
+CREATE POLICY "Staff manage quizzes" ON public.quizzes
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Students read active and closed quizzes" ON public.quizzes;
+CREATE POLICY "Students read active and closed quizzes" ON public.quizzes
+    FOR SELECT
+    TO authenticated, anon
+    USING (
+        public.is_sub_admin_or_admin(auth.uid()) OR
+        NOW() >= start_time
+    );
+
+-- 28. QUIZ QUESTIONS
+CREATE TABLE IF NOT EXISTS public.quiz_questions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    quiz_id UUID NOT NULL REFERENCES public.quizzes(id) ON DELETE CASCADE,
+    question TEXT NOT NULL,
+    options JSONB NOT NULL DEFAULT '[]'::jsonb,
+    correct_answer TEXT NOT NULL,
+    explanation TEXT,
+    marks INT NOT NULL DEFAULT 1,
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.quiz_questions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage quiz questions" ON public.quiz_questions;
+CREATE POLICY "Staff manage quiz questions" ON public.quiz_questions
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Students read quiz questions" ON public.quiz_questions;
+CREATE POLICY "Students read quiz questions" ON public.quiz_questions
+    FOR SELECT
+    TO authenticated
+    USING (
+        EXISTS (
+            SELECT 1 FROM public.quizzes
+            WHERE quizzes.id = quiz_questions.quiz_id
+            AND (quizzes.status IN ('active', 'closed') OR public.is_sub_admin_or_admin(auth.uid()))
+        )
+    );
+
+-- 29. QUIZ ATTEMPTS & FIRST-ATTEMPT LEADERBOARD
+CREATE TABLE IF NOT EXISTS public.quiz_attempts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    quiz_id UUID NOT NULL REFERENCES public.quizzes(id) ON DELETE CASCADE,
+    student_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    student_name TEXT NOT NULL,
+    course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+    score NUMERIC(5,2) NOT NULL DEFAULT 0,
+    total_marks NUMERIC(5,2) NOT NULL DEFAULT 0,
+    total_questions INT NOT NULL DEFAULT 0,
+    correct_count INT NOT NULL DEFAULT 0,
+    incorrect_count INT NOT NULL DEFAULT 0,
+    unanswered_count INT NOT NULL DEFAULT 0,
+    accuracy NUMERIC(5,2) NOT NULL DEFAULT 0,
+    percentage NUMERIC(5,2) NOT NULL DEFAULT 0,
+    time_spent_seconds INT NOT NULL DEFAULT 0,
+    answers JSONB NOT NULL DEFAULT '{}'::jsonb,
+    is_first_attempt BOOLEAN NOT NULL DEFAULT true,
+    is_practice BOOLEAN NOT NULL DEFAULT false,
+    status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted', 'timed_out', 'in_progress')),
+    completed_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.quiz_attempts ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Students insert own attempts" ON public.quiz_attempts;
+CREATE POLICY "Students insert own attempts" ON public.quiz_attempts
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (auth.uid() = student_id OR public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Students and staff read attempts" ON public.quiz_attempts;
+CREATE POLICY "Students and staff read attempts" ON public.quiz_attempts
+    FOR SELECT
+    TO authenticated
+    USING (
+        auth.uid() = student_id OR
+        is_first_attempt = true OR
+        public.is_sub_admin_or_admin(auth.uid())
+    );
+
+-- Index for instant leaderboard generation: Score DESC, Accuracy DESC, Time ASC
+CREATE INDEX IF NOT EXISTS idx_quiz_leaderboard ON public.quiz_attempts (quiz_id, is_first_attempt, score DESC, accuracy DESC, time_spent_seconds ASC)
+WHERE is_first_attempt = true;
+
+-- 30. PDF PAGE ALLOCATIONS
+CREATE TABLE IF NOT EXISTS public.pdf_page_allocations (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    topic_id UUID REFERENCES public.topics(id) ON DELETE CASCADE,
+    course_id UUID REFERENCES public.courses(id) ON DELETE CASCADE,
+    sub_module_id UUID REFERENCES public.sub_modules(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    pdf_url TEXT NOT NULL,
+    start_page INT NOT NULL DEFAULT 1,
+    end_page INT NOT NULL DEFAULT 1,
+    total_pages INT NOT NULL DEFAULT 1,
+    release_status TEXT NOT NULL DEFAULT 'locked' CHECK (release_status IN ('released', 'locked', 'scheduled')),
+    scheduled_release_at TIMESTAMPTZ,
+    released_at TIMESTAMPTZ,
+    released_by UUID REFERENCES public.profiles(id),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.pdf_page_allocations ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Staff manage pdf allocations" ON public.pdf_page_allocations;
+CREATE POLICY "Staff manage pdf allocations" ON public.pdf_page_allocations
+    FOR ALL
+    TO authenticated
+    USING (public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (public.is_sub_admin_or_admin(auth.uid()));
+
+DROP POLICY IF EXISTS "Read released pdf allocations" ON public.pdf_page_allocations;
+CREATE POLICY "Read released pdf allocations" ON public.pdf_page_allocations
+    FOR SELECT
+    TO authenticated, anon
+    USING (
+        release_status = 'released' OR public.is_sub_admin_or_admin(auth.uid())
+    );
+
+-- 31. STUDENT ROADMAP PROGRESS
+CREATE TABLE IF NOT EXISTS public.student_roadmap_progress (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    student_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    course_id UUID NOT NULL REFERENCES public.courses(id) ON DELETE CASCADE,
+    completed_sub_modules JSONB NOT NULL DEFAULT '[]'::jsonb,
+    current_sub_module_id UUID REFERENCES public.sub_modules(id) ON DELETE SET NULL,
+    progress_percentage INT NOT NULL DEFAULT 0,
+    last_activity_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(student_id, course_id)
+);
+
+ALTER TABLE public.student_roadmap_progress ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Students manage own progress" ON public.student_roadmap_progress;
+CREATE POLICY "Students manage own progress" ON public.student_roadmap_progress
+    FOR ALL
+    TO authenticated
+    USING (auth.uid() = student_id OR public.is_sub_admin_or_admin(auth.uid()))
+    WITH CHECK (auth.uid() = student_id OR public.is_sub_admin_or_admin(auth.uid()));
+
+
+

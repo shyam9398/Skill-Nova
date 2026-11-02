@@ -1,21 +1,39 @@
 import React, { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, BookOpen, MessageSquare, Rocket,
-  Bell, User, Shield, Compass, Sparkles
+  Bell, User, Code2, HelpCircle, LogOut, CheckCircle2, ChevronRight,
+  Briefcase, Calendar
 } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
+import { LogoutConfirmationModal } from '../components/common/LogoutConfirmationModal';
 
 export const StudentLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+  const navigate = useNavigate();
 
-  // Simplified and focused student navigation per Section 6
+  // Updated student navigation per Section 12:
+  // 1. Dashboard
+  // 2. My Enrolled Courses
+  // 3. Python Code Lab
+  // 4. Discussion Room
+  // 5. Quizzes
+  // 6. Opportunities
+  // 7. Saturday Special
+  // 8. Pathfinders
+  // 9. Notifications
+  // 10. My Profile
+  // 11. Logout (visible button below)
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/student/dashboard' },
     { label: 'My Enrolled Courses', icon: BookOpen, path: '/student/courses' },
+    { label: 'Python Code Lab', icon: Code2, path: '/student/python-lab', badge: 'Python 3' },
     { label: 'Discussion Room', icon: MessageSquare, path: '/student/discussion', badge: 'Community' },
+    { label: 'Quizzes', icon: HelpCircle, path: '/student/quizzes', badge: 'Drill' },
+    { label: 'Opportunities', icon: Briefcase, path: '/student/opportunities', badge: 'Careers' },
+    { label: 'Saturday Special', icon: Calendar, path: '/student/saturday-special', badge: 'Live' },
     { label: 'Pathfinders', icon: Rocket, path: '/student/pathfinders', badge: 'Blast!' },
     { label: 'Notifications', icon: Bell, path: '/student/notifications' },
     { label: 'My Profile', icon: User, path: '/student/profile' },
@@ -87,9 +105,21 @@ export const StudentLayout: React.FC = () => {
             })}
           </nav>
 
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-[#DFE9F6] bg-[#F5F9FF]/60 text-xs text-[#73839B]">
-            <div className="text-[11px] flex items-center justify-between">
+          {/* Visible Logout Option at the Bottom of Student Sidebar */}
+          <div className="p-3 border-t border-[#DFE9F6] bg-white space-y-2">
+            <button
+              onClick={() => logout()}
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition"
+              title="Sign Out of SkillNova"
+            >
+              <div className="flex items-center gap-2.5">
+                <LogOut className="w-4 h-4 text-red-600" />
+                <span>Logout</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-red-400" />
+            </button>
+
+            <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#73839B]">
               <span className="font-medium">Active Batch 2027</span>
               <span className="text-emerald-600 font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -108,10 +138,15 @@ export const StudentLayout: React.FC = () => {
         )}
 
         {/* Main Content Workspace */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#F5F9FF]">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#F5F9FF] relative">
           <Outlet />
         </main>
       </div>
+
+      {/* Global Confirmation Modal */}
+      <LogoutConfirmationModal />
     </div>
   );
 };
+
+export default StudentLayout;

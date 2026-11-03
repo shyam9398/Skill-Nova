@@ -5,7 +5,8 @@ import {
   Plus, 
   MapPin, 
   Calendar, 
-  ExternalLink, 
+  ExternalLink,
+  Trash2, 
   CheckCircle, 
   Tag, 
   Search,
@@ -16,11 +17,18 @@ import { dataService } from '../../services/dataService';
 import type { Opportunity } from '../../types';
 
 export const AdminOpportunitiesPage: React.FC = () => {
-  const [opportunities, setOpportunities] = useState<Opportunity[]>(dataService.getOpportunities());
+  const [opportunities, setOpportunities] = useState<Opportunity[]>(() => dataService.getOpportunities());
   const [filterType, setFilterType] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showModal, setShowModal] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const unsub = dataService.subscribe(() => {
+      setOpportunities(dataService.getOpportunities());
+    });
+    return unsub;
+  }, []);
 
   // Form State
   const [title, setTitle] = useState('');
@@ -44,28 +52,46 @@ export const AdminOpportunitiesPage: React.FC = () => {
     return matchesType && matchesSearch;
   });
 
-  const handleCreateOpportunity = (e: React.FormEvent) => {
+  const handleCreateOpportunity = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !company) return;
 
-    const newOpp = dataService.publishOpportunity({
-      title,
-      company,
-      type,
-      location,
-      stipendOrPrize,
-      deadline,
-      description,
-      requiredSkills: requiredSkills.split(',').map(s => s.trim()).filter(Boolean),
-      applyUrl
-    });
+    try {
+      const newOpp = await dataService.publishOpportunity({
+        title,
+        company,
+        type,
+        location,
+        stipendOrPrize,
+        deadline,
+        description,
+        requiredSkills: requiredSkills.split(',').map(s => s.trim()).filter(Boolean),
+        applyUrl
+      });
 
-    setOpportunities([newOpp, ...opportunities]);
-    setShowModal(false);
-    resetForm();
+      setOpportunities([newOpp, ...opportunities.filter(o => o.id !== newOpp.id)]);
+      setShowModal(false);
+      resetForm();
 
-    setNotification(`Successfully published opportunity: "${title}" at ${company}`);
-    setTimeout(() => setNotification(null), 3500);
+      setNotification(`Successfully published opportunity: "${title}" at ${company}`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      setNotification(`Error saving opportunity: ${err.message || 'Database error'}`);
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const handleDeleteOpportunity = async (id: string, oppTitle: string) => {
+    if (!window.confirm(`Delete opportunity "${oppTitle}"?`)) return;
+    try {
+      await dataService.deleteOpportunity(id);
+      setOpportunities(opportunities.filter(o => o.id !== id));
+      setNotification(`Opportunity "${oppTitle}" removed successfully.`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      setNotification(`Error deleting opportunity: ${err.message}`);
+      setTimeout(() => setNotification(null), 5000);
+    }
   };
 
   const resetForm = () => {
@@ -205,14 +231,24 @@ export const AdminOpportunitiesPage: React.FC = () => {
               <span className="text-[11px] text-[#9BAAC2]">
                 Posted: {opp.published_at || opp.postedDate || 'Today'}
               </span>
-              <a
-                href={opp.apply_url || opp.applyUrl || '#'}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1.5 rounded-lg bg-[#397BFF]/15 hover:bg-[#397BFF]/25 text-[#77B4FF] text-xs font-semibold flex items-center gap-1.5 transition"
-              >
-                Apply Portal <ExternalLink className="w-3 h-3" />
-              </a>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleDeleteOpportunity(opp.id, opp.title)}
+                  className="p-1.5 rounded-lg text-[#9BAAC2] hover:text-rose-400 hover:bg-rose-500/10 transition"
+                  title="Delete Opportunity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+                <a
+                  href={opp.apply_url || opp.applyUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-3 py-1.5 rounded-lg bg-[#397BFF]/15 hover:bg-[#397BFF]/25 text-[#77B4FF] text-xs font-semibold flex items-center gap-1.5 transition"
+                >
+                  Apply Portal <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
             </div>
           </div>
         ))}

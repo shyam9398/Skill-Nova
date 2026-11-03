@@ -1,0 +1,433 @@
+{
+  "auth_users": [
+    {
+      "created_at": "2026-11-02 10:29:22.749753+00",
+      "email": "skillnova09@gmail.com",
+      "id": "6c1e1aca-b160-42e0-83db-8bc804b6e69b",
+      "last_sign_in_at": "2026-11-02 16:55:04.293344+00",
+      "raw_user_meta_data": {
+        "email_verified": true
+      },
+      "role": "authenticated"
+    },
+    {
+      "created_at": "2026-11-02 14:17:00.85294+00",
+      "email": "admin.skillnova@gmail.com",
+      "id": "043117c9-c675-4621-85ee-8a02271d3696",
+      "last_sign_in_at": null,
+      "raw_user_meta_data": {
+        "email": "admin.skillnova@gmail.com",
+        "email_verified": false,
+        "full_name": "System Administrator",
+        "phone_verified": false,
+        "role": "admin",
+        "sub": "043117c9-c675-4621-85ee-8a02271d3696"
+      },
+      "role": "authenticated"
+    }
+  ],
+  "tables": {
+    "courses": [
+      {
+        "category": "Full Stack Development",
+        "course_fee": "\u00e2\u201a\u00b914,999",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "curriculum_text": null,
+        "description": "Master modern frontend architectures with React 19, TypeScript 5, Express REST APIs, PostgreSQL schema design, and Docker containerization.",
+        "duration_weeks": 12,
+        "id": "c0000000-0000-0000-0000-000000000101",
+        "is_published": true,
+        "mentor_email": "mentor.fullstack@skillnova.edu",
+        "mentor_id": null,
+        "mentor_name": "Senior Technical Architect",
+        "roadmap_image_url": "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&auto=format&fit=crop&q=80",
+        "slug": "full-stack-web-engineering",
+        "thumbnail_url": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80",
+        "timeline": "12 Weeks \u00e2\u20ac\u00a2 Live Cohort",
+        "title": "Full Stack Web Engineering & Microservices",
+        "updated_at": "2026-11-02 15:56:04.679456+00"
+      },
+      {
+        "category": "Artificial Intelligence",
+        "course_fee": "\u00e2\u201a\u00b918,999",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "curriculum_text": null,
+        "description": "Build multi-agent collaboration pipelines with LangGraph, deploy client-side WebAssembly models, and master vector embeddings with RAG.",
+        "duration_weeks": 10,
+        "id": "c0000000-0000-0000-0000-000000000201",
+        "is_published": true,
+        "mentor_email": "mentor.ai@skillnova.edu",
+        "mentor_id": null,
+        "mentor_name": "Principal AI Researcher",
+        "roadmap_image_url": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1200&auto=format&fit=crop&q=80",
+        "slug": "ai-agentic-systems",
+        "thumbnail_url": "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=600&auto=format&fit=crop&q=80",
+        "timeline": "10 Weeks \u00e2\u20ac\u00a2 Hands-on Labs",
+        "title": "AI & Agentic Systems Engineering",
+        "updated_at": "2026-11-02 15:56:04.679456+00"
+      },
+      {
+        "category": "Core Programming",
+        "course_fee": "\u00e2\u201a\u00b99,999",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "curriculum_text": null,
+        "description": "In-depth Python 3 systems, data structures, algorithm drills, dynamic programming, and in-browser Pyodide WebAssembly coding labs.",
+        "duration_weeks": 8,
+        "id": "c0000000-0000-0000-0000-000000000301",
+        "is_published": true,
+        "mentor_email": "mentor.python@skillnova.edu",
+        "mentor_id": null,
+        "mentor_name": "Lead Systems Engineer",
+        "roadmap_image_url": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=1200&auto=format&fit=crop&q=80",
+        "slug": "python-engineers-algorithms",
+        "thumbnail_url": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=600&auto=format&fit=crop&q=80",
+        "timeline": "8 Weeks \u00e2\u20ac\u00a2 Code In-Browser",
+        "title": "Python for Engineers & Algorithmic Problem Solving",
+        "updated_at": "2026-11-02 15:56:04.679456+00"
+      }
+    ],
+    "homepage_courses": [
+      {
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "curriculum_text": null,
+        "description": "Master React 19, TypeScript 5, Node.js microservices, PostgreSQL, and Docker with production deployments.",
+        "fee": "\u00e2\u201a\u00b95,999",
+        "id": "30000000-0000-4000-8000-000000000011",
+        "is_active": true,
+        "order_index": 1,
+        "thumbnail_url": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&auto=format&fit=crop&q=80",
+        "timeline": "12 Weeks \u00e2\u20ac\u00a2 Live Weekend Cohort",
+        "title": "Full Stack Web Engineering & Microservices",
+        "updated_at": "2026-11-02 15:56:04.679456+00",
+        "whatsapp_enroll_url": "https://chat.whatsapp.com/SkillNovaOfficialCohort2027"
+      },
+      {
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "curriculum_text": null,
+        "description": "Build production RAG pipelines, autonomous multi-agent systems with LangGraph, and deploy WebAssembly models.",
+        "fee": "\u00e2\u201a\u00b96,999",
+        "id": "30000000-0000-4000-8000-000000000012",
+        "is_active": true,
+        "order_index": 2,
+        "thumbnail_url": "https://images.unsplash.com/photo-1677442136019-21780efad99a?w=600&auto=format&fit=crop&q=80",
+        "timeline": "10 Weeks \u00e2\u20ac\u00a2 Hands-on Project Labs",
+        "title": "AI & Agentic Systems Engineering",
+        "updated_at": "2026-11-02 15:56:04.679456+00",
+        "whatsapp_enroll_url": "https://chat.whatsapp.com/SkillNovaOfficialCohort2027"
+      },
+      {
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "curriculum_text": null,
+        "description": "From syntax to system design, data structures, algorithms, and in-browser coding drills with Pyodide.",
+        "fee": "\u00e2\u201a\u00b93,999",
+        "id": "30000000-0000-4000-8000-000000000013",
+        "is_active": true,
+        "order_index": 3,
+        "thumbnail_url": "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=600&auto=format&fit=crop&q=80",
+        "timeline": "8 Weeks \u00e2\u20ac\u00a2 Code In-Browser",
+        "title": "Python for Engineers & Algorithmic Problem Solving",
+        "updated_at": "2026-11-02 15:56:04.679456+00",
+        "whatsapp_enroll_url": "https://chat.whatsapp.com/SkillNovaOfficialCohort2027"
+      }
+    ],
+    "homepage_settings": [
+      {
+        "demo_video_description": "Discover how SkillNova transforms software careers with 3D mountain journeys, client-side Python 3 WebAssembly coding labs, and direct industry mentorship.",
+        "demo_video_is_active": true,
+        "demo_video_title": "SkillNova Experience \u00e2\u20ac\u00a2 Live Walkthrough",
+        "demo_video_url": "https://www.youtube.com/watch?v=kqtD5dpn9C8",
+        "id": "30000000-0000-4000-8000-000000000001",
+        "instagram_display_name": "Instagram @skillnova_edu",
+        "instagram_is_active": true,
+        "instagram_url": "https://instagram.com/skillnova_edu",
+        "linkedin_display_name": "LinkedIn @skillnova",
+        "linkedin_is_active": true,
+        "linkedin_url": "https://linkedin.com/company/skillnova",
+        "updated_at": "2026-11-02 15:56:04.679456+00",
+        "whatsapp_display_name": "Official WhatsApp Community",
+        "whatsapp_group_url": "https://chat.whatsapp.com/SkillNovaOfficialCohort2027",
+        "whatsapp_is_active": true,
+        "whatsapp_qr_code_url": ""
+      }
+    ],
+    "modules": [
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "TypeScript 5.5, generic constraints, React 19 architecture, and state machines.",
+        "id": "10000000-0000-4000-8000-000000000101",
+        "order_index": 1,
+        "title": "Module 1: Advanced Frontend & System Architecture"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "Node.js, Express microservices, PostgreSQL design, and indexing strategies.",
+        "id": "10000000-0000-4000-8000-000000000102",
+        "order_index": 2,
+        "title": "Module 2: Scalable Backend Services & Databases"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000201",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "Vector spaces, matrix decomposition, loss optimization, and gradient descent.",
+        "id": "10000000-0000-4000-8000-000000000201",
+        "order_index": 1,
+        "title": "Module 1: Foundations of Machine Learning & Math"
+      }
+    ],
+    "profiles": [
+      {
+        "avatar_url": null,
+        "created_at": "2026-11-02 10:32:30.013431+00",
+        "email": "skillnova09@gmail.com",
+        "full_name": "SkillNova Admin",
+        "id": "6c1e1aca-b160-42e0-83db-8bc804b6e69b",
+        "theme_preference": "light",
+        "updated_at": "2026-11-02 10:32:30.013431+00",
+        "username": null
+      },
+      {
+        "avatar_url": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "email": "admin.skillnova@gmail.com",
+        "full_name": "System Administrator",
+        "id": "043117c9-c675-4621-85ee-8a02271d3696",
+        "theme_preference": "light",
+        "updated_at": "2026-11-02 15:56:04.679456+00",
+        "username": null
+      }
+    ],
+    "quiz_questions": [
+      {
+        "correct_answer": "B",
+        "correct_index": null,
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "explanation": "Lists in Python are mutable sequences; their elements can be modified in place without changing memory identity.",
+        "id": "a0000000-0000-0000-0000-000000000001",
+        "is_published": true,
+        "job_id": null,
+        "marks": 3,
+        "options": [
+          {
+            "key": "A",
+            "text": "tuple"
+          },
+          {
+            "key": "B",
+            "text": "list"
+          },
+          {
+            "key": "C",
+            "text": "str"
+          },
+          {
+            "key": "D",
+            "text": "int"
+          }
+        ],
+        "order_index": 1,
+        "question": "In Python, which of the following object types is mutable?",
+        "quiz_id": "40000000-0000-4000-8000-000000000001",
+        "source_ref": null,
+        "topic_id": null
+      },
+      {
+        "correct_answer": "B",
+        "correct_index": null,
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "explanation": "The def keyword begins a function definition header in Python syntax.",
+        "id": "a0000000-0000-0000-0000-000000000002",
+        "is_published": true,
+        "job_id": null,
+        "marks": 3,
+        "options": [
+          {
+            "key": "A",
+            "text": "function"
+          },
+          {
+            "key": "B",
+            "text": "def"
+          },
+          {
+            "key": "C",
+            "text": "define"
+          },
+          {
+            "key": "D",
+            "text": "fun"
+          }
+        ],
+        "order_index": 2,
+        "question": "Which keyword is used to define a function in Python?",
+        "quiz_id": "40000000-0000-4000-8000-000000000001",
+        "source_ref": null,
+        "topic_id": null
+      },
+      {
+        "correct_answer": "B",
+        "correct_index": null,
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "explanation": "Standard Python lists provide amortized O(1) append() and pop() operations from the end, implementing a Stack (LIFO).",
+        "id": "a0000000-0000-0000-0000-000000000003",
+        "is_published": true,
+        "job_id": null,
+        "marks": 3,
+        "options": [
+          {
+            "key": "A",
+            "text": "Queue"
+          },
+          {
+            "key": "B",
+            "text": "Stack (via list)"
+          },
+          {
+            "key": "C",
+            "text": "Hash Set"
+          },
+          {
+            "key": "D",
+            "text": "Binary Heap"
+          }
+        ],
+        "order_index": 3,
+        "question": "Which built-in Python data structure follows LIFO (Last In, First Out) ordering when using append() and pop()?",
+        "quiz_id": "40000000-0000-4000-8000-000000000001",
+        "source_ref": null,
+        "topic_id": null
+      },
+      {
+        "correct_answer": "A",
+        "correct_index": null,
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "explanation": "Pyodide compiles CPython to WebAssembly, enabling genuine Python 3 execution in the client browser with zero latency and high security.",
+        "id": "a0000000-0000-0000-0000-000000000004",
+        "is_published": true,
+        "job_id": null,
+        "marks": 3,
+        "options": [
+          {
+            "key": "A",
+            "text": "Executes Python locally in browser sandbox with zero latency"
+          },
+          {
+            "key": "B",
+            "text": "Requires a paid cloud license"
+          },
+          {
+            "key": "C",
+            "text": "Sends code over unencrypted sockets"
+          },
+          {
+            "key": "D",
+            "text": "Only supports static HTML"
+          }
+        ],
+        "order_index": 4,
+        "question": "What is the primary advantage of WebAssembly (Pyodide) in SkillNova's coding lab?",
+        "quiz_id": "40000000-0000-4000-8000-000000000001",
+        "source_ref": null,
+        "topic_id": null
+      }
+    ],
+    "quizzes": [
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "created_by": "Administrator",
+        "description": "Active cohort benchmark covering variable references, mutable vs immutable types, and Pyodide sandbox execution.",
+        "duration_minutes": 15,
+        "end_time": "2026-11-09 15:56:04.679456+00",
+        "id": "40000000-0000-4000-8000-000000000001",
+        "module_id": "10000000-0000-4000-8000-000000000101",
+        "start_time": "2026-11-02 14:56:04.679456+00",
+        "status": "active",
+        "sub_module_id": "20000000-0000-4000-8000-000000000101",
+        "title": "Python Fundamentals & Memory Models Assessment",
+        "total_marks": 10,
+        "updated_at": "2026-11-02 15:56:04.679456+00"
+      }
+    ],
+    "sub_modules": [
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "Generic constraints, conditional types, and runtime validation.",
+        "id": "20000000-0000-4000-8000-000000000101",
+        "module_id": "10000000-0000-4000-8000-000000000101",
+        "order_index": 1,
+        "title": "1.1 TypeScript Generics & Type Narrowing"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "Separation of concerns, useReducer patterns, and resilient subscriptions.",
+        "id": "20000000-0000-4000-8000-000000000102",
+        "module_id": "10000000-0000-4000-8000-000000000101",
+        "order_index": 2,
+        "title": "1.2 Custom Hooks & Reusable State Machines"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "React.memo, useMemo profiling, lazy loading, and rendering waterfalls.",
+        "id": "20000000-0000-4000-8000-000000000103",
+        "module_id": "10000000-0000-4000-8000-000000000101",
+        "order_index": 3,
+        "title": "1.3 Component Composition & Optimization"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "Module federation, contract versioning, and enterprise deployment.",
+        "id": "20000000-0000-4000-8000-000000000104",
+        "module_id": "10000000-0000-4000-8000-000000000101",
+        "order_index": 4,
+        "title": "1.4 Micro-Frontends & Architectural Standards"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "Middleware pipelines, input sanitization, and structured logging.",
+        "id": "20000000-0000-4000-8000-000000000201",
+        "module_id": "10000000-0000-4000-8000-000000000102",
+        "order_index": 1,
+        "title": "2.1 Express & Fastify Architecture"
+      },
+      {
+        "course_id": "c0000000-0000-0000-0000-000000000101",
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "description": "B-Tree indexes, composite keys, and query execution plan analysis.",
+        "id": "20000000-0000-4000-8000-000000000202",
+        "module_id": "10000000-0000-4000-8000-000000000102",
+        "order_index": 2,
+        "title": "2.2 PostgreSQL Schema Design & Indexing"
+      }
+    ],
+    "user_roles": [
+      {
+        "assigned_by": null,
+        "created_at": "2026-11-02 10:32:39.411124+00",
+        "id": "63794e7c-72e3-4992-8a77-80e6c46120a8",
+        "role": "admin",
+        "user_id": "6c1e1aca-b160-42e0-83db-8bc804b6e69b"
+      },
+      {
+        "assigned_by": null,
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "id": "81a24e26-45ba-4a8a-a947-f8cad2c96451",
+        "role": "student",
+        "user_id": "6c1e1aca-b160-42e0-83db-8bc804b6e69b"
+      },
+      {
+        "assigned_by": null,
+        "created_at": "2026-11-02 15:56:04.679456+00",
+        "id": "d9587d9f-af4a-49e3-b671-63851fd50324",
+        "role": "admin",
+        "user_id": "043117c9-c675-4621-85ee-8a02271d3696"
+      }
+    ]
+  }
+}

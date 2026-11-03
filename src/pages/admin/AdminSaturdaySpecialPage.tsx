@@ -16,9 +16,16 @@ import { dataService } from '../../services/dataService';
 import type { SaturdaySpecialSession } from '../../types';
 
 export const AdminSaturdaySpecialPage: React.FC = () => {
-  const [sessions, setSessions] = useState<SaturdaySpecialSession[]>(dataService.getSaturdaySpecialSessions());
+  const [sessions, setSessions] = useState<SaturdaySpecialSession[]>(() => dataService.getSaturdaySpecialSessions());
   const [showModal, setShowModal] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const unsub = dataService.subscribe(() => {
+      setSessions(dataService.getSaturdaySpecialSessions());
+    });
+    return unsub;
+  }, []);
 
   // Form state
   const [title, setTitle] = useState('');
@@ -40,26 +47,44 @@ export const AdminSaturdaySpecialPage: React.FC = () => {
     'Hackathon Strategy'
   ];
 
-  const handleCreateSession = (e: React.FormEvent) => {
+  const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description) return;
 
-    const newSession = dataService.publishSaturdaySpecial({
-      title,
-      category,
-      description,
-      recordingUrl: recordingUrl || 'https://drive.google.com/file/d/demo-session-recording/view',
-      resourceDocUrl: resourceDocUrl || 'https://drive.google.com/file/d/demo-presentation-deck/view',
-      coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
-      date
-    });
+    try {
+      const newSession = await dataService.publishSaturdaySpecial({
+        title,
+        category,
+        description,
+        recordingUrl: recordingUrl || 'https://drive.google.com/file/d/demo-session-recording/view',
+        resourceDocUrl: resourceDocUrl || 'https://drive.google.com/file/d/demo-presentation-deck/view',
+        coverImageUrl: coverImageUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80',
+        date
+      });
 
-    setSessions([newSession, ...sessions]);
-    setShowModal(false);
-    resetForm();
+      setSessions([newSession, ...sessions.filter(s => s.id !== newSession.id)]);
+      setShowModal(false);
+      resetForm();
 
-    setNotification(`Successfully published Saturday Special: "${title}"`);
-    setTimeout(() => setNotification(null), 3500);
+      setNotification(`Successfully published Saturday Special: "${title}"`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      setNotification(`Error saving session: ${err.message || 'Database error'}`);
+      setTimeout(() => setNotification(null), 5000);
+    }
+  };
+
+  const handleDeleteSession = async (id: string, sTitle: string) => {
+    if (!window.confirm(`Delete session "${sTitle}"?`)) return;
+    try {
+      await dataService.deleteSaturdaySpecial(id);
+      setSessions(sessions.filter(s => s.id !== id));
+      setNotification(`Session "${sTitle}" removed successfully.`);
+      setTimeout(() => setNotification(null), 3500);
+    } catch (err: any) {
+      setNotification(`Error deleting session: ${err.message}`);
+      setTimeout(() => setNotification(null), 5000);
+    }
   };
 
   const resetForm = () => {

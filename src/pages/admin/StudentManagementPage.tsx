@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Users, UserPlus, Search, CheckCircle, XCircle,
-  RotateCcw, BookOpen, Download, ShieldCheck, Key,
-  Phone, UserCheck, AlertCircle, X, ShieldAlert, Sparkles
+  BookOpen, Key, Phone, AlertCircle, X
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import type { User, Course } from '../../types';
@@ -26,6 +25,7 @@ export const StudentManagementPage: React.FC = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  const [isCreatingStudent, setIsCreatingStudent] = useState(false);
 
   // Feedback banner
   const [actionNotice, setActionNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -49,56 +49,83 @@ export const StudentManagementPage: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreateStudent = (e: React.FormEvent) => {
+  const handleCreateStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     setFormSuccess(null);
 
-    // Validation
-    const cleanUser = username.trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const cleanUser = username
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_.-]/g, '');
+
     if (!cleanUser || cleanUser.length < 3) {
-      setFormError('Username must be at least 3 characters and contain only letters, numbers, or underscores.');
+      setFormError(
+        'Username must be at least 3 characters and may contain letters, numbers, dots, underscores, or hyphens.'
+      );
       return;
     }
-    if (!password || password.length < 6) {
-      setFormError('Password must be at least 6 characters.');
+
+    if (!password || password.trim().length < 8) {
+      setFormError('Password must be at least 8 characters.');
       return;
     }
+
     if (!fullName.trim()) {
       setFormError('Full name is required.');
       return;
     }
+
     if (!phoneNumber.trim() || phoneNumber.trim().length < 8) {
-      setFormError('Please enter a valid phone number (at least 8 digits).');
+      setFormError('Please enter a valid phone number (at least 8 characters).');
       return;
     }
 
-    const res = dataService.addStudent({
-      username: cleanUser,
-      password: password.trim(),
-      full_name: fullName.trim(),
-      phone_number: phoneNumber.trim(),
-    });
+    if (isCreatingStudent) return;
 
-    if (!res.success) {
-      setFormError(res.error || 'Failed to create student account.');
-      return;
-    }
+    setIsCreatingStudent(true);
 
-    setFormSuccess(`Student account created successfully for @${cleanUser}!`);
-    setTimeout(() => {
-      setShowAddModal(false);
-      setUsername('');
-      setPassword('');
-      setFullName('');
-      setPhoneNumber('');
-      setFormSuccess(null);
-      setActionNotice({
-        type: 'success',
-        message: `Student @${cleanUser} (${fullName}) enrolled. Mapped login: ${cleanUser}@student.skillnova.edu`
+    try {
+      const res = await dataService.addStudent({
+        username: cleanUser,
+        password,
+        full_name: fullName.trim(),
+        phone_number: phoneNumber.trim(),
       });
-      setTimeout(() => setActionNotice(null), 5000);
-    }, 1000);
+
+      if (!res.success) {
+        setFormError(res.error || 'Failed to create student account.');
+        return;
+      }
+
+      setFormSuccess(`Student account created successfully for @${cleanUser}!`);
+      setStudents(dataService.getStudents());
+
+      window.setTimeout(() => {
+        setShowAddModal(false);
+        setUsername('');
+        setPassword('');
+        setFullName('');
+        setPhoneNumber('');
+        setFormSuccess(null);
+
+        setActionNotice({
+          type: 'success',
+          message: `Student @${cleanUser} (${fullName.trim()}) created successfully.`,
+        });
+
+        window.setTimeout(() => setActionNotice(null), 5000);
+      }, 1000);
+    } catch (error) {
+      console.error('[SkillNova] Student creation failed:', error);
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : 'Unexpected error while creating student.'
+      );
+    } finally {
+      setIsCreatingStudent(false);
+    }
   };
 
   const handleToggleStatus = (id: string) => {
@@ -112,7 +139,7 @@ export const StudentManagementPage: React.FC = () => {
   };
 
   const handleResetPassword = (student: User) => {
-    const res = dataService.resetUserPassword(student.id);
+    dataService.resetUserPassword(student.id);
     setSelectedStudent(student);
     setShowResetModal(true);
   };
@@ -134,11 +161,10 @@ export const StudentManagementPage: React.FC = () => {
       {/* Action Notification */}
       {actionNotice && (
         <div
-          className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg animate-fadeIn ${
-            actionNotice.type === 'success'
-              ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
-              : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
-          }`}
+          className={`p-4 rounded-2xl border flex items-center justify-between shadow-lg animate-fadeIn ${actionNotice.type === 'success'
+            ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/30'
+            : 'bg-rose-500/10 text-rose-300 border-rose-500/30'
+            }`}
         >
           <div className="flex items-center gap-2.5 text-xs font-semibold">
             {actionNotice.type === 'success' ? (
@@ -205,11 +231,10 @@ export const StudentManagementPage: React.FC = () => {
             <button
               key={filter}
               onClick={() => setStatusFilter(filter)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition ${
-                statusFilter === filter
-                  ? 'bg-[#397BFF] text-white shadow-md'
-                  : 'bg-[#15233A] text-[#9BAAC2] hover:text-[#F0F5FF]'
-              }`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold capitalize transition ${statusFilter === filter
+                ? 'bg-[#397BFF] text-white shadow-md'
+                : 'bg-[#15233A] text-[#9BAAC2] hover:text-[#F0F5FF]'
+                }`}
             >
               {filter} ({filter === 'all' ? students.length : students.filter(s => s.status === filter).length})
             </button>
@@ -292,11 +317,10 @@ export const StudentManagementPage: React.FC = () => {
                       {/* Status */}
                       <td className="py-3.5 px-4">
                         <span
-                          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${
-                            student.status === 'active'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                          }`}
+                          className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full inline-flex items-center gap-1.5 ${student.status === 'active'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                            }`}
                         >
                           <span className={`w-1.5 h-1.5 rounded-full ${student.status === 'active' ? 'bg-emerald-400' : 'bg-rose-400'}`} />
                           {student.status}
@@ -327,11 +351,10 @@ export const StudentManagementPage: React.FC = () => {
 
                           <button
                             onClick={() => handleToggleStatus(student.id)}
-                            className={`p-1.5 rounded-lg border text-xs transition ${
-                              student.status === 'active'
-                                ? 'bg-rose-500/10 border-rose-500/20 text-rose-300 hover:bg-rose-500/20'
-                                : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20'
-                            }`}
+                            className={`p-1.5 rounded-lg border text-xs transition ${student.status === 'active'
+                              ? 'bg-rose-500/10 border-rose-500/20 text-rose-300 hover:bg-rose-500/20'
+                              : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300 hover:bg-emerald-500/20'
+                              }`}
                             title={student.status === 'active' ? 'Deactivate Student Account' : 'Activate Student Account'}
                           >
                             {student.status === 'active' ? <XCircle className="w-3.5 h-3.5" /> : <CheckCircle className="w-3.5 h-3.5" />}
@@ -414,7 +437,7 @@ export const StudentManagementPage: React.FC = () => {
                   <input
                     type="password"
                     required
-                    placeholder="Min. 6 characters (e.g. StudentPass@2026)"
+                    placeholder="Min. 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl pl-9 pr-4 py-2.5 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF] transition"
@@ -465,9 +488,10 @@ export const StudentManagementPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
+                  disabled={isCreatingStudent}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save & Provision Student
+                  {isCreatingStudent ? 'Creating Student...' : 'Save & Provision Student'}
                 </button>
               </div>
             </form>

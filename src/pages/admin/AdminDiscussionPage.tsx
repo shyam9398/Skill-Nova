@@ -26,11 +26,11 @@ export const AdminDiscussionPage: React.FC = () => {
     return dataService.subscribe(update);
   }, []);
 
-  const handleSendReply = (e: React.FormEvent) => {
+  const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mentorReplyText.trim() || !selectedRequest) return;
 
-    const updated = dataService.addMentorRequestReply({
+    const updated = await dataService.addMentorRequestReply({
       request_id: selectedRequest.id,
       content: mentorReplyText,
       author_id: currentUser?.id,
@@ -44,9 +44,9 @@ export const AdminDiscussionPage: React.FC = () => {
     setMentorReplyText('');
   };
 
-  const handleUpdateStatus = (status: MentorRequest['status']) => {
+  const handleUpdateStatus = async (status: MentorRequest['status']) => {
     if (!selectedRequest) return;
-    const updated = dataService.updateMentorRequestStatus(selectedRequest.id, status);
+    const updated = await dataService.updateMentorRequestStatus(selectedRequest.id, status);
     if (updated) {
       setSelectedRequest(updated);
     }

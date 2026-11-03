@@ -54,11 +54,11 @@ export const StudentDiscussionPage: React.FC = () => {
     }
   }, [selectedPost, discussions]);
 
-  const handleCreatePost = (e: React.FormEvent) => {
+  const handleCreatePost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTitle.trim() || !newContent.trim()) return;
 
-    dataService.createDiscussionPost({
+    await dataService.createDiscussionPost({
       title: newTitle,
       content: newContent,
       category: newCategory,
@@ -74,11 +74,11 @@ export const StudentDiscussionPage: React.FC = () => {
     setShowNewPostModal(false);
   };
 
-  const handleSendReply = (e: React.FormEvent) => {
+  const handleSendReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyInput.trim() || !selectedPost) return;
 
-    dataService.addDiscussionReply({
+    await dataService.addDiscussionReply({
       post_id: selectedPost.id,
       content: replyInput,
       author_id: currentUser?.id,
@@ -96,13 +96,13 @@ export const StudentDiscussionPage: React.FC = () => {
     dataService.toggleLikeDiscussion(postId, currentUser.id);
   };
 
-  const handleCreateMentorRequest = (e: React.FormEvent) => {
+  const handleCreateMentorRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!doubtTitle.trim() || !doubtDescription.trim() || !selectedCourseId) return;
 
     const course = courses.find(c => c.id === selectedCourseId);
 
-    dataService.createMentorRequest({
+    await dataService.createMentorRequest({
       student_id: currentUser?.id,
       student_name: currentUser?.full_name,
       student_email: currentUser?.email,
@@ -122,11 +122,11 @@ export const StudentDiscussionPage: React.FC = () => {
     setShowMentorModal(false);
   };
 
-  const handleSendMentorReply = (e: React.FormEvent) => {
+  const handleSendMentorReply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mentorReplyInput.trim() || !selectedRequest) return;
 
-    const updated = dataService.addMentorRequestReply({
+    const updated = await dataService.addMentorRequestReply({
       request_id: selectedRequest.id,
       content: mentorReplyInput,
       author_id: currentUser?.id,

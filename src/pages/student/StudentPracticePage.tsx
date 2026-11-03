@@ -15,10 +15,18 @@ import { QuizEngine } from '../../components/practice/QuizEngine';
 import type { Course, Topic } from '../../types';
 
 export const StudentPracticePage: React.FC = () => {
+  const [, setTick] = useState(0);
   const user = dataService.getCurrentUser();
   const enrolledCourses = dataService.getEnrolledCourses(user?.id);
   const [selectedCourseId, setSelectedCourseId] = useState(enrolledCourses[0]?.id || '');
   const [mode, setMode] = useState<'flashcards' | 'quiz'>('flashcards');
+
+  React.useEffect(() => {
+    const unsub = dataService.subscribe(() => {
+      setTick(t => t + 1);
+    });
+    return unsub;
+  }, []);
 
   const selectedCourse = enrolledCourses.find(c => c.id === selectedCourseId) || enrolledCourses[0];
   const flashcards = dataService.getFlashcards(selectedCourse?.id);

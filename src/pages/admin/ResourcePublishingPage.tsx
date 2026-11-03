@@ -106,7 +106,7 @@ EXPLANATION: WebAssembly allows Python 3 to execute completely client-side in an
   }, []);
 
   const loadData = () => {
-    const list = dataService.getCourses();
+    const list = dataService.getCoursesForCurrentUser();
     setCourses(list);
     const activeCourseId = selectedCourseId || (list.length > 0 ? list[0].id : '');
     if (activeCourseId) {

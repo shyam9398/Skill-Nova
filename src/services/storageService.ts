@@ -13,7 +13,7 @@ export interface UploadResult {
  */
 export const storageService = {
   /**
-   * Upload a learning document or video to the private 'learning-resources' bucket.
+   * Upload a learning document or video to the private 'course-materials' bucket.
    */
   async uploadLearningResource(file: File, subFolder: string = 'materials'): Promise<UploadResult> {
     if (!isLiveSupabaseConfigured) {
@@ -29,7 +29,7 @@ export const storageService = {
       const filePath = `${subFolder}/${Date.now()}_${sanitizedName}`;
 
       const { data, error } = await supabase.storage
-        .from('learning-resources')
+        .from('course-materials')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: true
@@ -41,8 +41,8 @@ export const storageService = {
       }
 
       // Generate a signed URL valid for 7 days (604800 seconds) for private access
-      const { data: signedData, error: signError } = await supabase.storage
-        .from('learning-resources')
+      const { data: signedData } = await supabase.storage
+        .from('course-materials')
         .createSignedUrl(data.path, 604800);
 
       const url = signedData?.signedUrl || '';
@@ -59,7 +59,7 @@ export const storageService = {
   },
 
   /**
-   * Upload a course promotional thumbnail or roadmap image to the public 'course-thumbnails' bucket.
+   * Upload a course promotional thumbnail or roadmap image to the public 'course-roadmaps' bucket.
    */
   async uploadCourseThumbnail(file: File): Promise<UploadResult> {
     if (!isLiveSupabaseConfigured) {
@@ -75,7 +75,7 @@ export const storageService = {
       const filePath = `thumbnails/${Date.now()}_${sanitizedName}`;
 
       const { data, error } = await supabase.storage
-        .from('course-thumbnails')
+        .from('course-roadmaps')
         .upload(filePath, file, {
           cacheControl: '86400',
           upsert: true
@@ -87,7 +87,7 @@ export const storageService = {
       }
 
       const { data: publicData } = supabase.storage
-        .from('course-thumbnails')
+        .from('course-roadmaps')
         .getPublicUrl(data.path);
 
       return {

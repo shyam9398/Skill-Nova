@@ -342,25 +342,25 @@ export const PythonCodingLab: React.FC<PythonCodingLabProps> = ({
     setCode(snippetCode);
   };
 
-  const handleSaveCode = () => {
+  const handleSaveCode = async () => {
     localStorage.setItem(`skillnova_code_${courseId}_${practicalId}`, code);
-    dataService.saveStudentCode({
-      student_id: currentUser?.id || 'usr-student-1',
+    await dataService.saveStudentCode({
+      student_id: currentUser?.id || '6c1e1aca-b160-42e0-83db-8bc804b6e69b',
       course_id: courseId,
       practical_id: practicalId,
       source_code: code,
       status: 'saved'
     });
 
-    setSaveFeedback('Code saved locally & synced to profile');
+    setSaveFeedback('Code saved locally & synced to profile in Supabase');
     setTimeout(() => setSaveFeedback(null), 3000);
   };
 
-  const handleSubmitPractical = () => {
+  const handleSubmitPractical = async () => {
     if (window.confirm('Submit this practical assignment for mentor evaluation?')) {
-      dataService.submitStudentPractical({
-        student_id: currentUser?.id || 'usr-student-1',
-        student_name: currentUser?.full_name || 'Aarav Sharma',
+      await dataService.submitStudentPractical({
+        student_id: currentUser?.id || '6c1e1aca-b160-42e0-83db-8bc804b6e69b',
+        student_name: currentUser?.full_name || 'SkillNova Student',
         course_id: courseId,
         course_title: courseTitle,
         practical_id: practicalId,
@@ -369,7 +369,7 @@ export const PythonCodingLab: React.FC<PythonCodingLabProps> = ({
         submitted_at: new Date().toISOString()
       });
 
-      setSubmissionFeedback('Practical submitted successfully to your faculty mentor!');
+      setSubmissionFeedback('Practical submitted successfully to your faculty mentor in Supabase!');
       setTimeout(() => setSubmissionFeedback(null), 4500);
     }
   };

@@ -86,7 +86,7 @@ Module 3: Distributed Systems & Backend
   }, []);
 
   const loadCourses = () => {
-    const list = dataService.getCourses();
+    const list = dataService.getCoursesForCurrentUser();
     setCourses(list);
     if (!selectedCourse && list.length > 0) {
       setSelectedCourse(list[0]);

@@ -1,14 +1,30 @@
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
+
 import type { User, UserRole } from '../types';
 import { dataService } from '../services/dataService';
-import { supabase, isLiveSupabaseConfigured } from '../services/supabaseClient';
+import {
+  supabase,
+  isLiveSupabaseConfigured,
+} from '../services/supabaseClient';
 
 interface AuthContextType {
   currentUser: User | null;
   role: UserRole | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (email: string, password?: string, expectedRole?: UserRole) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    email: string,
+    password?: string,
+    expectedRole?: UserRole
+  ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   switchRole: (role: UserRole) => void;
   refreshUser: () => void;
@@ -17,168 +33,233 @@ interface AuthContextType {
   confirmLogout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 const AUTH_STORAGE_KEY = 'skillnova_active_session_user';
 const LOGOUT_FLAG_KEY = 'skillnova_explicit_logout';
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Synchronous initial restore from localStorage to avoid flash of unauthenticated state
+export const AuthProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
+
+  // In live Supabase mode, never restore identity from localStorage.
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    if (isLiveSupabaseConfigured) {
+      return null;
+    }
+
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+
       if (stored) {
         return JSON.parse(stored);
       }
+
       return dataService.getCurrentUser() || null;
     } catch {
       return null;
     }
   });
 
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [showLogoutModal, setShowLogoutModal] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const isInitializedRef = useRef(false);
 
-  // Sync state to localStorage & dataService
-  const setPersistedUser = useCallback((user: User | null) => {
-    setCurrentUser(user);
-    if (user) {
-      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(user));
-      localStorage.removeItem(LOGOUT_FLAG_KEY);
-      dataService.setCurrentUser(user);
-    } else {
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-      dataService.logout();
+  // --------------------------------------------------
+  // Persist user state
+  // --------------------------------------------------
+
+  const setPersistedUser = useCallback(
+    (user: User | null) => {
+      setCurrentUser(user);
+
+      if (user) {
+        localStorage.setItem(
+          AUTH_STORAGE_KEY,
+          JSON.stringify(user)
+        );
+
+        localStorage.removeItem(LOGOUT_FLAG_KEY);
+
+        dataService.setCurrentUser(user);
+      } else {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        dataService.logout();
+      }
+    },
+    []
+  );
+
+  // --------------------------------------------------
+  // Fetch profile and role from Supabase
+  // --------------------------------------------------
+
+  const fetchSupabaseUserProfile = async (
+    authUserId: string,
+    authEmail: string
+  ): Promise<User> => {
+
+    // Fetch profile.
+    const {
+      data: profile,
+      error: profileError,
+    } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authUserId)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error(
+        '[SkillNova Auth] Profile fetch error:',
+        profileError
+      );
+
+      throw profileError;
     }
-  }, []);
 
-  // Fetch full user profile & role from Supabase tables
-  const fetchSupabaseUserProfile = async (authUserId: string, authEmail: string, metaRole?: string): Promise<User> => {
-    try {
-      // Query profiles table
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUserId)
-        .maybeSingle();
+    // Fetch actual role from user_roles.
+    const {
+      data: roleRow,
+      error: roleError,
+    } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', authUserId)
+      .maybeSingle();
 
-      // Query user_roles table
-      const { data: roleRow } = await supabase
-        .from('user_roles')
-        .select('role')
+    if (roleError) {
+      console.error(
+        '[SkillNova Auth] Role fetch error:',
+        roleError
+      );
+
+      throw roleError;
+    }
+
+    // Never grant admin privileges using frontend metadata.
+    const resolvedRole: UserRole =
+      (roleRow?.role as UserRole) || 'student';
+
+    const cleanEmail =
+      authEmail || profile?.email || '';
+
+    let assignedCourses: string[] = [];
+
+    if (resolvedRole === 'student') {
+      const {
+        data: enrollments,
+        error: enrollmentError,
+      } = await supabase
+        .from('course_enrollments')
+        .select('course_id')
+        .eq('student_id', authUserId);
+
+      if (enrollmentError) {
+        console.warn(
+          '[SkillNova Auth] Enrollment fetch warning:',
+          enrollmentError.message
+        );
+      }
+
+      if (enrollments?.length) {
+        assignedCourses = enrollments.map(
+          (enrollment: any) => enrollment.course_id
+        );
+      }
+
+    } else if (resolvedRole === 'sub_admin') {
+      const {
+        data: subAdmin,
+        error: subAdminError,
+      } = await supabase
+        .from('sub_admins')
+        .select('assigned_courses')
         .eq('user_id', authUserId)
         .maybeSingle();
 
-      const resolvedRole: UserRole = (roleRow?.role as UserRole) || (metaRole as UserRole) || 'student';
-      const cleanEmail = authEmail || profile?.email || '';
+      if (subAdminError) {
+        console.warn(
+          '[SkillNova Auth] Sub-admin fetch warning:',
+          subAdminError.message
+        );
+      }
 
-      const user: User = {
-        id: authUserId,
-        email: cleanEmail,
-        full_name: profile?.full_name || cleanEmail.split('@')[0],
-        role: resolvedRole,
-        status: 'active',
-        theme_preference: (profile?.theme_preference as 'light' | 'dark') || 'light',
-        created_at: profile?.created_at || new Date().toISOString(),
-        assigned_courses: ['c0000000-0000-0000-0000-000000000101']
-      };
-
-      return user;
-    } catch (e) {
-      console.warn('[SkillNova Auth] Failed fetching profile from database, using auth metadata:', e);
-      return {
-        id: authUserId,
-        email: authEmail,
-        full_name: authEmail.split('@')[0],
-        role: (metaRole as UserRole) || 'student',
-        status: 'active',
-        created_at: new Date().toISOString(),
-        assigned_courses: ['c0000000-0000-0000-0000-000000000101']
-      };
+      if (
+        Array.isArray(subAdmin?.assigned_courses)
+      ) {
+        assignedCourses = subAdmin.assigned_courses;
+      }
     }
+
+    const user: User = {
+      id: authUserId,
+      email: cleanEmail,
+      full_name:
+        profile?.full_name ||
+        cleanEmail.split('@')[0],
+      role: resolvedRole,
+      status: 'active',
+      theme_preference:
+        (profile?.theme_preference as 'light' | 'dark') ||
+        'light',
+      created_at:
+        profile?.created_at ||
+        new Date().toISOString(),
+      assigned_courses: assignedCourses,
+    };
+
+    return user;
   };
 
-  // Initialize and listen to Supabase auth events
+  // --------------------------------------------------
+  // Initialize Supabase authentication
+  // --------------------------------------------------
+
   useEffect(() => {
     if (isInitializedRef.current) return;
+
     isInitializedRef.current = true;
 
     let isMounted = true;
 
-    const initializeAuth = async () => {
+    if (!isLiveSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
+    const loadUser = async (session: any) => {
+      if (!isMounted) return;
+
+      if (!session?.user) {
+        setPersistedUser(null);
+        setIsLoading(false);
+        return;
+      }
+
       try {
-        if (isLiveSupabaseConfigured) {
-          // Check active remote Supabase session
-          const { data, error } = await supabase.auth.getSession();
-          if (error) {
-            console.warn('[SkillNova Auth] Supabase getSession warning:', error.message);
-          }
+        const user = await fetchSupabaseUserProfile(
+          session.user.id,
+          session.user.email || ''
+        );
 
-          const session = data?.session;
-          if (session?.user && isMounted) {
-            const user = await fetchSupabaseUserProfile(
-              session.user.id,
-              session.user.email || '',
-              session.user.user_metadata?.role
-            );
-            if (isMounted) setPersistedUser(user);
-          } else {
-            // Restore cached session if user did not explicitly log out
-            const explicitLogout = localStorage.getItem(LOGOUT_FLAG_KEY);
-            if (explicitLogout !== 'true') {
-              const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-              if (stored && isMounted) {
-                try {
-                  const parsed: User = JSON.parse(stored);
-                  setPersistedUser(parsed);
-                } catch {
-                  // Ignore parse error
-                }
-              }
-            }
-          }
-
-          // Single persistent onAuthStateChange listener
-          const { data: { subscription } } = supabase.auth.onAuthStateChange(
-            async (event, newSession) => {
-              if (!isMounted) return;
-
-              if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-                if (newSession?.user) {
-                  const user = await fetchSupabaseUserProfile(
-                    newSession.user.id,
-                    newSession.user.email || '',
-                    newSession.user.user_metadata?.role
-                  );
-                  if (isMounted) setPersistedUser(user);
-                }
-              } else if (event === 'SIGNED_OUT') {
-                const explicit = localStorage.getItem(LOGOUT_FLAG_KEY);
-                if (explicit === 'true' && isMounted) {
-                  setPersistedUser(null);
-                }
-              }
-            }
-          );
-
-          return () => {
-            subscription.unsubscribe();
-          };
-        } else {
-          // Local fallback mode
-          const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-          if (stored && isMounted) {
-            try {
-              const parsed: User = JSON.parse(stored);
-              setPersistedUser(parsed);
-            } catch {
-              // Ignore
-            }
-          }
+        if (isMounted) {
+          setPersistedUser(user);
         }
-      } catch (err) {
-        console.warn('[SkillNova Auth] Auth initialization encountered warning:', err);
+
+      } catch (error) {
+        console.error(
+          '[SkillNova Auth] User initialization failed:',
+          error
+        );
+
+        if (isMounted) {
+          setPersistedUser(null);
+        }
+
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -186,134 +267,339 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    initializeAuth();
+    // Subscribe to authentication changes.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!isMounted) return;
+
+        if (event === 'SIGNED_OUT') {
+          setPersistedUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        if (
+          event === 'SIGNED_IN' ||
+          event === 'TOKEN_REFRESHED' ||
+          event === 'USER_UPDATED' ||
+          event === 'INITIAL_SESSION'
+        ) {
+          // Run database queries outside the auth callback.
+          setTimeout(() => {
+            if (isMounted) {
+              void loadUser(session);
+            }
+          }, 0);
+        }
+      }
+    );
+
+    // Verify the actual Supabase session.
+    const initialize = async () => {
+      try {
+        const {
+          data,
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!isMounted) return;
+
+        if (data.session?.user) {
+          await loadUser(data.session);
+        } else {
+          // No Supabase session means no authenticated user.
+          setPersistedUser(null);
+          setIsLoading(false);
+        }
+
+      } catch (error) {
+        console.error(
+          '[SkillNova Auth] Initialization error:',
+          error
+        );
+
+        if (isMounted) {
+          setPersistedUser(null);
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void initialize();
 
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, [setPersistedUser]);
 
-  const login = async (email: string, password = '', expectedRole?: UserRole): Promise<{ success: boolean; error?: string }> => {
+  // --------------------------------------------------
+  // Login
+  // --------------------------------------------------
+
+  const login = async (
+    email: string,
+    password = '',
+    expectedRole?: UserRole
+  ): Promise<{ success: boolean; error?: string }> => {
+
     setIsLoading(true);
+
     try {
       const cleanEmail = email.trim().toLowerCase();
 
-      // Check deactivation in dataService
-      const existingUser = dataService.getUserByEmail(cleanEmail);
-      if (existingUser && existingUser.status === 'inactive') {
-        return { success: false, error: 'Your account has been deactivated by an Administrator.' };
+      if (!cleanEmail || !password) {
+        return {
+          success: false,
+          error: 'Please enter your email and password.',
+        };
       }
 
+      // REAL SUPABASE AUTHENTICATION
       if (isLiveSupabaseConfigured) {
-        try {
-          // 1. Attempt standard Supabase Auth Sign In
-          const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
-            email: cleanEmail,
-            password: password || 'SkillNova@2026',
-          });
+        const {
+          data,
+          error,
+        } = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
 
-          if (!signInErr && signInData?.user) {
-            const user = await fetchSupabaseUserProfile(
-              signInData.user.id,
-              signInData.user.email || cleanEmail,
-              signInData.user.user_metadata?.role || expectedRole
-            );
+        if (error || !data.user || !data.session) {
+          console.error(
+            '[SkillNova Auth] Login failed:',
+            error?.message
+          );
 
-            // Role guard
-            if (expectedRole) {
-              if (expectedRole === 'admin' && user.role === 'student') {
-                return { success: false, error: 'Unauthorized: Student credentials cannot access the Administrative Portal.' };
-              }
-              if (expectedRole === 'sub_admin' && user.role === 'student') {
-                return { success: false, error: 'Unauthorized: Student credentials cannot access the Sub-Admin Portal.' };
-              }
-            }
-
-            setPersistedUser(user);
-            return { success: true };
-          }
-
-          // 2. If user not found or invalid credentials, attempt registration / auto-provisioning
-          if (signInErr && (signInErr.message.toLowerCase().includes('invalid login credentials') || signInErr.message.toLowerCase().includes('user not found'))) {
-            const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-              email: cleanEmail,
-              password: password || 'SkillNova@2026',
-              options: {
-                data: {
-                  full_name: cleanEmail.split('@')[0],
-                  role: expectedRole || 'student'
-                }
-              }
-            });
-
-            if (!signUpErr && signUpData?.user) {
-              // If user was created and session established
-              if (signUpData.session) {
-                const user = await fetchSupabaseUserProfile(
-                  signUpData.user.id,
-                  signUpData.user.email || cleanEmail,
-                  expectedRole || 'student'
-                );
-                setPersistedUser(user);
-                return { success: true };
-              }
-            }
-          }
-        } catch (supabaseErr: any) {
-          console.warn('[SkillNova Auth] Supabase direct auth attempt note:', supabaseErr?.message || supabaseErr);
+          return {
+            success: false,
+            error:
+              error?.message ||
+              'Authentication failed.',
+          };
         }
+
+        // Fetch role from the database.
+        const user = await fetchSupabaseUserProfile(
+          data.user.id,
+          data.user.email || cleanEmail
+        );
+
+        // Verify admin permissions.
+        if (
+          expectedRole === 'admin' &&
+          user.role !== 'admin'
+        ) {
+          await supabase.auth.signOut();
+
+          return {
+            success: false,
+            error:
+              'Unauthorized: Admin privileges required.',
+          };
+        }
+
+        if (
+          expectedRole === 'sub_admin' &&
+          user.role !== 'sub_admin' &&
+          user.role !== 'admin'
+        ) {
+          await supabase.auth.signOut();
+
+          return {
+            success: false,
+            error:
+              'Unauthorized: Sub-admin privileges required.',
+          };
+        }
+
+        setPersistedUser(user);
+
+        console.log(
+          '[SkillNova Auth] Login successful:',
+          {
+            id: data.user.id,
+            email: data.user.email,
+            role: user.role,
+          }
+        );
+
+        return { success: true };
       }
 
-      // Local authentication fallback for mock/demo preview
-      const localRes = dataService.login(cleanEmail, expectedRole);
+      // LOCAL FALLBACK FOR DEMO MODE ONLY
+      const existingUser =
+        dataService.getUserByEmail(cleanEmail);
+
+      if (
+        existingUser &&
+        existingUser.status === 'inactive'
+      ) {
+        return {
+          success: false,
+          error:
+            'Your account has been deactivated by an Administrator.',
+        };
+      }
+
+      const localRes = dataService.login(
+        cleanEmail,
+        expectedRole
+      );
+
       if (localRes.success && localRes.user) {
         setPersistedUser(localRes.user);
+
         return { success: true };
       }
 
       return {
         success: false,
-        error: localRes.error || 'Authentication failed. Please verify your student email or contact administrator.',
+        error:
+          localRes.error || 'Authentication failed.',
       };
+
+    } catch (error: any) {
+      console.error(
+        '[SkillNova Auth] Login exception:',
+        error
+      );
+
+      return {
+        success: false,
+        error:
+          error?.message ||
+          'Unexpected authentication error.',
+      };
+
     } finally {
       setIsLoading(false);
     }
   };
 
+  // --------------------------------------------------
+  // Logout
+  // --------------------------------------------------
+
   const confirmLogout = async () => {
     setShowLogoutModal(false);
+
     localStorage.setItem(LOGOUT_FLAG_KEY, 'true');
+
     try {
       if (isLiveSupabaseConfigured) {
-        await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+          console.error(
+            '[SkillNova Auth] Sign out error:',
+            error
+          );
+        }
       }
-    } catch (e) {
-      console.warn('Sign out warning:', e);
+    } catch (error) {
+      console.error(
+        '[SkillNova Auth] Logout exception:',
+        error
+      );
     }
+
     setPersistedUser(null);
-    sessionStorage.setItem('skillnova_logout_toast', 'You have been successfully logged out.');
+
+    sessionStorage.setItem(
+      'skillnova_logout_toast',
+      'You have been successfully logged out.'
+    );
   };
 
   const logout = async () => {
     setShowLogoutModal(true);
   };
 
+  // --------------------------------------------------
+  // Role switching
+  // --------------------------------------------------
+
   const switchRole = (newRole: UserRole) => {
+    if (isLiveSupabaseConfigured) {
+      console.warn(
+        '[SkillNova Auth] Role switching is disabled in live mode. Roles must be assigned through the database.'
+      );
+
+      return;
+    }
+
+    // Allowed only in local demo mode.
     dataService.switchRole(newRole);
+
     const updated = dataService.getCurrentUser();
+
     if (updated) {
       setPersistedUser(updated);
     }
   };
 
+  // --------------------------------------------------
+  // Refresh current user
+  // --------------------------------------------------
+
   const refreshUser = () => {
-    if (currentUser) {
-      const updated = dataService.getUserById(currentUser.id);
-      if (updated) {
-        setPersistedUser(updated);
+    if (!isLiveSupabaseConfigured) {
+      if (currentUser) {
+        const updated = dataService.getUserById(
+          currentUser.id
+        );
+
+        if (updated) {
+          setPersistedUser(updated);
+        }
       }
+
+      return;
     }
+
+    // In live mode, refresh from the real session.
+    void (async () => {
+      try {
+        const {
+          data,
+          error,
+        } = await supabase.auth.getSession();
+
+        if (error) throw error;
+
+        if (!data.session?.user) {
+          setPersistedUser(null);
+          return;
+        }
+
+        const user = await fetchSupabaseUserProfile(
+          data.session.user.id,
+          data.session.user.email || ''
+        );
+
+        setPersistedUser(user);
+
+      } catch (error) {
+        console.error(
+          '[SkillNova Auth] Refresh failed:',
+          error
+        );
+
+        setPersistedUser(null);
+      }
+    })();
   };
+
+  // --------------------------------------------------
+  // Context provider
+  // --------------------------------------------------
 
   return (
     <AuthContext.Provider
@@ -336,11 +622,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+// --------------------------------------------------
+// Custom authentication hook
+// --------------------------------------------------
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error(
+      'useAuth must be used within an AuthProvider'
+    );
   }
+
   return context;
 };
 

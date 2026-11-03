@@ -49,12 +49,12 @@ Explanation: Tuples are immutable sequence types in Python.`;
 export const AdminQuizManagementPage: React.FC = () => {
   const { currentUser } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>(() => dataService.getQuizzesList());
-  const [courses, setCourses] = useState<Course[]>(() => dataService.getCourses());
+  const [courses, setCourses] = useState<Course[]>(() => dataService.getCoursesForCurrentUser());
 
   useEffect(() => {
     const unsub = dataService.subscribe(() => {
       setQuizzes(dataService.getQuizzesList());
-      setCourses(dataService.getCourses());
+      setCourses(dataService.getCoursesForCurrentUser());
     });
     return unsub;
   }, []);

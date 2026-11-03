@@ -31,6 +31,7 @@ import type {
   QuizLeaderboardEntry,
   PdfPageAllocation,
   StudentRoadmapProgress,
+  TickerAnnouncement,
 } from "../types";
 
 import {
@@ -78,7 +79,7 @@ export function ensureUuid(id?: string): string {
 type Listener = () => void;
 
 const INITIAL_HOMEPAGE_SETTINGS: HomepageSettings = {
-  id: "hp-settings-1",
+  id: "30000000-0000-4000-8000-000000000001",
 
   demo_video_url: "https://www.youtube.com/watch?v=kqtD5dpn9C8",
 
@@ -109,6 +110,18 @@ const INITIAL_HOMEPAGE_SETTINGS: HomepageSettings = {
   linkedin_is_active: true,
 
   linkedin_display_name: "SkillNova LinkedIn Community",
+
+  live_meeting_url: "",
+
+  live_meeting_title: "Daily Engineering Cohort Masterclass",
+
+  live_meeting_time: "Everyday at 07:00 PM IST",
+
+  live_meeting_is_active: false,
+
+  live_meeting_is_daily_recurring: true,
+
+  live_meeting_updated_at: new Date().toISOString(),
 
   updated_at: new Date().toISOString(),
 };
@@ -2136,6 +2149,10 @@ class DataService {
           score: Number(a.score) || 0,
 
           total_marks: Number(a.total_marks) || 100,
+
+          total_questions: Number(a.total_questions) || (a.answers ? Object.keys(typeof a.answers === 'string' ? JSON.parse(a.answers) : a.answers).length : 0),
+
+          correct_count: Number(a.correct_count) || 0,
 
           accuracy: Number(a.accuracy) || 0,
 
@@ -6488,7 +6505,277 @@ class DataService {
     this.saveToStorage("blueprints", this.blueprints);
   }
 
-  // --- Notifications ---
+  // --- Notifications & Scrolling Ticker Announcements ---
+
+  public getStudentTickerAnnouncements(studentId: string): TickerAnnouncement[] {
+    const announcementsMap = new Map<string, TickerAnnouncement>();
+    const now = new Date();
+
+    const formatISTDateTime = (isoString?: string): string => {
+      if (!isoString) return '';
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return isoString;
+        return new Intl.DateTimeFormat('en-IN', {
+          timeZone: 'Asia/Kolkata',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: true,
+        }).format(d);
+      } catch {
+        return isoString;
+      }
+    };
+
+    // 1. Live Daily Meeting / Live Class Session (if configured & active)
+    const settings = this.getHomepageSettings();
+    if (settings.live_meeting_is_active && settings.live_meeting_url && settings.live_meeting_url.trim()) {
+      const isDaily = settings.live_meeting_is_daily_recurring !== false;
+      const timeStr = settings.live_meeting_time || 'Everyday at 07:00 PM IST';
+      announcementsMap.set('live-meeting-daily', {
+        id: 'live-meeting-daily',
+        type: 'live_meeting',
+        title: `🔴 Live Session: ${settings.live_meeting_title || 'Daily Engineering Cohort Masterclass'} • Time: ${timeStr} ${isDaily ? '(Daily Recurring Class — Resume Everyday)' : ''} — Click to Join Live Room`,
+        link: settings.live_meeting_url,
+        is_external_link: true,
+        published_at: settings.live_meeting_updated_at || new Date().toISOString(),
+        priority: 1
+      });
+    }
+
+    // 2. Identify Student Enrolled Courses
+    const enrolledCourses = this.getEnrolledCoursesForStudent(studentId);
+    if (!enrolledCourses || enrolledCourses.length === 0) {
+      return Array.from(announcementsMap.values());
+    }
+
+    const enrolledCourseIds = new Set(enrolledCourses.map((c) => c.id));
+    const courseTitleMap = new Map<string, string>();
+    enrolledCourses.forEach((c) => courseTitleMap.set(c.id, c.title));
+
+    // Module title map
+    const moduleTitleMap = new Map<string, string>();
+    this.modules.forEach((m) => {
+      if (enrolledCourseIds.has(m.course_id)) {
+        moduleTitleMap.set(m.id, m.title);
+      }
+    });
+
+    // 3. Quizzes for enrolled courses
+    this.checkQuizSchedules();
+    enrolledCourses.forEach((course) => {
+      const courseQuizzes = this.getQuizzesList(course.id);
+      courseQuizzes.forEach((quiz) => {
+        const start = quiz.start_time ? new Date(quiz.start_time) : null;
+        const end = quiz.end_time ? new Date(quiz.end_time) : null;
+
+        // Respect release window: only if active or start_time is reached
+        const isLiveOrUpcomingActive = quiz.status === 'active' ||
+          (start && start <= now && (!end || end >= now));
+
+        if (isLiveOrUpcomingActive) {
+          const startFormatted = formatISTDateTime(quiz.start_time);
+          const endFormatted = formatISTDateTime(quiz.end_time);
+          const timeRange = startFormatted && endFormatted
+            ? `available from ${startFormatted} to ${endFormatted} (IST)`
+            : 'is now available for evaluation';
+
+          const quizKey = `quiz-${quiz.id}`;
+          announcementsMap.set(quizKey, {
+            id: quizKey,
+            type: 'quiz',
+            title: `📝 ${quiz.title} (${course.title}) is ${timeRange}.`,
+            course_id: course.id,
+            course_title: course.title,
+            module_id: quiz.module_id,
+            sub_module_id: quiz.sub_module_id,
+            resource_id: quiz.id,
+            published_at: quiz.start_time || quiz.created_at,
+            link: '/student/quizzes',
+            priority: 2
+          });
+        }
+      });
+    });
+
+    // 4. Released Topics & Learning Resources for Enrolled Courses
+    this.topics.forEach((topic) => {
+      if (!enrolledCourseIds.has(topic.course_id)) return;
+
+      const isExplicitlyReleased = topic.is_published === true;
+      const isScheduledAndDue = topic.release_status === 'scheduled' &&
+        topic.scheduled_release_at &&
+        new Date(topic.scheduled_release_at) <= now;
+
+      if (!isExplicitlyReleased && !isScheduledAndDue) return;
+
+      const modTitle = topic.module_id ? moduleTitleMap.get(topic.module_id) : '';
+      const prefix = modTitle ? `${modTitle} – ` : '';
+      const courseTitle = courseTitleMap.get(topic.course_id) || '';
+
+      // A. Videos
+      if (topic.has_recording || topic.recording_url || topic.drive_video_url || topic.resource_type === 'video' || topic.resource_type === 'drive_video') {
+        const key = `video-${topic.id}`;
+        if (!announcementsMap.has(key)) {
+          announcementsMap.set(key, {
+            id: key,
+            type: 'video',
+            title: `🎬 ${prefix}${topic.title} Video has been released.`,
+            course_id: topic.course_id,
+            course_title: courseTitle,
+            module_id: topic.module_id,
+            sub_module_id: topic.sub_module_id,
+            resource_id: topic.id,
+            published_at: topic.released_at || topic.scheduled_release_at || topic.created_at,
+            link: `/student/courses/${topic.course_id}?module=${topic.module_id || ''}&subModule=${topic.sub_module_id || ''}&type=video`,
+            priority: 3
+          });
+        }
+      }
+
+      // B. PPT Presentations
+      if (topic.ppt_url || topic.ppt_file_url || topic.resource_type === 'ppt' || topic.resource_type === 'ppt_presentation') {
+        const key = `ppt-${topic.id}`;
+        if (!announcementsMap.has(key)) {
+          announcementsMap.set(key, {
+            id: key,
+            type: 'ppt',
+            title: `📊 ${prefix}${topic.title} PPT has been released.`,
+            course_id: topic.course_id,
+            course_title: courseTitle,
+            module_id: topic.module_id,
+            sub_module_id: topic.sub_module_id,
+            resource_id: topic.id,
+            published_at: topic.released_at || topic.scheduled_release_at || topic.created_at,
+            link: `/student/courses/${topic.course_id}?module=${topic.module_id || ''}&subModule=${topic.sub_module_id || ''}&type=ppt`,
+            priority: 3
+          });
+        }
+      }
+
+      // C. Notes & Documents
+      if (topic.doc_url || topic.drive_notes_url || topic.pdf_url || topic.resource_type === 'notes' || topic.resource_type === 'drive_notes') {
+        const key = `notes-${topic.id}`;
+        if (!announcementsMap.has(key)) {
+          announcementsMap.set(key, {
+            id: key,
+            type: 'notes',
+            title: `📄 ${prefix}${topic.title} Notes & Documents are now available.`,
+            course_id: topic.course_id,
+            course_title: courseTitle,
+            module_id: topic.module_id,
+            sub_module_id: topic.sub_module_id,
+            resource_id: topic.id,
+            published_at: topic.released_at || topic.scheduled_release_at || topic.created_at,
+            link: `/student/courses/${topic.course_id}?module=${topic.module_id || ''}&subModule=${topic.sub_module_id || ''}&type=notes`,
+            priority: 3
+          });
+        }
+      }
+    });
+
+    // 5. Presentation Slide Allocations
+    this.presentations.forEach((pres) => {
+      if (!enrolledCourseIds.has(pres.course_id)) return;
+      const modTitle = pres.module_id ? moduleTitleMap.get(pres.module_id) : '';
+      const prefix = modTitle ? `${modTitle} – ` : '';
+
+      (pres.allocations || []).forEach((alloc) => {
+        const isReleased = alloc.release_status === 'released' ||
+          (alloc.release_status === 'scheduled' && alloc.scheduled_release_at && new Date(alloc.scheduled_release_at) <= now);
+
+        if (isReleased) {
+          const key = `slide-alloc-${alloc.id}`;
+          if (!announcementsMap.has(key)) {
+            announcementsMap.set(key, {
+              id: key,
+              type: 'ppt',
+              title: `📊 ${prefix}${pres.title} PPT (Slides ${alloc.start_slide}–${alloc.end_slide}) has been released.`,
+              course_id: pres.course_id,
+              course_title: courseTitleMap.get(pres.course_id),
+              module_id: pres.module_id,
+              sub_module_id: alloc.sub_module_id,
+              resource_id: pres.id,
+              published_at: alloc.released_at || alloc.scheduled_release_at || alloc.created_at,
+              link: `/student/courses/${pres.course_id}?module=${pres.module_id || ''}&subModule=${alloc.sub_module_id || ''}&type=ppt`,
+              priority: 3
+            });
+          }
+        }
+      });
+    });
+
+    // 6. Interview Questions
+    this.getInterviewQuestions().forEach((iq: InterviewQuestion) => {
+      if (iq.is_published === false) return;
+      const parentTopic = this.topics.find((t) => t.id === iq.topic_id);
+      if (!parentTopic || !enrolledCourseIds.has(parentTopic.course_id)) return;
+
+      const modTitle = parentTopic.module_id ? moduleTitleMap.get(parentTopic.module_id) : '';
+      const prefix = modTitle ? `${modTitle} – ` : '';
+      const key = `interview-${parentTopic.id}`;
+      if (!announcementsMap.has(key)) {
+        announcementsMap.set(key, {
+          id: key,
+          type: 'interview',
+          title: `💡 ${prefix}${parentTopic.title} Interview Questions have been published.`,
+          course_id: parentTopic.course_id,
+          course_title: courseTitleMap.get(parentTopic.course_id),
+          module_id: parentTopic.module_id,
+          sub_module_id: parentTopic.sub_module_id,
+          resource_id: parentTopic.id,
+          published_at: iq.created_at || parentTopic.created_at,
+          link: `/student/courses/${parentTopic.course_id}?module=${parentTopic.module_id || ''}&subModule=${parentTopic.sub_module_id || ''}&type=interview`,
+          priority: 3
+        });
+      }
+    });
+
+    // 7. General Notifications & System Announcements
+    this.getNotifications(studentId).forEach((ann: Notification) => {
+      const key = `notif-${ann.id}`;
+      if (!announcementsMap.has(key)) {
+        announcementsMap.set(key, {
+          id: key,
+          type: 'announcement',
+          title: `📢 ${ann.title}${ann.message ? `: ${ann.message}` : ''}`,
+          published_at: ann.created_at,
+          link: ann.link || undefined,
+          priority: 4
+        });
+      }
+    });
+
+    return Array.from(announcementsMap.values()).sort((a, b) => {
+      if ((a.priority || 5) !== (b.priority || 5)) {
+        return (a.priority || 5) - (b.priority || 5);
+      }
+      const timeA = a.published_at ? new Date(a.published_at).getTime() : 0;
+      const timeB = b.published_at ? new Date(b.published_at).getTime() : 0;
+      return timeB - timeA;
+    });
+  }
+
+  // Live Daily Meeting Controls
+  public async updateLiveMeeting(meetingData: {
+    url: string;
+    title?: string;
+    time?: string;
+    isActive?: boolean;
+    isDaily?: boolean;
+  }): Promise<HomepageSettings> {
+    return this.saveHomepageSettings({
+      live_meeting_url: meetingData.url,
+      live_meeting_title: meetingData.title || this.homepageSettings.live_meeting_title || 'Daily Engineering Cohort Masterclass',
+      live_meeting_time: meetingData.time || this.homepageSettings.live_meeting_time || 'Everyday at 07:00 PM IST',
+      live_meeting_is_active: meetingData.isActive !== undefined ? meetingData.isActive : true,
+      live_meeting_is_daily_recurring: meetingData.isDaily !== undefined ? meetingData.isDaily : true,
+      live_meeting_updated_at: new Date().toISOString(),
+    });
+  }
 
   public getNotifications(userId?: string): Notification[] {
     if (userId) {
@@ -7576,8 +7863,12 @@ Module 3: Production Deployment & System Leadership
 
     if (isLiveSupabaseConfigured) {
       try {
+        const validSettingsId = (this.homepageSettings.id && this.homepageSettings.id.length === 36)
+          ? this.homepageSettings.id
+          : "30000000-0000-4000-8000-000000000001";
+
         const { error } = await supabase.from("homepage_settings").upsert({
-          id: this.homepageSettings.id || "hp-settings-1",
+          id: validSettingsId,
 
           demo_video_url: this.homepageSettings.demo_video_url,
 
@@ -7606,6 +7897,18 @@ Module 3: Production Deployment & System Leadership
           linkedin_is_active: this.homepageSettings.linkedin_is_active,
 
           linkedin_display_name: this.homepageSettings.linkedin_display_name,
+
+          live_meeting_url: this.homepageSettings.live_meeting_url || '',
+
+          live_meeting_title: this.homepageSettings.live_meeting_title || 'Daily Engineering Cohort Masterclass',
+
+          live_meeting_time: this.homepageSettings.live_meeting_time || 'Everyday at 07:00 PM IST',
+
+          live_meeting_is_active: this.homepageSettings.live_meeting_is_active ?? false,
+
+          live_meeting_is_daily_recurring: this.homepageSettings.live_meeting_is_daily_recurring ?? true,
+
+          live_meeting_updated_at: new Date().toISOString(),
 
           updated_at: new Date().toISOString(),
         });
@@ -8516,6 +8819,10 @@ Module 3: Production Deployment & System Leadership
 
       total_marks: quiz?.total_marks || 100,
 
+      total_questions: totalQuestions,
+
+      correct_count: correctCount,
+
       accuracy: accuracy,
 
       answers: data.answers,
@@ -8547,6 +8854,10 @@ Module 3: Production Deployment & System Leadership
           score: newAttempt.score,
 
           total_marks: newAttempt.total_marks,
+
+          total_questions: newAttempt.total_questions,
+
+          correct_count: newAttempt.correct_count,
 
           accuracy: newAttempt.accuracy,
 
@@ -8618,75 +8929,93 @@ Module 3: Production Deployment & System Leadership
   }
 
   public getQuizLeaderboard(quizId: string): QuizLeaderboardEntry[] {
-    // FIRST-ATTEMPT LEADERBOARD RULE:
+    // 1. Filter attempts for this specific quiz
+    const quizAttempts = this.quizAttemptsList.filter((a) => a.quiz_id === quizId);
 
-    // Only student's first valid submitted attempt counts toward official leaderboard.
-
-    const firstAttempts = this.quizAttemptsList.filter(
-      (a) => a.quiz_id === quizId && a.is_first_attempt === true,
+    // 2. Identify the official first valid attempt per student
+    // Sort chronologically ascending to safely determine first attempt
+    const sortedChronologically = [...quizAttempts].sort(
+      (a, b) => new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime(),
     );
 
-    // Deduplicate in case of duplicate imports, keeping earliest
-
     const byStudent = new Map<string, QuizAttempt>();
-
-    firstAttempts.forEach((attempt) => {
+    sortedChronologically.forEach((attempt) => {
       if (!byStudent.has(attempt.student_id)) {
+        byStudent.set(attempt.student_id, attempt);
+      } else if (attempt.is_first_attempt && !byStudent.get(attempt.student_id)?.is_first_attempt) {
         byStudent.set(attempt.student_id, attempt);
       }
     });
 
     const entries = Array.from(byStudent.values());
 
-    // Tie-breaking:
-
-    // 1. Highest score first
-
-    // 2. Accuracy percentage next
-
-    // 3. Earliest valid completion time (least time_spent_seconds)
-
-    // 4. Earliest completion timestamp
-
+    // 3. Ranking Priority:
+    // 1st: Highest total score
+    // 2nd: Highest accuracy percentage
+    // 3rd: Earliest valid completion time (least time_spent_seconds)
+    // 4th: Earliest completion timestamp
     entries.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
 
       const bAcc = b.accuracy || 0;
-
       const aAcc = a.accuracy || 0;
-
       if (bAcc !== aAcc) return bAcc - aAcc;
 
-      if ((a.time_spent_seconds || 0) !== (b.time_spent_seconds || 0)) {
-        return (a.time_spent_seconds || 0) - (b.time_spent_seconds || 0);
-      }
+      const aTime = a.time_spent_seconds || 0;
+      const bTime = b.time_spent_seconds || 0;
+      if (aTime !== bTime) return aTime - bTime;
 
-      return (
-        new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime()
-      );
+      return new Date(a.completed_at).getTime() - new Date(b.completed_at).getTime();
     });
 
-    return entries.map((entry, idx) => ({
-      rank: idx + 1,
+    // 4. Standard Competition Ranking (1, 2, 2, 4) for tied results
+    let currentRank = 1;
+    return entries.map((entry, idx) => {
+      if (idx > 0) {
+        const prev = entries[idx - 1];
+        const isTie =
+          entry.score === prev.score &&
+          (entry.accuracy || 0) === (prev.accuracy || 0) &&
+          (entry.time_spent_seconds || 0) === (prev.time_spent_seconds || 0);
 
-      attempt_id: entry.id,
+        if (!isTie) {
+          currentRank = idx + 1;
+        }
+      }
 
-      student_id: entry.student_id,
+      // Dynamic student profile & profile picture lookup
+      const studentProfile = this.users.find((u) => u.id === entry.student_id);
+      const studentName = studentProfile?.full_name || entry.student_name || "Student";
+      const avatarUrl = studentProfile?.avatar_url || studentProfile?.avatar || "";
 
-      student_name: entry.student_name || "Student",
+      const quizObj = this.getQuizById(quizId);
+      const totalQuestions =
+        entry.total_questions ||
+        quizObj?.questions?.length ||
+        (entry.answers ? Object.keys(entry.answers).length : 0) ||
+        1;
 
-      score: entry.score,
+      const correctCount =
+        entry.correct_count !== undefined
+          ? entry.correct_count
+          : Math.round(((entry.accuracy || 0) / 100) * totalQuestions);
 
-      total_marks: entry.total_marks || 100,
-
-      accuracy: entry.accuracy || 0,
-
-      time_spent_seconds: entry.time_spent_seconds || 0,
-
-      completed_at: entry.completed_at,
-
-      is_first_attempt: true,
-    }));
+      return {
+        rank: currentRank,
+        attempt_id: entry.id,
+        student_id: entry.student_id,
+        student_name: studentName,
+        avatar_url: avatarUrl,
+        score: entry.score,
+        total_marks: entry.total_marks || quizObj?.total_marks || 100,
+        correct_count: correctCount,
+        total_questions: totalQuestions,
+        accuracy: entry.accuracy || 0,
+        time_spent_seconds: entry.time_spent_seconds || 0,
+        completed_at: entry.completed_at,
+        is_first_attempt: true,
+      };
+    });
   }
 
   // --- PDF Page Allocations ---

@@ -21,10 +21,11 @@ const LinkedinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 import { dataService } from '../../services/dataService';
+import { LiveMeetingManagementCard } from '../../components/admin/LiveMeetingManagementCard';
 import type { HomepageSettings, HomepageCourse } from '../../types';
 
 export const HomepageManagementPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'video' | 'courses' | 'whatsapp' | 'instagram' | 'linkedin' | 'preview'>('video');
+  const [activeTab, setActiveTab] = useState<'meeting' | 'video' | 'courses' | 'whatsapp' | 'instagram' | 'linkedin' | 'preview'>('meeting');
 
   const [settings, setSettings] = useState<HomepageSettings>(dataService.getHomepageSettings());
   const [courses, setCourses] = useState<HomepageCourse[]>(dataService.getHomepageCourses());
@@ -235,6 +236,18 @@ Module 3: Capstone Deployment
       {/* Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#DFE9F6]">
         <button
+          onClick={() => setActiveTab('meeting')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'meeting'
+              ? 'bg-[#176BFF] text-white shadow-xs'
+              : 'text-[#73839B] hover:text-[#15243B] hover:bg-white'
+          }`}
+        >
+          <Video className="w-4 h-4 text-red-400" />
+          <span>Daily Live Class Link</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('video')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'video'
@@ -306,6 +319,11 @@ Module 3: Capstone Deployment
           <span>Live Frame Preview</span>
         </button>
       </div>
+
+      {/* Tab 0: Daily Live Meeting */}
+      {activeTab === 'meeting' && (
+        <LiveMeetingManagementCard />
+      )}
 
       {/* Tab 1: Demo Video */}
       {activeTab === 'video' && (

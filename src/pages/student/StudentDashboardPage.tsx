@@ -9,7 +9,9 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
 import { InteractiveDashboardRoadmap } from '../../components/dashboard/InteractiveDashboardRoadmap';
-import type { Course, CourseModule, Topic, QuizAttempt, StudentRoadmapProgress } from '../../types';
+import { StudentNotificationTicker } from '../../components/dashboard/StudentNotificationTicker';
+import { StudentLiveMeetingBanner } from '../../components/dashboard/StudentLiveMeetingBanner';
+import type { Course, CourseModule, Topic, QuizAttempt, StudentRoadmapProgress, TickerAnnouncement, HomepageSettings } from '../../types';
 
 export const StudentDashboardPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -22,9 +24,12 @@ export const StudentDashboardPage: React.FC = () => {
   const [roadmapProgress, setRoadmapProgress] = useState<StudentRoadmapProgress>(() => 
     dataService.getStudentRoadmapProgress(studentId)
   );
+  const [tickerAnnouncements, setTickerAnnouncements] = useState<TickerAnnouncement[]>([]);
+  const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>(dataService.getHomepageSettings());
 
   useEffect(() => {
     void dataService.syncAllFromSupabase();
+    void dataService.syncHomepageFromSupabase();
     const load = () => {
       const courses = currentUser ? dataService.getEnrolledCoursesForStudent(studentId) : [];
       setEnrolledCourses(courses);
@@ -37,6 +42,8 @@ export const StudentDashboardPage: React.FC = () => {
 
       setTopics(dataService.getReleasedTopics());
       setQuizAttempts(dataService.getQuizAttempts(studentId));
+      setTickerAnnouncements(dataService.getStudentTickerAnnouncements(studentId));
+      setHomepageSettings(dataService.getHomepageSettings());
       if (courses.length > 0) {
         setRoadmapProgress(dataService.getStudentRoadmapProgress(studentId, courses[0].id));
       }
@@ -74,7 +81,19 @@ export const StudentDashboardPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-7xl mx-auto pb-16 text-black dark:text-[#F0F5FF]">
+    <div className="space-y-6 animate-fadeIn max-w-7xl mx-auto pb-16 text-black dark:text-[#F0F5FF]">
+      {/* 0. Real-time Scrolling Notification / Course Release Announcement Ticker */}
+      <StudentNotificationTicker announcements={tickerAnnouncements} />
+
+      {/* 0.5. Daily Live Class / Meeting Room Banner */}
+      <StudentLiveMeetingBanner
+        meetingUrl={homepageSettings.live_meeting_url}
+        meetingTitle={homepageSettings.live_meeting_title}
+        meetingTime={homepageSettings.live_meeting_time}
+        isActive={homepageSettings.live_meeting_is_active}
+        isDaily={homepageSettings.live_meeting_is_daily_recurring}
+      />
+
       {/* 1. Welcome & High-Impact Analytics Banner */}
       <div className="dark-section rounded-3xl bg-gradient-to-r from-[#0E1729] via-[#15233A] to-[#0A101D] border border-white/10 p-6 md:p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#00D4B8]/10 rounded-full blur-3xl pointer-events-none" />

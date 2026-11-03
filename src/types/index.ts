@@ -485,7 +485,13 @@ export interface QuizLeaderboardEntry {
 
   student_name: string;
 
+  avatar_url?: string;
+
   score: number;
+
+  correct_count?: number;
+
+  total_questions?: number;
 
   total_marks: number;
 
@@ -993,6 +999,18 @@ export interface HomepageSettings {
 
   linkedin_display_name: string;
 
+  live_meeting_url?: string;
+
+  live_meeting_title?: string;
+
+  live_meeting_time?: string;
+
+  live_meeting_is_active?: boolean;
+
+  live_meeting_is_daily_recurring?: boolean;
+
+  live_meeting_updated_at?: string;
+
   updated_at: string;
 }
 
@@ -1066,4 +1084,19 @@ export interface StudentAccessRequestEvent {
   details?: string;
 
   created_at: string;
+}
+
+export interface TickerAnnouncement {
+  id: string;
+  type: 'video' | 'ppt' | 'notes' | 'interview' | 'quiz' | 'live_meeting' | 'announcement';
+  title: string;
+  course_id?: string;
+  course_title?: string;
+  module_id?: string;
+  sub_module_id?: string;
+  resource_id?: string;
+  published_at?: string;
+  link?: string;
+  is_external_link?: boolean;
+  priority?: number;
 }

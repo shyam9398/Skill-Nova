@@ -6,6 +6,7 @@ import {
   AlertCircle, Shield, FileText, Briefcase
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
+import { LiveMeetingManagementCard } from '../../components/admin/LiveMeetingManagementCard';
 import type { User, Course, Topic, AIGenerationJob } from '../../types';
 
 export const AdminDashboardPage: React.FC = () => {
@@ -71,6 +72,9 @@ export const AdminDashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Live Classroom Meeting Link Broadcast Control */}
+      <LiveMeetingManagementCard />
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

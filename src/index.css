@@ -603,3 +603,35 @@ html:not(.dark) [class*="bg-gradient"] .text-white {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   STUDENT DASHBOARD NOTIFICATION TICKER MARQUEE
+   ========================================================================== */
+@keyframes ticker-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-ticker {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ticker-marquee 35s linear infinite;
+  will-change: transform;
+}
+
+.animate-ticker:hover,
+.animate-ticker:focus-within,
+.ticker-paused {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker {
+    animation: none !important;
+    overflow-x: auto;
+  }
+}

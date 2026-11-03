@@ -845,6 +845,12 @@ CREATE TABLE IF NOT EXISTS public.homepage_settings (
     linkedin_url TEXT DEFAULT 'https://linkedin.com/company/skillnova',
     linkedin_is_active BOOLEAN DEFAULT true,
     linkedin_display_name TEXT DEFAULT 'LinkedIn @skillnova',
+    live_meeting_url TEXT DEFAULT '',
+    live_meeting_title TEXT DEFAULT 'Daily Engineering Cohort Masterclass',
+    live_meeting_time TEXT DEFAULT 'Everyday at 07:00 PM IST',
+    live_meeting_is_active BOOLEAN DEFAULT false,
+    live_meeting_is_daily_recurring BOOLEAN DEFAULT true,
+    live_meeting_updated_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 

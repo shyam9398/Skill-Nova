@@ -505,105 +505,121 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 7. Footer – Premium Dark Design (Reference Image 3 - SNKS Inspiration) */}
-      <footer id="contact" className="dark-section dark-place bg-[#0A0E17] text-white pt-16 pb-12 border-t border-[#1E293B]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
-          {/* Top Footer Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16">
-            {/* Left Section: Logo & Tagline (Cols 1-5) */}
-            <div className="md:col-span-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#176BFF] to-[#00A3FF] flex items-center justify-center text-white">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <span className="text-2xl font-black tracking-tight text-white font-mono">
-                  SkillNova
-                </span>
-              </div>
-              <p className="text-sm font-medium text-slate-300">
-                Learn. Build. Explore. Grow.
-              </p>
-              <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
-                Empowering college engineers and aspiring developers with structured curriculum, real-time feedback, and authentic career mentorship.
-              </p>
-            </div>
-
-            {/* Middle Section: Explore Links (Cols 6-8) */}
-            <div className="md:col-span-4 space-y-3">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                EXPLORE
-              </h4>
-              <ul className="space-y-2.5 text-xs text-slate-300">
-                <li>
-                  <a href="#about" className="hover:text-white transition flex items-center gap-1.5">
-                    About SkillNova <ArrowUpRight className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="#courses" className="hover:text-white transition flex items-center gap-1.5">
-                    Courses & Curriculum <ArrowUpRight className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <a href="#experience" className="hover:text-white transition flex items-center gap-1.5">
-                    Learning Experience <ArrowUpRight className="w-3 h-3 text-slate-500" />
-                  </a>
-                </li>
-                <li>
-                  <Link to="/student/login" className="hover:text-white transition flex items-center gap-1.5">
-                    Student Learning Portal <ArrowUpRight className="w-3 h-3 text-slate-500" />
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Right Section: Details & Legal (Cols 9-12) */}
-            <div className="md:col-span-3 space-y-3">
-              <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
-                THE DETAILS
-              </h4>
-              <ul className="space-y-2.5 text-xs text-slate-300">
-                <li>
-                  <button
-                    onClick={() => setShowAccessModal(true)}
-                    className="hover:text-white transition text-left"
-                  >
-                    Request Student Access
-                  </button>
-                </li>
-                <li>
-                  <Link to="/admin/login" className="hover:text-white transition">
-                    Administrator Login
-                  </Link>
-                </li>
-                <li>
-                  <span className="text-slate-400 cursor-default">
-                    Privacy Policy
-                  </span>
-                </li>
-                <li>
-                  <span className="text-slate-400 cursor-default">
-                    Terms & Conditions
-                  </span>
-                </li>
-              </ul>
-            </div>
+<footer id="contact" className="dark-section dark-place bg-[#0A0E17] text-white pt-16 pb-12 border-t border-[#1E293B]">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    {/* Top Footer Grid */}
+    <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16">
+      {/* Left Section: Logo & Tagline (Cols 1-5) */}
+      <div className="md:col-span-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#176BFF] to-[#00A3FF] flex items-center justify-center text-white">
+            <Sparkles className="w-4 h-4" />
           </div>
-
-          {/* Thin Divider Line (Ref Image 3) */}
-          <div className="border-t border-[#1E293B]" />
-
-          {/* Copyright Row */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-mono text-slate-400">
-            <div>
-              © 2026 SkillNova. All rights reserved.
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Technology Education • Modern Engineering Standards</span>
-            </div>
-          </div>
+          <span className="text-2xl font-black tracking-tight text-white font-mono">
+            SkillNova
+          </span>
         </div>
-      </footer>
+
+        <p className="text-sm font-medium text-slate-300">
+          Learn. Build. Explore. Grow.
+        </p>
+
+        <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
+          Empowering college engineers and aspiring developers with structured curriculum, real-time feedback, and authentic career mentorship.
+        </p>
+
+        {/* Contact Information - Moved Below Description */}
+        <div className="mt-4">
+          <p className="text-sm text-gray-400 mb-2">
+            Contact Us
+          </p>
+          <a
+            href="mailto:skillnova09@gmail.com"
+            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+          >
+            skillnova09@gmail.com
+          </a>
+        </div>
+      </div>
+
+      {/* Middle Section: Explore Links (Cols 6-8) */}
+      <div className="md:col-span-4 space-y-3">
+        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+          EXPLORE
+        </h4>
+        <ul className="space-y-2.5 text-xs text-slate-300">
+          <li>
+            <a href="#about" className="hover:text-white transition flex items-center gap-1.5">
+              About SkillNova <ArrowUpRight className="w-3 h-3 text-slate-500" />
+            </a>
+          </li>
+          <li>
+            <a href="#courses" className="hover:text-white transition flex items-center gap-1.5">
+              Courses & Curriculum <ArrowUpRight className="w-3 h-3 text-slate-500" />
+            </a>
+          </li>
+          <li>
+            <a href="#experience" className="hover:text-white transition flex items-center gap-1.5">
+              Learning Experience <ArrowUpRight className="w-3 h-3 text-slate-500" />
+            </a>
+          </li>
+          <li>
+            <Link to="/student/login" className="hover:text-white transition flex items-center gap-1.5">
+              Student Learning Portal <ArrowUpRight className="w-3 h-3 text-slate-500" />
+            </Link>
+          </li>
+        </ul>
+      </div>
+
+      {/* Right Section: Details & Legal (Cols 9-12) */}
+      <div className="md:col-span-3 space-y-3">
+        <h4 className="text-xs font-mono font-bold uppercase tracking-wider text-slate-400">
+          THE DETAILS
+        </h4>
+        <ul className="space-y-2.5 text-xs text-slate-300">
+          <li>
+            <button
+              onClick={() => setShowAccessModal(true)}
+              className="hover:text-white transition text-left"
+            >
+              Request Student Access
+            </button>
+          </li>
+          <li>
+            <Link to="/admin/login" className="hover:text-white transition">
+              Administrator Login
+            </Link>
+          </li>
+          <li>
+            <span className="text-slate-400 cursor-default">
+              Privacy Policy
+            </span>
+          </li>
+          <li>
+            <span className="text-slate-400 cursor-default">
+              Terms & Conditions
+            </span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    {/* Thin Divider Line */}
+    <div className="border-t border-[#1E293B]" />
+
+    {/* Copyright Row */}
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-mono text-slate-400">
+      <div>
+        © 2026 SkillNova. All rights reserved.
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+        <span>Technology Education • Modern Engineering Standards</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
 
       {/* 8. Social Media Icons – UNCHANGED: Exactly as configured in FloatingSocialConnect */}
       <FloatingSocialConnect />

@@ -381,7 +381,7 @@ export const StudentDiscussionPage: React.FC = () => {
       {activeTab === 'mentor' && (
         <div className="space-y-6">
           {/* Top Info & New Request Trigger */}
-          <div className="bg-gradient-to-r from-[#EAF3FF] via-white to-[#F5F9FF] p-6 rounded-3xl border border-[#DFE9F6] flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
+          <div className="bg-gradient-to-r from-[#EAF3FF] via-white to-[#F5F9FF] dark:from-[#0B1530] dark:via-[#0D1833] dark:to-[#050816] p-6 rounded-3xl border border-[#DFE9F6] dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm transition-colors">
             <div className="space-y-1">
               <span className="text-xs font-bold text-[#176BFF] uppercase tracking-wider font-mono flex items-center gap-1.5">
                 <HelpCircle className="w-4 h-4 text-[#00A3FF]" />

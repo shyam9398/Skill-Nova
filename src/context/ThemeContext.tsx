@@ -59,7 +59,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       <div className={`min-h-screen w-full transition-colors duration-300 relative ${
         theme === 'dark' 
           ? 'bg-[#050816] text-[#F4F7FF]' 
-          : 'bg-[#F5F9FF] text-[#15243B]'
+          : 'bg-[#F5F9FF] text-black'
       }`}>
         {/* Restrained decorative particles canvas / overlay */}
         <ThemeParticlesOverlay theme={theme} />

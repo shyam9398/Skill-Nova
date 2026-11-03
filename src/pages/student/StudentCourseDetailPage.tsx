@@ -1,30 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Layers, Video, FileText, Sparkles,
   CheckCircle2, Clock, Play, ExternalLink,
-  Presentation as PresIcon, Download, BookOpen, Compass, Code2,
-  ChevronRight, ChevronDown, ChevronUp, Lock, Calendar, AlertCircle, Eye, ShieldCheck, Check,
-  HelpCircle, RotateCcw
+  Presentation as PresIcon, Download, BookOpen,
+  ChevronDown, ChevronUp, Lock, Calendar, AlertCircle, Eye, ShieldCheck, Check,
+  HelpCircle, RotateCcw, Circle
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { EmbeddedVideoPlayer } from '../../components/resource/EmbeddedVideoPlayer';
-import { PdfDocumentViewer } from '../../components/resource/PdfDocumentViewer';
-import { PresentationSlideViewer } from '../../components/resource/PresentationSlideViewer';
-import { FlashcardDeck } from '../../components/practice/FlashcardDeck';
-import { PythonCodingLab } from '../../components/coding/PythonCodingLab';
-import type { Topic, Presentation, CourseModule, CourseSubModule } from '../../types';
+import { SkillNovaDocumentViewer } from '../../components/resource/SkillNovaDocumentViewer';
+import { DynamicFlashcardViewer } from '../../components/practice/DynamicFlashcardViewer';
+import type { Topic, Presentation, CourseModule, CourseSubModule, Flashcard } from '../../types';
 
 export const StudentCourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
-  const [searchParams] = useSearchParams();
-  const queryModuleId = searchParams.get('module');
-  const querySubModuleId = searchParams.get('subModule');
 
   const [course, setCourse] = useState(() => dataService.getCourseById(courseId || ''));
   const [modules, setModules] = useState<CourseModule[]>(() => dataService.getModulesForCourse(courseId || ''));
   const [allTopics, setAllTopics] = useState<Topic[]>(() => dataService.getReleasedTopics(courseId || ''));
   const [allPresentations, setAllPresentations] = useState<Presentation[]>(() => dataService.getPresentations(courseId || ''));
+  const [allFlashcards, setAllFlashcards] = useState<Flashcard[]>(() => dataService.getFlashcards(courseId || ''));
 
   // Subscribe to realtime updates from Supabase
   useEffect(() => {
@@ -33,81 +29,65 @@ export const StudentCourseDetailPage: React.FC = () => {
     void dataService.syncSubModulesFromSupabase();
     void dataService.syncTopicsFromSupabase();
     void dataService.syncPresentationsFromSupabase();
+    void dataService.syncFlashcardsFromSupabase();
     const unsub = dataService.subscribe(() => {
       setCourse(dataService.getCourseById(courseId || ''));
       setModules(dataService.getModulesForCourse(courseId || ''));
       setAllTopics(dataService.getReleasedTopics(courseId || ''));
       setAllPresentations(dataService.getPresentations(courseId || ''));
+      setAllFlashcards(dataService.getFlashcards(courseId || ''));
     });
     return () => unsub();
   }, [courseId]);
 
-  // Selected Module & Sub-Module State
-  const [selectedModuleId, setSelectedModuleId] = useState<string>('');
-  const [selectedSubModuleId, setSelectedSubModuleId] = useState<string>('');
+  // Selected Module State: 'all' or specific module ID
+  const [selectedModuleId, setSelectedModuleId] = useState<string>('all');
+  const [isModuleDropdownOpen, setIsModuleDropdownOpen] = useState(false);
 
-  // Workspace Tabs: Modules vs Python Lab vs Feed
-  const [activeTab, setActiveTab] = useState<'modules' | 'python_lab' | 'flashcards' | 'all_feed'>('modules');
+  // Expanded state for All Modules Accordions
+  const [expandedModuleIds, setExpandedModuleIds] = useState<Record<string, boolean>>({});
 
-  // Dedicated Horizontal Resource Category Filter
-  type ResourceCategory = 'all' | 'videos' | 'ppt' | 'interview' | 'notes' | 'pdfs' | 'flashcards';
-  const [activeResourceCategory, setActiveResourceCategory] = useState<ResourceCategory>('videos');
-  const [expandedInterviewId, setExpandedInterviewId] = useState<string | null>(null);
+  // Dedicated Horizontal Resource Category Filter for specific module mode
+  type ResourceCategory = 'all' | 'videos' | 'ppt' | 'notes' | 'interview' | 'flashcards';
+  const [activeCategory, setActiveCategory] = useState<ResourceCategory>('all');
 
-  // Dedicated PPT Slide-Level Viewer Modal State
-  const [activePptPresentation, setActivePptPresentation] = useState<Presentation | null>(null);
-
-  // Active In-Page Video Player Topic
+  // Active in-page video
   const [activeVideoTopic, setActiveVideoTopic] = useState<Topic | null>(null);
 
-  // Active In-Page PDF Viewer Topic
-  const [activePdfTopic, setActivePdfTopic] = useState<Topic | null>(null);
+  // Roadmap progress
+  const roadmapProgress = dataService.getStudentRoadmapProgress(undefined, course?.id || '');
 
-  // Notes Modal State
-  const [activeNotesTopic, setActiveNotesTopic] = useState<Topic | null>(null);
-
-  // Initialize selected module and sub-module on load or modules change
-  useEffect(() => {
-    if (modules.length > 0) {
-      if (queryModuleId && modules.some(m => m.id === queryModuleId)) {
-        setSelectedModuleId(queryModuleId);
-        const targetMod = modules.find(m => m.id === queryModuleId);
-        const subMods = targetMod?.sub_modules || [];
-        if (querySubModuleId && subMods.some(sm => sm.id === querySubModuleId)) {
-          setSelectedSubModuleId(querySubModuleId);
-        } else if (subMods.length > 0) {
-          setSelectedSubModuleId(subMods[0].id);
-        }
-      } else if (!selectedModuleId || !modules.some(m => m.id === selectedModuleId)) {
-        const firstMod = modules[0];
-        setSelectedModuleId(firstMod.id);
-        const subMods = firstMod.sub_modules || [];
-        if (subMods.length > 0) {
-          setSelectedSubModuleId(subMods[0].id);
-        } else {
-          setSelectedSubModuleId('');
-        }
-      }
-    }
-  }, [modules, queryModuleId, querySubModuleId]);
-
-  // When selected module changes, update active sub-module
-  const handleSelectModule = (modId: string) => {
-    setSelectedModuleId(modId);
-    const targetMod = modules.find(m => m.id === modId);
-    const subMods = targetMod?.sub_modules || [];
+  // Helper to determine module completion status (Requirement 2)
+  const isModuleCompleted = (mod: CourseModule): boolean => {
+    const subMods = mod.sub_modules || [];
     if (subMods.length > 0) {
-      setSelectedSubModuleId(subMods[0].id);
-    } else {
-      setSelectedSubModuleId('');
+      return subMods.every(sm => roadmapProgress.completed_sub_modules.includes(sm.id));
     }
+    return roadmapProgress.completed_sub_modules.includes(mod.id);
+  };
+
+  // Toggle Module Completion handler (persists to Supabase student_progress)
+  const handleToggleModuleComplete = async (mod: CourseModule, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!course) return;
+    await dataService.toggleModuleCompletion('', course.id, mod.id);
+  };
+
+  // Toggle Accordion section in All Modules mode
+  const toggleModuleAccordion = (modId: string) => {
+    setExpandedModuleIds(prev => ({
+      ...prev,
+      [modId]: prev[modId] === undefined ? false : !prev[modId]
+    }));
   };
 
   if (!course) {
     return (
       <div className="text-center py-20 space-y-4 max-w-md mx-auto">
         <h2 className="text-xl font-bold text-slate-800 dark:text-white">Course Not Found</h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">The requested course is not assigned to your account or has been archived.</p>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          The requested course is not assigned to your account or has been archived.
+        </p>
         <Link to="/student/courses" className="text-xs text-[#00A3FF] font-bold hover:underline">
           Return to My Courses
         </Link>
@@ -115,117 +95,50 @@ export const StudentCourseDetailPage: React.FC = () => {
     );
   }
 
-  const activeModule = modules.find(m => m.id === selectedModuleId) || modules[0];
-  const activeSubModules = activeModule?.sub_modules || [];
-  const activeSubModule = activeSubModules.find(sm => sm.id === selectedSubModuleId) || activeSubModules[0];
+  // Helper to get grouped resources for any module
+  const getModuleResources = (modId: string) => {
+    const modTopics = allTopics.filter(t => t.module_id === modId);
+    
+    // 1. Videos
+    const videos = modTopics.filter(t => 
+      t.recording_url || t.recording_link || t.resource_type === 'video' || t.resource_type === 'drive_video'
+    );
 
-  // Filter topics for the currently selected module and sub-module
-  const currentTopics = allTopics.filter(t => {
-    if (activeSubModule && t.sub_module_id) {
-      return t.sub_module_id === activeSubModule.id;
-    }
-    return t.module_id === activeModule?.id;
-  });
+    // 2. PPT Presentations
+    const ppts = allPresentations.filter(p => p.module_id === modId);
+    const topicPpts = modTopics.filter(t => 
+      (t.resource_type === 'ppt' || t.resource_type === 'ppt_presentation' || t.ppt_url) && 
+      !ppts.some(p => p.id === t.id)
+    );
 
-  // Resource Categorization for the active sub-module/module:
-  // 1. Videos (recordings or embed videos)
-  const videoResources = currentTopics.filter(t =>
-    t.recording_url || t.recording_link || t.has_recording || t.resource_category === 'video' || t.resource_type === 'drive_video'
-  );
+    // 3. Notes & Documents
+    const notes = modTopics.filter(t => 
+      (t.resource_type === 'notes' || (t.drive_notes_link && !t.ppt_url)) &&
+      t.resource_type !== 'interview' && 
+      t.resource_type !== 'doc_questions'
+    );
 
-  // Auto-select first video when sub-module changes or videoResources load
-  useEffect(() => {
-    if (videoResources.length > 0) {
-      if (!activeVideoTopic || !videoResources.some(v => v.id === activeVideoTopic.id)) {
-        setActiveVideoTopic(videoResources[0]);
-      }
-    } else {
-      setActiveVideoTopic(null);
-    }
-  }, [selectedSubModuleId, videoResources.length]);
+    // 4. Interview Questions
+    const interviews = modTopics.filter(t => 
+      t.resource_type === 'interview' || t.resource_type === 'doc_questions'
+    );
 
-  // 2. PPT Presentations (from presentations table or topic ppt attachments)
-  const pptList = allPresentations.filter(p => {
-    if (activeSubModule) {
-      const hasAlloc = p.allocations?.some(a => a.sub_module_id === activeSubModule.id);
-      return p.sub_module_id === activeSubModule.id || hasAlloc || p.module_id === activeModule?.id;
-    }
-    return p.module_id === activeModule?.id;
-  });
+    // 5. Flashcards
+    const flashcards = dataService.getFlashcardsForModule(modId, course.id);
 
-  // 3. Interview Questions
-  const interviewQuestionsList = currentTopics.filter(t =>
-    t.resource_category === 'doc_questions' || t.resource_type === 'doc_questions' || (t as any).type === 'questions'
-  );
-  const globalInterviewQuestions = dataService.getInterviewQuestions();
-  const allInterviewQuestions = interviewQuestionsList.length > 0
-    ? interviewQuestionsList
-    : globalInterviewQuestions.slice(0, 6).map(q => ({
-        id: q.id,
-        title: q.question,
-        description: q.sampleAnswer || q.model_answer || 'Technical interview answer and explanation.',
-        difficulty: q.difficulty || 'medium',
-        topic_name: q.role_category || 'Core Concepts',
-        course_id: course.id,
-        module_id: activeModule?.id || '',
-        sub_module_id: activeSubModule?.id || '',
-        is_published: true,
-        order_index: 0,
-        created_at: new Date().toISOString()
-      }));
-
-  // 4. Notes & Documents
-  const notesResources = currentTopics.filter(t =>
-    t.drive_notes_url || t.drive_notes_link || t.resource_category === 'notes' || t.has_notes || ((t as any).type === 'notes' && !t.pdf_file_url)
-  );
-
-  // 5. PDFs
-  const pdfResources = currentTopics.filter(t =>
-    t.pdf_file_url || t.pdf_url || t.resource_category === 'pdf'
-  );
-
-  // Auto-select first PDF when sub-module changes
-  useEffect(() => {
-    if (pdfResources.length > 0) {
-      if (!activePdfTopic || !pdfResources.some(p => p.id === activePdfTopic.id)) {
-        setActivePdfTopic(pdfResources[0]);
-      }
-    } else {
-      setActivePdfTopic(null);
-    }
-  }, [selectedSubModuleId, pdfResources.length]);
-
-  // 6. Flashcards
-  const flashcardResources = dataService.getFlashcards(course.id);
-
-  // All 7 Horizontal Navigation Categories
-  const totalResourceCount = 
-    videoResources.length + 
-    pptList.length + 
-    allInterviewQuestions.length + 
-    notesResources.length + 
-    pdfResources.length + 
-    flashcardResources.length;
-
-  const resourceCategories = [
-    { id: 'all' as const, label: 'All Resources', icon: Layers, count: totalResourceCount },
-    { id: 'videos' as const, label: 'Videos', icon: Video, count: videoResources.length },
-    { id: 'ppt' as const, label: 'PPT Presentations', icon: PresIcon, count: pptList.length },
-    { id: 'interview' as const, label: 'Interview Questions', icon: HelpCircle, count: allInterviewQuestions.length },
-    { id: 'notes' as const, label: 'Notes & Documents', icon: FileText, count: notesResources.length },
-    { id: 'pdfs' as const, label: 'PDFs', icon: Download, count: pdfResources.length },
-    { id: 'flashcards' as const, label: 'Flashcards', icon: BookOpen, count: flashcardResources.length },
-  ];
-
-  // Roadmap progress
-  const roadmapProgress = dataService.getStudentRoadmapProgress(undefined, course.id);
-  const isSubModuleCompleted = activeSubModule ? roadmapProgress.completed_sub_modules.includes(activeSubModule.id) : false;
-
-  const handleMarkComplete = async () => {
-    if (activeSubModule) {
-      await dataService.markSubModuleCompleted('', course.id, activeSubModule.id);
-    }
+    return {
+      videos,
+      ppts: [...ppts, ...topicPpts],
+      notes,
+      interviews,
+      flashcards,
+      totalCount: videos.length + ppts.length + topicPpts.length + notes.length + interviews.length + flashcards.length
+    };
   };
+
+  // Active single module resolution
+  const activeModule = modules.find(m => m.id === selectedModuleId);
+  const activeModuleResources = activeModule ? getModuleResources(activeModule.id) : null;
 
   return (
     <div className="space-y-6 animate-fadeIn max-w-6xl mx-auto pb-16">
@@ -258,21 +171,17 @@ export const StudentCourseDetailPage: React.FC = () => {
             {course.description}
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs pt-1 text-slate-500 dark:text-slate-400">
-            <span>
-              Mentor: <strong className="text-[#00A3FF]">{course.mentor_name}</strong>
-            </span>
+          <div className="flex flex-wrap items-center gap-4 text-xs pt-1 text-slate-500 dark:text-slate-400 font-mono">
+            <span>Mentor: <strong className="text-[#00A3FF]">{course.mentor_name}</strong></span>
             <span>•</span>
-            <span>
-              {modules.length} Modules • {allTopics.length} Topics
-            </span>
+            <span>{modules.length} Modules • {allTopics.length} Learning Resources</span>
           </div>
         </div>
 
         {/* Syllabus Progress Card */}
         <div className="bg-slate-50 dark:bg-[#060B18] p-5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2 md:min-w-[220px]">
           <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-700 dark:text-slate-200">Roadmap Progress</span>
+            <span className="text-slate-700 dark:text-slate-200">Course Mastery</span>
             <span className="text-[#00A3FF] font-mono">{roadmapProgress.progress_percentage}%</span>
           </div>
           <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
@@ -282,808 +191,586 @@ export const StudentCourseDetailPage: React.FC = () => {
             />
           </div>
           <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center pt-1 font-mono">
-            {roadmapProgress.completed_sub_modules.length} units completed
+            {roadmapProgress.completed_sub_modules.length} lessons completed
           </div>
         </div>
       </div>
 
-      {/* Main Workspace Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-white/10 pb-2 overflow-x-auto no-scrollbar">
-        <button
-          onClick={() => setActiveTab('modules')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'modules'
-              ? 'bg-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/20'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
-          }`}
-        >
-          <Layers className="w-4 h-4" />
-          <span>Curriculum Modules</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-white/20">
-            {modules.length}
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('python_lab')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'python_lab'
-              ? 'bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/25'
-              : 'text-slate-600 dark:text-slate-300 hover:text-[#00A3FF] hover:bg-slate-100 dark:hover:bg-white/5'
-          }`}
-        >
-          <Code2 className="w-4 h-4 text-[#00D1FF]" />
-          <span>Python Coding Lab</span>
-          <span className="text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
-            WASM
-          </span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('flashcards')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'flashcards'
-              ? 'bg-[#00A3FF] text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
-          }`}
-        >
-          <BookOpen className="w-4 h-4" />
-          <span>Flashcard Decks</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('all_feed')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
-            activeTab === 'all_feed'
-              ? 'bg-[#00A3FF] text-white shadow-sm'
-              : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/5'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          <span>Chronological Feed</span>
-        </button>
-      </div>
-
-      {/* Tab Content 1: Modular Learning Experience */}
-      {activeTab === 'modules' && (
-        <div className="space-y-6">
-          {/* Horizontal Module and Sub-Module Navigation */}
-          <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800 dark:text-white uppercase tracking-wider text-[11px] font-mono">
-                Course Modules
+      {/* COMBINED MODULE DROPDOWN & SELECTION INTERFACE (Requirement 2 & 3) */}
+      <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center shrink-0">
+              <Layers className="w-5 h-5" />
+            </div>
+            <div>
+              <label className="text-xs font-mono font-bold text-[#00A3FF] uppercase tracking-wider block">
+                Curriculum Module Navigation
+              </label>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                Select a specific module or browse All Modules grouped together
               </span>
-              <span className="text-slate-500 dark:text-slate-400">Select module to display assigned resources</span>
             </div>
+          </div>
 
-            {/* Row 1: Horizontal Scrollable Module Selector */}
-            <div className="flex items-center gap-2.5 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
-              {modules.map((mod, idx) => {
-                const isSelected = mod.id === activeModule?.id;
-                return (
-                  <button
-                    key={mod.id}
-                    onClick={() => handleSelectModule(mod.id)}
-                    className={`px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 border ${
-                      isSelected
-                        ? 'bg-[#00A3FF] text-white border-[#00A3FF] shadow-md shadow-[#00A3FF]/25 scale-[1.02]'
-                        : 'bg-slate-50 dark:bg-[#060B18] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-white/10 hover:border-[#00A3FF]'
-                    }`}
-                  >
-                    <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-mono ${
-                      isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-slate-300'
-                    }`}>
-                      {idx + 1}
+          {/* Custom Styled Module Dropdown Container */}
+          <div className="relative w-full sm:w-auto sm:min-w-[340px]">
+            <button
+              type="button"
+              onClick={() => setIsModuleDropdownOpen(prev => !prev)}
+              className="w-full px-4 py-3 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-300 dark:border-white/15 text-xs font-bold text-slate-900 dark:text-white flex items-center justify-between gap-3 shadow-xs hover:border-[#00A3FF] transition"
+            >
+              <span className="truncate flex items-center gap-2">
+                {selectedModuleId === 'all' ? (
+                  <>
+                    <span className="text-[#00A3FF] font-black">All Modules</span>
+                    <span className="text-slate-400 font-mono">({modules.length} Units)</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-[#00A3FF] font-black">
+                      Module {modules.findIndex(m => m.id === selectedModuleId) + 1} –
                     </span>
-                    <span className="truncate max-w-[220px]">{mod.title}</span>
-                  </button>
-                );
-              })}
-            </div>
+                    <span className="truncate">{activeModule?.title}</span>
+                    {activeModule && (
+                      isModuleCompleted(activeModule) ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                      ) : (
+                        <Circle className="w-3 h-3 text-slate-400 shrink-0" />
+                      )
+                    )}
+                  </>
+                )}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isModuleDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-            {/* Row 2: Horizontal Scrollable Sub-Module Selector */}
-            {activeSubModules.length > 0 && (
-              <div className="pt-3 border-t border-slate-200 dark:border-white/10">
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="font-semibold text-[#00A3FF] text-[11px] font-mono">
-                    Sub-Units in {activeModule?.title}
+            {/* Dropdown Menu Items */}
+            {isModuleDropdownOpen && (
+              <div className="absolute top-full left-0 right-0 mt-2 z-40 bg-white dark:bg-[#0A1224] rounded-2xl border border-slate-200 dark:border-white/15 shadow-2xl overflow-hidden py-1.5 animate-fadeIn max-h-80 overflow-y-auto">
+                {/* 1. All Modules Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedModuleId('all');
+                    setIsModuleDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-2.5 text-xs text-left font-bold flex items-center justify-between transition ${
+                    selectedModuleId === 'all'
+                      ? 'bg-[#00A3FF]/15 text-[#00A3FF]'
+                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    <Layers className="w-3.5 h-3.5 text-[#00A3FF]" />
+                    <span>All Modules (Full Curriculum Overview)</span>
                   </span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{activeSubModules.length} lessons</span>
-                </div>
+                  {selectedModuleId === 'all' && (
+                    <span className="w-2 h-2 rounded-full bg-[#00A3FF]" />
+                  )}
+                </button>
 
-                <div className="flex items-center gap-2 overflow-x-auto pb-2 pt-1 no-scrollbar scroll-smooth">
-                  {activeSubModules.map((subMod) => {
-                    const isSubSelected = subMod.id === activeSubModule?.id;
-                    const isDone = roadmapProgress.completed_sub_modules.includes(subMod.id);
+                <div className="border-t border-slate-100 dark:border-white/5 my-1" />
 
-                    return (
-                      <button
-                        key={subMod.id}
-                        onClick={() => setSelectedSubModuleId(subMod.id)}
-                        className={`px-3.5 py-2 rounded-xl text-xs font-medium transition-all shrink-0 flex items-center gap-1.5 border ${
-                          isSubSelected
-                            ? 'bg-[#00A3FF]/15 text-[#00A3FF] border-[#00A3FF] font-bold shadow-xs'
-                            : 'bg-white dark:bg-[#060B18] text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/10 hover:border-slate-400'
-                        }`}
-                      >
-                        {isDone ? (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                {/* 2. Individual Modules List with Checkmarks/Circles (Requirement 2) */}
+                {modules.map((mod, idx) => {
+                  const isCompleted = isModuleCompleted(mod);
+                  const isSelected = selectedModuleId === mod.id;
+
+                  return (
+                    <button
+                      key={mod.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedModuleId(mod.id);
+                        setIsModuleDropdownOpen(false);
+                        setActiveCategory('all');
+                      }}
+                      className={`w-full px-4 py-2.5 text-xs text-left font-semibold flex items-center justify-between transition ${
+                        isSelected
+                          ? 'bg-[#00A3FF]/15 text-[#00A3FF] font-bold'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <span className="truncate pr-3">
+                        Module {idx + 1} – {mod.title}
+                      </span>
+
+                      {/* Completed = green checkmark (✓), Incomplete = neutral circle (○) */}
+                      <span className="shrink-0 flex items-center font-mono">
+                        {isCompleted ? (
+                          <span className="flex items-center gap-1 text-emerald-500 font-bold" title="Completed Module">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                            <span className="text-[10px]">✓</span>
+                          </span>
                         ) : (
-                          <ChevronRight className={`w-3.5 h-3.5 ${isSubSelected ? 'text-[#00A3FF]' : 'text-slate-400'}`} />
+                          <span className="text-slate-400 font-bold text-xs" title="Incomplete Module">
+                            ○
+                          </span>
                         )}
-                        <span className="truncate max-w-[240px]">{subMod.title}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
+        </div>
 
-          {/* Sub-Module Header & Mark Completed Button */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-[#0A1224] p-5 rounded-2xl border border-slate-200 dark:border-white/10">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-mono font-bold text-[#00A3FF]">CURRENT LESSON</span>
-                {isSubModuleCompleted && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                    Completed
-                  </span>
-                )}
-              </div>
-              <h2 className="text-lg md:text-xl font-black text-slate-900 dark:text-white">
-                {activeSubModule?.title || activeModule?.title || 'Learning Resources'}
-              </h2>
-              {activeSubModule?.description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{activeSubModule.description}</p>
-              )}
+        {/* Selected Single Module Action Bar */}
+        {selectedModuleId !== 'all' && activeModule && (
+          <div className="pt-3 border-t border-slate-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono font-bold text-[#00A3FF]">ACTIVE UNIT:</span>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                {activeModule.title}
+              </h3>
             </div>
 
             <button
-              onClick={handleMarkComplete}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shrink-0 ${
-                isSubModuleCompleted
-                  ? 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 cursor-default'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
+              type="button"
+              onClick={() => handleToggleModuleComplete(activeModule)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 self-start sm:self-auto shrink-0 ${
+                isModuleCompleted(activeModule)
+                  ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/25'
+                  : 'bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10'
               }`}
             >
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{isSubModuleCompleted ? 'Stage Marked Complete' : 'Mark Lesson Complete'}</span>
+              {isModuleCompleted(activeModule) ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>Module Marked Complete ✓</span>
+                </>
+              ) : (
+                <>
+                  <Circle className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Mark Module as Complete</span>
+                </>
+              )}
             </button>
           </div>
+        )}
+      </div>
 
-          {/* HORIZONTAL SCROLLABLE RESOURCE NAVIGATION BAR */}
-          <div className="bg-white dark:bg-[#0D1833] rounded-2xl border border-slate-200 dark:border-white/10 p-2 shadow-xs">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
-              {resourceCategories.map((cat) => {
-                const isSelected = activeResourceCategory === cat.id;
-                const Icon = cat.icon;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setActiveResourceCategory(cat.id)}
-                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all duration-200 flex items-center gap-2 border ${
-                      isSelected
-                        ? 'bg-[#00A8FF] text-white border-[#00A8FF] shadow-md shadow-[#00A8FF]/25 font-bold'
-                        : 'bg-slate-50 dark:bg-[#0B1530] text-slate-600 dark:text-[#9BAAC5] border-slate-200 dark:border-white/10 hover:border-[#00A8FF]/50 hover:text-slate-900 dark:hover:text-white'
-                    }`}
-                  >
-                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[#00A8FF]'}`} />
-                    <span>{cat.label}</span>
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                      isSelected
-                        ? 'bg-white/20 text-white'
-                        : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#9BAAC5]'
-                    }`}>
-                      {cat.count}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+      {/* ========================================================================= */}
+      {/* MODE 1: ALL MODULES SELECTED (Grouped by module, independently collapsible) */}
+      {/* ========================================================================= */}
+      {selectedModuleId === 'all' ? (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 font-mono">
+              Full Course Curriculum Units ({modules.length} Modules)
+            </h3>
+            <span className="text-xs text-slate-400 font-mono">Grouped by Module</span>
           </div>
 
-          {/* DYNAMIC CONTENT AREA: DISPLAY ONLY THE SELECTED RESOURCE CATEGORY */}
-          <div className="space-y-6 animate-fadeIn">
-            
-            {/* 1. VIDEOS SECTION - INLINE RESPONSIVE VIDEO PLAYER ON SAME PAGE */}
-            {(activeResourceCategory === 'videos' || activeResourceCategory === 'all') && (
-            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
-                    <Video className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Video Lectures & Recordings</h3>
-                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
-                      Play lecture recordings & masterclasses directly on this page
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                  {videoResources.length} Video{videoResources.length !== 1 ? 's' : ''}
-                </span>
-              </div>
+          {modules.map((mod, modIdx) => {
+            const isCompleted = isModuleCompleted(mod);
+            const isExpanded = expandedModuleIds[mod.id] !== false; // Default expanded
+            const res = getModuleResources(mod.id);
 
-              {/* In-Page Video Player */}
-              {activeVideoTopic ? (
-                <div className="space-y-4">
-                  <EmbeddedVideoPlayer
-                    url={activeVideoTopic.recording_url || activeVideoTopic.recording_link || ''}
-                    title={activeVideoTopic.title}
-                    subtitle={activeSubModule?.title || course.title}
-                  />
-
-                  {/* Playlist Selector below the player */}
-                  {videoResources.length > 1 && (
-                    <div className="pt-2">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2 font-mono">
-                        Available Video Recordings in this Unit:
-                      </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {videoResources.map((vid) => {
-                          const isCurrent = vid.id === activeVideoTopic.id;
-                          return (
-                            <button
-                              key={vid.id}
-                              onClick={() => setActiveVideoTopic(vid)}
-                              className={`p-3 rounded-xl border text-left transition flex items-center justify-between gap-2 ${
-                                isCurrent
-                                  ? 'bg-[#00A8FF]/15 border-[#00A8FF] text-[#00A8FF]'
-                                  : 'bg-slate-50 dark:bg-[#0B1530] border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#9BAAC5] hover:border-[#00A8FF]'
-                              }`}
-                            >
-                              <div className="truncate">
-                                <h5 className="text-xs font-bold truncate">{vid.title}</h5>
-                                <span className="text-[10px] text-slate-500 dark:text-[#9BAAC5] font-mono">HD Quality</span>
-                              </div>
-                              <Play className={`w-4 h-4 shrink-0 ${isCurrent ? 'fill-[#00A8FF]' : ''}`} />
-                            </button>
-                          );
-                        })}
-                      </div>
+            return (
+              <div
+                key={mod.id}
+                className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden transition-all duration-200"
+              >
+                {/* Module Accordion Header */}
+                <div
+                  onClick={() => toggleModuleAccordion(mod.id)}
+                  className="p-5 sm:p-6 cursor-pointer flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-white/2 transition select-none"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-2xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center shrink-0 font-bold font-mono">
+                      {modIdx + 1}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
-                    <Video className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Video Lectures Released Yet</h4>
-                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
-                    Video recordings for this sub-module will appear here once published by the instructor.
-                  </p>
-                </div>
-              )}
-            </div>
-            )}
 
-            {/* 2. PPT PRESENTATIONS (With Slide-Level Access Control) */}
-            {(activeResourceCategory === 'ppt' || activeResourceCategory === 'all') && (
-            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
-                    <PresIcon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Curriculum Presentation Decks</h3>
-                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
-                      In-platform presentation slide viewer with allocated slide-range restrictions
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                  {pptList.length} Deck{pptList.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              {pptList.length === 0 ? (
-                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
-                    <PresIcon className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Presentation Decks Assigned</h4>
-                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
-                    Slide decks assigned to this unit will appear here with allocated slide-level permissions.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {pptList.map(pres => {
-                    const allocAuth = dataService.getAuthorizedSlidesForSubModule(pres.id, activeSubModule?.id || '');
-                    const isReleased = allocAuth.isAccessible;
-                    const isScheduled = allocAuth.isScheduled;
-
-                    return (
-                      <div
-                        key={pres.id}
-                        className="p-5 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 hover:border-[#00A8FF] transition flex flex-col justify-between gap-4"
-                      >
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{pres.title}</h4>
-                            {isReleased ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-mono shrink-0">
-                                Released (Slides {allocAuth.startSlide}–{allocAuth.endSlide})
-                              </span>
-                            ) : isScheduled ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 font-mono shrink-0">
-                                Scheduled (Slides {allocAuth.startSlide}–{allocAuth.endSlide})
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-[#9BAAC5] border border-slate-300 dark:border-white/20 font-mono shrink-0">
-                                Locked
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-[#9BAAC5] line-clamp-2">
-                            {pres.description || 'Curriculum presentation slides for active unit.'}
-                          </p>
-                          <div className="text-[11px] text-slate-500 dark:text-[#9BAAC5] font-mono">
-                            Total Deck Slides: {pres.total_slides} • Scope: Slides {allocAuth.startSlide} to {allocAuth.endSlide}
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => setActivePptPresentation(pres)}
-                          className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition ${
-                            isReleased
-                              ? 'bg-[#00A8FF] hover:bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
-                              : 'bg-slate-800 hover:bg-slate-700 text-white'
-                          }`}
-                        >
-                          {isReleased ? (
-                            <>
-                              <Eye className="w-4 h-4" />
-                              <span>View Slides ({allocAuth.startSlide}–{allocAuth.endSlide})</span>
-                            </>
-                          ) : (
-                            <>
-                              <Lock className="w-4 h-4 text-amber-400" />
-                              <span>Check Release Schedule</span>
-                            </>
-                          )}
-                        </button>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono font-bold uppercase text-[#00A3FF]">
+                          Module {modIdx + 1}
+                        </span>
+                        {isCompleted ? (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center gap-1 font-mono">
+                            <Check className="w-3 h-3" /> Completed
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-white/5 text-slate-500 border border-slate-200 dark:border-white/10 font-mono">
+                            ○ In Progress
+                          </span>
+                        )}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* 3. INTERVIEW QUESTIONS CATEGORY */}
-            {(activeResourceCategory === 'interview' || activeResourceCategory === 'all') && (
-            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
-                    <HelpCircle className="w-5 h-5" />
+                      <h4 className="text-base font-extrabold text-slate-900 dark:text-white">
+                        {mod.title}
+                      </h4>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Technical Interview Q&A</h3>
-                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
-                      Curated engineering questions, model answers, and core architectural principles
-                    </p>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="hidden sm:inline-block text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                      {res.totalCount} Resources
+                    </span>
+                    <button
+                      type="button"
+                      className="p-2 rounded-xl bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-slate-300"
+                      aria-label={isExpanded ? 'Collapse module' : 'Expand module'}
+                    >
+                      {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                  {allInterviewQuestions.length} Question{allInterviewQuestions.length !== 1 ? 's' : ''}
-                </span>
-              </div>
 
-              {allInterviewQuestions.length === 0 ? (
-                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
-                    <HelpCircle className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Interview Questions Assigned</h4>
-                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
-                    Technical interview questions tailored to this curriculum unit will appear here.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {allInterviewQuestions.map((q, idx) => {
-                    const isExpanded = expandedInterviewId === q.id || (idx === 0 && expandedInterviewId === null);
-                    return (
-                      <div
-                        key={q.id}
-                        className="rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 overflow-hidden transition"
-                      >
-                        <button
-                          onClick={() => setExpandedInterviewId(isExpanded ? '' : q.id)}
-                          className="w-full p-4 sm:p-5 text-left flex items-start justify-between gap-3 hover:bg-slate-100 dark:hover:bg-white/5 transition"
-                        >
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase">
-                                Q{idx + 1}
-                              </span>
-                              {(q as any).difficulty && (
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
-                                  (q as any).difficulty === 'hard'
-                                    ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
-                                    : (q as any).difficulty === 'easy'
-                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
-                                    : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
-                                }`}>
-                                  {(q as any).difficulty}
-                                </span>
-                              )}
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                              {q.title}
-                            </h4>
-                          </div>
-                          <div className="p-1.5 rounded-lg bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-[#9BAAC5] shrink-0 mt-1">
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          </div>
-                        </button>
-
-                        {isExpanded && (
-                          <div className="px-4 sm:px-5 pb-5 pt-1 border-t border-slate-200 dark:border-white/10 space-y-3 bg-white dark:bg-[#0D1833]">
-                            <div className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-sans pt-3 whitespace-pre-line">
-                              {q.description}
+                {/* Module Resources Body */}
+                {isExpanded && (
+                  <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-slate-200 dark:border-white/10 space-y-6 animate-fadeIn">
+                    {res.totalCount === 0 ? (
+                      <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                        No learning resources published for this module yet.
+                      </div>
+                    ) : (
+                      <>
+                        {/* 1. Videos in this module */}
+                        {res.videos.length > 0 && (
+                          <div className="space-y-3">
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5 font-mono">
+                              <Video className="w-3.5 h-3.5" /> Videos ({res.videos.length})
+                            </h5>
+                            <div className="space-y-3">
+                              {res.videos.map(v => (
+                                <EmbeddedVideoPlayer
+                                  key={v.id}
+                                  url={v.recording_url || v.recording_link || ''}
+                                  title={v.title}
+                                  subtitle={`Module ${modIdx + 1}: ${mod.title}`}
+                                />
+                              ))}
                             </div>
                           </div>
                         )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-            )}
 
-            {/* 4. NOTES & DOCUMENTS CATEGORY */}
-            {(activeResourceCategory === 'notes' || activeResourceCategory === 'all') && (
-            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
-                    <FileText className="w-5 h-5" />
+                        {/* 2. PPT Presentations in this module */}
+                        {res.ppts.length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5 font-mono">
+                              <PresIcon className="w-3.5 h-3.5" /> PPT Presentations ({res.ppts.length})
+                            </h5>
+                            <div className="grid grid-cols-1 gap-4">
+                              {res.ppts.map(p => (
+                                <SkillNovaDocumentViewer
+                                  key={p.id}
+                                  url={p.ppt_url || ''}
+                                  title={p.title}
+                                  resourceType="ppt"
+                                  startRange={(p as any).slide_start || 1}
+                                  endRange={(p as any).slide_end || (p as any).total_slides}
+                                  totalRange={(p as any).total_slides}
+                                  rangeUnit="slides"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 3. Notes & Documents in this module */}
+                        {res.notes.length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-blue-500 flex items-center gap-1.5 font-mono">
+                              <FileText className="w-3.5 h-3.5" /> Notes & Documents ({res.notes.length})
+                            </h5>
+                            <div className="grid grid-cols-1 gap-4">
+                              {res.notes.map(n => (
+                                <SkillNovaDocumentViewer
+                                  key={n.id}
+                                  url={n.drive_notes_link || n.doc_url || n.pdf_url || ''}
+                                  title={n.title}
+                                  resourceType="notes"
+                                  startRange={n.slide_start}
+                                  endRange={n.slide_end}
+                                  totalRange={n.total_slides}
+                                  rangeUnit="pages"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 4. Interview Questions in this module */}
+                        {res.interviews.length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5 font-mono">
+                              <HelpCircle className="w-3.5 h-3.5" /> Interview Questions ({res.interviews.length})
+                            </h5>
+                            <div className="grid grid-cols-1 gap-4">
+                              {res.interviews.map(iq => (
+                                <SkillNovaDocumentViewer
+                                  key={iq.id}
+                                  url={iq.doc_url || iq.drive_notes_link || iq.pdf_url || ''}
+                                  title={iq.title}
+                                  resourceType="interview"
+                                  startRange={iq.slide_start}
+                                  endRange={iq.slide_end}
+                                  totalRange={iq.total_slides}
+                                  rangeUnit="pages"
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 5. Flashcards in this module */}
+                        {res.flashcards.length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            <h5 className="text-xs font-bold uppercase tracking-wider text-purple-500 flex items-center gap-1.5 font-mono">
+                              <BookOpen className="w-3.5 h-3.5" /> Dynamic Flashcards ({res.flashcards.length})
+                            </h5>
+                            <DynamicFlashcardViewer
+                              flashcards={res.flashcards}
+                              moduleTitle={`Module ${modIdx + 1}: ${mod.title}`}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Notes & Study Cheat-Sheets</h3>
-                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
-                      Technical study documentation, architecture summaries, and reference sheets
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                  {notesResources.length} Document{notesResources.length !== 1 ? 's' : ''}
-                </span>
+                )}
               </div>
-
-              {notesResources.length === 0 ? (
-                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
-                    <FileText className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Notes or Documents Assigned</h4>
-                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
-                    Study notes and reference documentation for this lesson will be listed here.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {notesResources.map(t => (
-                    <div
-                      key={t.id}
-                      className="p-5 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 hover:border-[#00A8FF] transition flex items-center justify-between gap-3"
+            );
+          })}
+        </div>
+      ) : (
+        /* ========================================================================= */
+        /* MODE 2: SPECIFIC MODULE SELECTED (Horizontal category tabs & contents)     */
+        /* ========================================================================= */
+        activeModule && activeModuleResources && (
+          <div className="space-y-6">
+            {/* Horizontal Resource Category Bar */}
+            <div className="bg-white dark:bg-[#0A1224] rounded-2xl border border-slate-200 dark:border-white/10 p-2 shadow-xs">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
+                {[
+                  { id: 'all' as const, label: 'All Resources', icon: Layers, count: activeModuleResources.totalCount },
+                  { id: 'videos' as const, label: 'Videos', icon: Video, count: activeModuleResources.videos.length },
+                  { id: 'ppt' as const, label: 'PPT Presentations', icon: PresIcon, count: activeModuleResources.ppts.length },
+                  { id: 'notes' as const, label: 'Notes & Documents', icon: FileText, count: activeModuleResources.notes.length },
+                  { id: 'interview' as const, label: 'Interview Questions', icon: HelpCircle, count: activeModuleResources.interviews.length },
+                  { id: 'flashcards' as const, label: 'Flashcards', icon: BookOpen, count: activeModuleResources.flashcards.length },
+                ].map(cat => {
+                  const isSelected = activeCategory === cat.id;
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-2 border ${
+                        isSelected
+                          ? 'bg-[#00A8FF] text-white border-[#00A8FF] shadow-md shadow-[#00A8FF]/25 font-bold'
+                          : 'bg-slate-50 dark:bg-[#060B18] text-slate-600 dark:text-[#9BAAC5] border-slate-200 dark:border-white/10 hover:border-[#00A8FF]/50 hover:text-slate-900 dark:hover:text-white'
+                      }`}
                     >
-                      <div className="overflow-hidden space-y-1">
-                        <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase block">Study Note</span>
-                        <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{t.title}</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5] truncate">{t.description || 'Technical lesson summary and cheat sheet'}</p>
-                      </div>
-                      <button
-                        onClick={() => setActiveNotesTopic(t)}
-                        className="px-3.5 py-2 rounded-xl bg-[#00A8FF]/15 hover:bg-[#00A8FF] text-[#00A8FF] hover:text-white border border-[#00A8FF]/30 text-xs font-bold shrink-0 transition flex items-center gap-1.5"
-                      >
-                        <FileText className="w-3.5 h-3.5" />
-                        <span>Read</span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* 5. PDFS CATEGORY */}
-            {(activeResourceCategory === 'pdfs' || activeResourceCategory === 'all') && (
-            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">PDF Reference Manuals</h3>
-                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
-                      In-platform PDF viewer with page-range security and full-screen controls
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                  {pdfResources.length} File{pdfResources.length !== 1 ? 's' : ''}
-                </span>
-              </div>
-
-              {pdfResources.length === 0 ? (
-                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
-                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
-                    <Download className="w-6 h-6" />
-                  </div>
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No PDF Manuals Assigned</h4>
-                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
-                    PDF reference manuals and chapters will be displayed here with authorized page ranges.
-                  </p>
-                </div>
-              ) : activePdfTopic ? (
-                <div className="space-y-4">
-                  {/* Page range authorization check */}
-                  {(() => {
-                    const pdfAuth = dataService.getAuthorizedPdfForSubModule(
-                      activePdfTopic.id,
-                      activeSubModule?.id || ''
-                    );
-                    return (
-                      <PdfDocumentViewer
-                        pdfUrl={activePdfTopic.pdf_file_url || activePdfTopic.pdf_url || ''}
-                        title={activePdfTopic.title}
-                        subModuleTitle={activeSubModule?.title}
-                        startPage={pdfAuth.startPage || 1}
-                        endPage={pdfAuth.endPage || 10}
-                        totalPages={pdfAuth.totalPages || 20}
-                        isAccessible={pdfAuth.isAccessible}
-                        isScheduled={pdfAuth.isScheduled}
-                        isLocked={pdfAuth.isLocked}
-                        scheduledReleaseAt={pdfAuth.scheduledReleaseAt}
-                        allocation={pdfAuth.allocation}
-                      />
-                    );
-                  })()}
-
-                  {/* Switch between other PDFs if multiple exist */}
-                  {pdfResources.length > 1 && (
-                    <div className="pt-2">
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2 font-mono">
-                        Other PDFs for this Section:
+                      <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[#00A8FF]'}`} />
+                      <span>{cat.label}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                        isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#9BAAC5]'
+                      }`}>
+                        {cat.count}
                       </span>
-                      <div className="flex flex-wrap gap-2">
-                        {pdfResources.map((pdf) => (
-                          <button
-                            key={pdf.id}
-                            onClick={() => setActivePdfTopic(pdf)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
-                              pdf.id === activePdfTopic.id
-                                ? 'bg-[#00A8FF] text-white border-[#00A8FF]'
-                                : 'bg-slate-100 dark:bg-[#0B1530] border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#9BAAC5] hover:border-[#00A8FF]'
-                            }`}
-                          >
-                            {pdf.title}
-                          </button>
-                        ))}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Category Content Area */}
+            <div className="space-y-6 animate-fadeIn">
+              
+              {/* 1. VIDEOS */}
+              {(activeCategory === 'videos' || activeCategory === 'all') && (
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center justify-center">
+                        <Video className="w-5 h-5" />
                       </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Curriculum Video Recordings</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">In-platform video player</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                      {activeModuleResources.videos.length} Videos
+                    </span>
+                  </div>
+
+                  {activeModuleResources.videos.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                      No video lectures published yet for this module.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {activeModuleResources.videos.map(v => (
+                        <EmbeddedVideoPlayer
+                          key={v.id}
+                          url={v.recording_url || v.recording_link || ''}
+                          title={v.title}
+                          subtitle={activeModule.title}
+                        />
+                      ))}
                     </div>
                   )}
                 </div>
-              ) : null}
-            </div>
-            )}
+              )}
 
-            {/* 6. FLASHCARDS CATEGORY */}
-            {(activeResourceCategory === 'flashcards' || activeResourceCategory === 'all') && (
-            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Recall Flashcards</h3>
-                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
-                      Cognitive drills and spaced repetition flashcard decks for topic mastery
-                    </p>
-                  </div>
-                </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                  {flashcardResources.length} Cards
-                </span>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                    {activeSubModule?.title || course.title} Active Recall Deck
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] leading-relaxed">
-                    Test your understanding with double-sided flashcards before attempting weekly evaluations.
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveTab('flashcards')}
-                  className="px-5 py-2.5 rounded-xl bg-[#00A8FF] hover:bg-[#176BFF] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#00A8FF]/25 shrink-0 transition"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  <span>Launch Flashcard Deck</span>
-                </button>
-              </div>
-
-              {flashcardResources.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-                  {flashcardResources.slice(0, 3).map((fc, i) => (
-                    <div
-                      key={fc.id || i}
-                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 space-y-2"
-                    >
-                      <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase">Card {i + 1}</span>
-                      <h5 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">{fc.question}</h5>
-                      <p className="text-[11px] text-slate-500 dark:text-[#9BAAC5] line-clamp-2">{fc.answer}</p>
+              {/* 2. PPT PRESENTATIONS */}
+              {(activeCategory === 'ppt' || activeCategory === 'all') && (
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center">
+                        <PresIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Presentation Decks & Slides</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">In-platform viewer with slide restrictions</p>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            )}
-
-            {/* 7. ALL RESOURCES OVERVIEW */}
-            {activeResourceCategory === 'all' && (
-              <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 shadow-sm animate-fadeIn">
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
-                  Unit Resource Breakdown & Direct Shortcuts
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-[#9BAAC5] mb-5">
-                  Select any resource category below to filter the view:
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {resourceCategories.filter(c => c.id !== 'all').map(cat => {
-                    const Icon = cat.icon;
-                    return (
-                      <button
-                        key={cat.id}
-                        onClick={() => setActiveResourceCategory(cat.id)}
-                        className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 hover:border-[#00A8FF] transition flex items-center justify-between text-left group"
-                      >
-                        <div className="flex items-center gap-3 truncate">
-                          <div className="w-8 h-8 rounded-lg bg-[#00A8FF]/15 text-[#00A8FF] flex items-center justify-center shrink-0">
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div className="truncate">
-                            <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#00A8FF] transition truncate">
-                              {cat.label}
-                            </div>
-                            <div className="text-[10px] text-slate-500 dark:text-[#9BAAC5] font-mono">
-                              {cat.count} item{cat.count !== 1 ? 's' : ''}
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#00A8FF] group-hover:translate-x-0.5 transition-transform shrink-0" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
-
-      {/* Tab Content: Python 3 Coding Lab */}
-      {activeTab === 'python_lab' && (
-        <div className="space-y-4 animate-in fade-in">
-          <PythonCodingLab courseId={course.id} courseTitle={course.title} />
-        </div>
-      )}
-
-      {/* Tab Content: Flashcards Deck */}
-      {activeTab === 'flashcards' && (
-        <div className="space-y-4">
-          <FlashcardDeck cards={flashcardResources} topicTitle={activeSubModule?.title || course.title} />
-        </div>
-      )}
-
-      {/* Tab Content: Chronological Feed */}
-      {activeTab === 'all_feed' && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-            <span>Showing latest published topics first (chronological feed)</span>
-            <span className="font-mono">{allTopics.length} Total Lessons</span>
-          </div>
-
-          <div className="space-y-3">
-            {allTopics.map((topic, idx) => (
-              <div
-                key={topic.id}
-                className="p-5 rounded-3xl bg-white dark:bg-[#0A1224] border border-slate-200 dark:border-white/10 shadow-sm hover:border-[#00A3FF] transition space-y-3"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-6 h-6 rounded-lg bg-[#00A3FF]/15 text-[#00A3FF] flex items-center justify-center font-bold text-xs shrink-0 font-mono">
-                      {allTopics.length - idx}
+                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                      {activeModuleResources.ppts.length} Decks
                     </span>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{topic.title}</h3>
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
-                    <Clock className="w-3.5 h-3.5 text-[#00A3FF]" />
-                    <span>{topic.created_at ? new Date(topic.created_at).toLocaleDateString() : 'Today'}</span>
+
+                  {activeModuleResources.ppts.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                      No presentation slide decks assigned yet for this module.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {activeModuleResources.ppts.map(p => (
+                        <SkillNovaDocumentViewer
+                          key={p.id}
+                          url={p.ppt_url || ''}
+                          title={p.title}
+                          resourceType="ppt"
+                          startRange={(p as any).slide_start || 1}
+                          endRange={(p as any).slide_end || (p as any).total_slides}
+                          totalRange={(p as any).total_slides}
+                          rangeUnit="slides"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 3. NOTES & DOCUMENTS */}
+              {(activeCategory === 'notes' || activeCategory === 'all') && (
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 border border-blue-500/30 flex items-center justify-center">
+                        <FileText className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Notes & Study Sheets</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">In-platform scrollable documents</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                      {activeModuleResources.notes.length} Documents
+                    </span>
                   </div>
+
+                  {activeModuleResources.notes.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                      No study notes or documents published yet for this module.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {activeModuleResources.notes.map(n => (
+                        <SkillNovaDocumentViewer
+                          key={n.id}
+                          url={n.drive_notes_link || n.doc_url || n.pdf_url || ''}
+                          title={n.title}
+                          resourceType="notes"
+                          startRange={n.slide_start}
+                          endRange={n.slide_end}
+                          totalRange={n.total_slides}
+                          rangeUnit="pages"
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
+              )}
 
-                {topic.description && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{topic.description}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Dedicated High-Priority Presentation Slide Viewer Modal */}
-      {activePptPresentation && (
-        <PresentationSlideViewer
-          presentation={activePptPresentation}
-          subModuleId={activeSubModule?.id || ''}
-          subModuleTitle={activeSubModule?.title}
-          onClose={() => setActivePptPresentation(null)}
-        />
-      )}
-
-      {/* Notes / Document Reader Modal */}
-      {activeNotesTopic && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-4 md:p-8 flex items-center justify-center">
-          <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-3xl w-full p-6 md:p-8 space-y-4 shadow-2xl max-h-[85vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-[#00A3FF]/20 text-[#00A3FF] flex items-center justify-center">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">{activeNotesTopic.title}</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Class Notes & Interview Sheet</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setActiveNotesTopic(null)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="prose dark:prose-invert max-w-none text-xs md:text-sm text-slate-700 dark:text-slate-300 space-y-3">
-              <p className="leading-relaxed">
-                {activeNotesTopic.description || 'Core curriculum review notes, foundational architectural principles, and key technical talking points for this unit.'}
-              </p>
-              {activeNotesTopic.drive_notes_url && (
-                <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/10 flex items-center justify-between">
-                  <div>
-                    <h5 className="font-bold text-xs text-slate-900 dark:text-white">Document Source Verified</h5>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">Access synced directly from instructor resources</p>
+              {/* 4. INTERVIEW QUESTIONS */}
+              {(activeCategory === 'interview' || activeCategory === 'all') && (
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center justify-center">
+                        <HelpCircle className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Technical Interview Questions</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">Curated questions, model answers, and sheet guides</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                      {activeModuleResources.interviews.length} Questions
+                    </span>
                   </div>
-                  <a
-                    href={activeNotesTopic.drive_notes_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-3.5 py-1.5 rounded-lg bg-[#00A3FF] hover:bg-[#176BFF] text-white text-xs font-semibold flex items-center gap-1.5"
-                  >
-                    <span>Open Reference</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+
+                  {activeModuleResources.interviews.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                      No interview question sheets assigned yet for this module.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {activeModuleResources.interviews.map(iq => (
+                        <SkillNovaDocumentViewer
+                          key={iq.id}
+                          url={iq.doc_url || iq.drive_notes_link || iq.pdf_url || ''}
+                          title={iq.title}
+                          resourceType="interview"
+                          startRange={iq.slide_start}
+                          endRange={iq.slide_end}
+                          totalRange={iq.total_slides}
+                          rangeUnit="pages"
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 5. FLASHCARDS */}
+              {(activeCategory === 'flashcards' || activeCategory === 'all') && (
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+                        <BookOpen className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Module Dynamic Flashcards</h4>
+                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">Interactive front/back review cards</p>
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                      {activeModuleResources.flashcards.length} Cards
+                    </span>
+                  </div>
+
+                  <DynamicFlashcardViewer
+                    flashcards={activeModuleResources.flashcards}
+                    moduleTitle={activeModule.title}
+                  />
                 </div>
               )}
             </div>
           </div>
-        </div>
+        )
       )}
     </div>
   );
 };
+
+export default StudentCourseDetailPage;

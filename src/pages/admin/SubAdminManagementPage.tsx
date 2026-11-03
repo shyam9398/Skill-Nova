@@ -19,6 +19,7 @@ export const SubAdminManagementPage: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentUser = dataService.getCurrentUser();
   const isSuperAdmin = currentUser?.role === 'admin';
@@ -37,7 +38,7 @@ export const SubAdminManagementPage: React.FC = () => {
     return () => unsubscribe();
   }, []);
 
-  const handleCreateSubAdmin = (e: React.FormEvent) => {
+  const handleCreateSubAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -51,24 +52,31 @@ export const SubAdminManagementPage: React.FC = () => {
       return;
     }
 
-    const res = dataService.addSubAdmin({
-      username: cleanUser,
-      password: password.trim(),
-      full_name: fullName.trim() || `Sub-Admin ${cleanUser.toUpperCase()}`,
-      assigned_courses: courses.map(c => c.id) // Full course scope
-    });
+    setIsSubmitting(true);
+    try {
+      const res = await dataService.addSubAdmin({
+        username: cleanUser,
+        password: password.trim(),
+        full_name: fullName.trim() || `Sub-Admin ${cleanUser.toUpperCase()}`,
+        assigned_courses: courses.map(c => c.id) // Full course scope
+      });
 
-    if (!res.success) {
-      setFormError(res.error || 'Failed to create sub-admin.');
-      return;
+      if (!res.success) {
+        setFormError(res.error || 'Failed to create sub-admin in Supabase.');
+        return;
+      }
+
+      setShowAddModal(false);
+      setUsername('');
+      setPassword('');
+      setFullName('');
+      setActionNotice(`Sub-admin @${cleanUser} provisioned successfully in Supabase Auth & PostgreSQL with full administrative permissions!`);
+      setTimeout(() => setActionNotice(null), 5000);
+    } catch (err: any) {
+      setFormError(err?.message || 'Unexpected error creating sub-admin account.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setShowAddModal(false);
-    setUsername('');
-    setPassword('');
-    setFullName('');
-    setActionNotice(`Sub-admin @${cleanUser} provisioned successfully with full administrative functionality!`);
-    setTimeout(() => setActionNotice(null), 5000);
   };
 
   const handleToggleSubAdminStatus = (id: string) => {
@@ -393,9 +401,17 @@ export const SubAdminManagementPage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition disabled:opacity-50 flex items-center gap-2"
                 >
-                  Create Sub-admin
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Creating in Supabase...</span>
+                    </>
+                  ) : (
+                    <span>Create Sub-admin</span>
+                  )}
                 </button>
               </div>
             </form>

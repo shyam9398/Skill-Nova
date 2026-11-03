@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Read Vite environment variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ktjnzjhypwwtpciikwnf.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7T7cwx413smVojHmlkzBkQ_JVfM7FvD';
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://ktjnzjhypwwtpciikwnf.supabase.co';
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7T7cwx413smVojHmlkzBkQ_JVfM7FvD';
 
 // Live Supabase check
 export const isLiveSupabaseConfigured = Boolean(

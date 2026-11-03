@@ -115,19 +115,19 @@ export const LandingPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-[#15243B] flex flex-col font-sans selection:bg-[#176BFF]/20 relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#EAF4FE] dark:bg-[#050816] text-[#15243B] dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#176BFF]/20 relative overflow-x-hidden transition-colors duration-300">
       {/* Floating Logout Toast if user just signed out */}
       {logoutToast && (
-        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-white border border-[#DFE9F6] shadow-2xl flex items-center gap-3 animate-fadeIn">
-          <div className="w-7 h-7 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+        <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-white dark:bg-[#0D1833] border border-[#DFE9F6] dark:border-white/10 shadow-2xl flex items-center gap-3 animate-fadeIn">
+          <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
             <CheckCircle2 className="w-4 h-4" />
           </div>
-          <span className="text-xs font-bold text-[#15243B]">{logoutToast}</span>
+          <span className="text-xs font-bold text-[#15243B] dark:text-[#F4F7FF]">{logoutToast}</span>
         </div>
       )}
 
       {/* 2. Header / Navigation Bar – Clean, Professional, University-style */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] shadow-xs">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#070D1E]/95 backdrop-blur-md border-b border-[#E2E8F0] dark:border-white/10 shadow-xs transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           {/* Logo on Left */}
           <Link to="/" className="flex items-center gap-3 group">
@@ -135,27 +135,27 @@ export const LandingPage: React.FC = () => {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <span className="text-2xl font-black tracking-tight text-[#0B1220]">
-                Skill<span className="text-[#176BFF]">Nova</span>
+              <span className="text-2xl font-black tracking-tight text-[#0B1220] dark:text-white">
+                Skill<span className="text-[#176BFF] dark:text-[#00A8FF]">Nova</span>
               </span>
-              <p className="text-[10px] text-[#64748B] font-semibold tracking-wider uppercase -mt-0.5">
+              <p className="text-[10px] text-[#64748B] dark:text-[#9BAAC5] font-semibold tracking-wider uppercase -mt-0.5">
                 Learn • Build • Explore • Grow
               </p>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#475569]">
-            <a href="#about" className="hover:text-[#176BFF] transition">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#475569] dark:text-[#9BAAC5]">
+            <a href="#about" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               About
             </a>
-            <a href="#experience" className="hover:text-[#176BFF] transition">
+            <a href="#experience" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               Learning Experience
             </a>
-            <a href="#courses" className="hover:text-[#176BFF] transition">
+            <a href="#courses" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               Courses
             </a>
-            <a href="#contact" className="hover:text-[#176BFF] transition">
+            <a href="#contact" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               Contact
             </a>
           </nav>
@@ -165,11 +165,10 @@ export const LandingPage: React.FC = () => {
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className={`p-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 shadow-xs ${
-                theme === 'dark'
-                  ? 'bg-[#0D1833] hover:bg-[#132247] border-white/10 text-amber-300 hover:text-amber-200 shadow-[0_0_12px_rgba(255,215,0,0.2)]'
-                  : 'bg-white hover:bg-[#EAF3FF] border-[#DFE9F6] text-[#176BFF] hover:text-[#00A8FF]'
-              }`}
+              className={`p-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 shadow-xs ${theme === 'dark'
+                ? 'bg-[#0D1833] hover:bg-[#132247] border-white/10 text-amber-300 hover:text-amber-200 shadow-[0_0_12px_rgba(255,215,0,0.2)]'
+                : 'bg-white hover:bg-[#EAF3FF] border-[#DFE9F6] text-[#176BFF] hover:text-[#00A8FF]'
+                }`}
               title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Cosmic Dark Theme'}
               aria-label="Toggle theme"
             >
@@ -182,16 +181,16 @@ export const LandingPage: React.FC = () => {
 
             <button
               onClick={() => setShowAccessModal(true)}
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#176BFF] bg-[#F0F6FF] hover:bg-[#E2EDFF] border border-[#BFDBFE] transition"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#176BFF] dark:text-[#00E5FF] bg-[#F0F6FF] dark:bg-[#00A8FF]/15 hover:bg-[#E2EDFF] dark:hover:bg-[#00A8FF]/25 border border-[#BFDBFE] dark:border-[#00A8FF]/30 transition"
             >
               Request Access
             </button>
 
             <Link
               to="/admin/login"
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#475569] hover:text-[#0B1220] hover:bg-[#F1F5F9] border border-[#E2E8F0] transition flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#475569] dark:text-[#9BAAC5] hover:text-[#0B1220] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-white/5 border border-[#E2E8F0] dark:border-white/10 transition flex items-center gap-1.5"
             >
-              <Lock className="w-3.5 h-3.5 text-[#64748B]" />
+              <Lock className="w-3.5 h-3.5 text-[#64748B] dark:text-[#9BAAC5]" />
               <span>Admin</span>
             </Link>
 
@@ -207,11 +206,10 @@ export const LandingPage: React.FC = () => {
           <div className="flex sm:hidden items-center gap-2">
             <button
               onClick={toggleTheme}
-              className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 ${
-                theme === 'dark'
-                  ? 'bg-[#0D1833] border-white/10 text-amber-300'
-                  : 'bg-white border-[#DFE9F6] text-[#176BFF]'
-              }`}
+              className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 ${theme === 'dark'
+                ? 'bg-[#0D1833] border-white/10 text-amber-300'
+                : 'bg-white border-[#DFE9F6] text-[#176BFF]'
+                }`}
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -224,7 +222,7 @@ export const LandingPage: React.FC = () => {
             </Link>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-[#475569] hover:text-[#0B1220]"
+              className="p-2 text-[#475569] dark:text-[#9BAAC5] hover:text-[#0B1220] dark:hover:text-white"
               aria-label="Toggle Navigation Menu"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -234,51 +232,51 @@ export const LandingPage: React.FC = () => {
 
         {/* Collapsible Mobile Drawer */}
         {mobileMenuOpen && (
-          <div className="sm:hidden border-t border-[#E2E8F0] bg-white px-4 py-4 space-y-3 animate-fadeIn">
-            <nav className="flex flex-col space-y-2 text-sm font-semibold text-[#475569]">
+          <div className="sm:hidden border-t border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#0B1530] px-4 py-4 space-y-3 animate-fadeIn">
+            <nav className="flex flex-col space-y-2 text-sm font-semibold text-[#475569] dark:text-[#9BAAC5]">
               <a
                 href="#about"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-[#176BFF]"
+                className="py-1.5 hover:text-[#176BFF] dark:hover:text-[#00A8FF]"
               >
                 About SkillNova
               </a>
               <a
                 href="#experience"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-[#176BFF]"
+                className="py-1.5 hover:text-[#176BFF] dark:hover:text-[#00A8FF]"
               >
                 Learning Experience
               </a>
               <a
                 href="#courses"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-[#176BFF]"
+                className="py-1.5 hover:text-[#176BFF] dark:hover:text-[#00A8FF]"
               >
                 Courses & Curriculum
               </a>
               <a
                 href="#contact"
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1.5 hover:text-[#176BFF]"
+                className="py-1.5 hover:text-[#176BFF] dark:hover:text-[#00A8FF]"
               >
                 Contact & Support
               </a>
             </nav>
-            <div className="pt-3 border-t border-[#E2E8F0] flex flex-col gap-2">
+            <div className="pt-3 border-t border-[#E2E8F0] dark:border-white/10 flex flex-col gap-2">
               <button
                 onClick={() => {
                   setShowAccessModal(true);
                   setMobileMenuOpen(false);
                 }}
-                className="w-full py-2.5 rounded-xl text-xs font-bold text-center text-[#176BFF] bg-[#F0F6FF] border border-[#BFDBFE]"
+                className="w-full py-2.5 rounded-xl text-xs font-bold text-center text-[#176BFF] dark:text-[#00E5FF] bg-[#F0F6FF] dark:bg-[#00A8FF]/15 border border-[#BFDBFE] dark:border-[#00A8FF]/30"
               >
                 Request Access
               </button>
               <Link
                 to="/admin/login"
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full py-2.5 rounded-xl text-xs font-bold text-center text-[#475569] bg-[#F8FAFC] border border-[#E2E8F0]"
+                className="w-full py-2.5 rounded-xl text-xs font-bold text-center text-[#475569] dark:text-[#9BAAC5] bg-[#F8FAFC] dark:bg-[#0D1833] border border-[#E2E8F0] dark:border-white/10"
               >
                 Admin Portal
               </Link>
@@ -295,11 +293,11 @@ export const LandingPage: React.FC = () => {
       </header>
 
       {/* 3. Hero Section – Split Layout with Reference Image 1 Inspiration */}
-      <section className="bg-[#0B1220] text-white relative overflow-hidden">
+      <section className="dark-section dark-place bg-[#0B1220] text-white relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:min-h-[640px] items-center">
-            {/* Left Content (Cols 1-7) */}
-            <div className="lg:col-span-7 py-12 sm:py-16 lg:py-20 z-10 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px] lg:min-h-[640px] items-center gap-6 lg:gap-8">
+            {/* Left Content (Cols 1-6) */}
+            <div className="lg:col-span-6 xl:col-span-6 py-12 sm:py-16 lg:py-20 z-10 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-mono text-[#38BDF8]">
                 <span className="w-2 h-2 rounded-full bg-[#00A3FF] animate-pulse" />
                 <span>Premier Engineering Education • Cohort 2026</span>
@@ -347,7 +345,7 @@ export const LandingPage: React.FC = () => {
               <div className="pt-6 border-t border-slate-800/80 flex flex-wrap items-center gap-6 text-xs text-slate-400 font-mono">
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#38BDF8]" />
-                  <span>Curated Syllabi</span>
+                  <span>Curated Syllabus</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle2 className="w-4 h-4 text-[#38BDF8]" />
@@ -360,14 +358,14 @@ export const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right Angled Image (Cols 8-12) */}
-            <div className="lg:col-span-5 relative w-full h-64 sm:h-80 md:h-96 lg:h-full min-h-[260px] sm:min-h-[340px] lg:min-h-[580px] flex items-center justify-center overflow-hidden my-4 lg:my-0">
-              {/* Angled container with mountain / learning visual */}
-              <div className="relative w-full h-full rounded-2xl lg:rounded-none lg:[clip-path:polygon(10%_0%,_100%_0%,_100%_100%,_0%_100%)] overflow-hidden shadow-2xl bg-[#0B1220]">
+            {/* Right Image: Shifted slightly to the left, full aspect-square so top Success milestone & star are completely visible */}
+            <div className="lg:col-span-6 xl:col-span-6 relative w-full flex items-center justify-center lg:justify-start my-6 lg:my-0 lg:-ml-4 xl:-ml-6">
+              {/* Perfectly proportioned 1:1 container matching the 1024x1024 asset */}
+              <div className="relative w-full max-w-[540px] lg:max-w-[600px] xl:max-w-[620px] aspect-square rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl shadow-[#00A3FF]/15 bg-[#0B1220] border border-white/10 group">
                 <img
                   src={mountainJourneyImg}
-                  alt="SkillNova Pathway to Success"
-                  className="w-full h-full object-cover object-center filter brightness-95 contrast-105 transition-transform duration-700 hover:scale-105"
+                  alt="SkillNova Pathway to Success: Learn, Build, Explore, Mentorship Support, Internships, Hackathons, Career Guidance, and Success"
+                  className="w-full h-full object-contain object-center filter brightness-100 contrast-105 transition-transform duration-700 group-hover:scale-102"
                   loading="eager"
                   onError={(e) => {
                     const target = e.currentTarget;
@@ -378,9 +376,9 @@ export const LandingPage: React.FC = () => {
                     }
                   }}
                 />
-                {/* Gradient Overlay to blend seamlessly into the dark background */}
-                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#0B1220] via-[#0B1220]/40 to-transparent opacity-85 lg:opacity-75 pointer-events-none" />
-                <div className="absolute inset-0 bg-[#00A8FF]/10 pointer-events-none" />
+                {/* Subtle soft edge gradient to blend gently into the hero background without obscuring student or milestones */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0B1220]/40 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute inset-0 ring-1 ring-inset ring-white/10 rounded-2xl sm:rounded-3xl pointer-events-none" />
               </div>
             </div>
           </div>
@@ -388,50 +386,50 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 4. About SkillNova Section – Reference Image 2 (Welcome to KTU College Inspiration) */}
-      <section id="about" className="py-20 lg:py-28 bg-white border-b border-[#E2E8F0]">
+      <section id="about" className="py-20 lg:py-28 bg-white dark:bg-[#050816] border-b border-[#E2E8F0] dark:border-white/10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Header Title & Intro */}
           <div className="max-w-3xl space-y-3">
-            <span className="text-xs font-bold font-mono uppercase tracking-widest text-[#176BFF]">
+            <span className="text-xs font-bold font-mono uppercase tracking-widest text-[#176BFF] dark:text-[#00A8FF]">
               About SkillNova
             </span>
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0B1220] tracking-tight">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0B1220] dark:text-[#F4F7FF] tracking-tight">
               Welcome to SkillNova
             </h2>
-            <p className="text-sm sm:text-base text-[#64748B] leading-relaxed">
+            <p className="text-sm sm:text-base text-[#64748B] dark:text-[#9BAAC5] leading-relaxed">
               SkillNova is a premier educational platform committed to bridging collegiate academia with production software engineering through structured curriculums, practical coding sessions, and continuous mentorship.
             </p>
           </div>
 
           {/* Two Balanced Columns: Our Mission & Our Vision */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12 pt-2">
-            <div className="p-8 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-3">
-              <span className="text-xs font-bold font-mono uppercase tracking-wider text-[#176BFF]">
+            <div className="p-8 rounded-3xl bg-[#F8FAFC] dark:bg-[#0D1833] border border-[#E2E8F0] dark:border-white/10 space-y-3 transition-colors">
+              <span className="text-xs font-bold font-mono uppercase tracking-wider text-[#176BFF] dark:text-[#00A8FF]">
                 Strategic Focus
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#0B1220]">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#0B1220] dark:text-[#F4F7FF]">
                 Our Mission
               </h3>
-              <p className="text-sm text-[#475569] leading-relaxed">
+              <p className="text-sm text-[#475569] dark:text-[#9BAAC5] leading-relaxed">
                 To make technology education accessible through structured learning, practical development, and continuous mentorship.
               </p>
             </div>
 
-            <div className="p-8 rounded-3xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-3">
+            <div className="p-8 rounded-3xl bg-[#F8FAFC] dark:bg-[#0D1833] border border-[#E2E8F0] dark:border-white/10 space-y-3 transition-colors">
               <span className="text-xs font-bold font-mono uppercase tracking-wider text-[#00A3FF]">
                 Long-Term Horizon
               </span>
-              <h3 className="text-xl sm:text-2xl font-bold text-[#0B1220]">
+              <h3 className="text-xl sm:text-2xl font-bold text-[#0B1220] dark:text-[#F4F7FF]">
                 Our Vision
               </h3>
-              <p className="text-sm text-[#475569] leading-relaxed">
+              <p className="text-sm text-[#475569] dark:text-[#9BAAC5] leading-relaxed">
                 To build a learning community where students develop technical skills, explore emerging technologies, and prepare confidently for their careers.
               </p>
             </div>
           </div>
 
           {/* Large Rounded Image – University Lecture Hall / Auditorium Aesthetic (Ref Image 2) */}
-          <div className="rounded-3xl overflow-hidden border border-[#E2E8F0] shadow-xl aspect-[16/8] max-h-[500px] w-full bg-[#F1F5F9]">
+          <div className="rounded-3xl overflow-hidden border border-[#E2E8F0] dark:border-white/10 shadow-xl aspect-[16/8] max-h-[500px] w-full bg-[#F1F5F9] dark:bg-[#0D1833]">
             <img
               src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=1600&auto=format&fit=crop&q=80"
               alt="SkillNova Academic Lecture Hall and Collaborative Learning Community"
@@ -442,17 +440,17 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 5. Learning Experience / What We Offer Section */}
-      <section id="experience" className="py-20 lg:py-28 bg-[#F8FAFC] border-b border-[#E2E8F0]">
+      <section id="experience" className="py-20 lg:py-28 bg-[#F8FAFC] dark:bg-[#070D1E] border-b border-[#E2E8F0] dark:border-white/10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Section Header */}
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <span className="text-xs font-bold font-mono uppercase tracking-widest text-[#176BFF]">
+            <span className="text-xs font-bold font-mono uppercase tracking-widest text-[#176BFF] dark:text-[#00A8FF]">
               What We Offer
             </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-[#0B1220] tracking-tight">
+            <h2 className="text-3xl sm:text-4xl font-black text-[#0B1220] dark:text-[#F4F7FF] tracking-tight">
               The SkillNova Learning Experience
             </h2>
-            <p className="text-sm text-[#64748B] leading-relaxed">
+            <p className="text-sm text-[#64748B] dark:text-[#9BAAC5] leading-relaxed">
               A comprehensive educational platform designed to take you from foundational logic to production system architecture.
             </p>
           </div>
@@ -464,15 +462,15 @@ export const LandingPage: React.FC = () => {
               return (
                 <div
                   key={feat.id}
-                  className="bg-white p-7 rounded-3xl border border-[#E2E8F0] shadow-xs hover:border-[#176BFF] hover:shadow-md transition-all duration-200 space-y-3.5 group"
+                  className="bg-white dark:bg-[#0D1833] p-7 rounded-3xl border border-[#E2E8F0] dark:border-white/10 shadow-xs hover:border-[#176BFF] dark:hover:border-[#00A8FF] hover:shadow-md transition-all duration-200 space-y-3.5 group"
                 >
                   <div className={`w-12 h-12 rounded-2xl ${feat.bg} flex items-center justify-center transition-transform group-hover:scale-105`}>
                     <Icon className={`w-6 h-6 ${feat.accent}`} />
                   </div>
-                  <h3 className="text-base font-bold text-[#0B1220] tracking-tight">
+                  <h3 className="text-base font-bold text-[#0B1220] dark:text-[#F4F7FF] tracking-tight">
                     {feat.title}
                   </h3>
-                  <p className="text-xs text-[#64748B] leading-relaxed">
+                  <p className="text-xs text-[#64748B] dark:text-[#9BAAC5] leading-relaxed">
                     {feat.desc}
                   </p>
                 </div>
@@ -483,14 +481,31 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 6. Courses and Curriculum Section (Dynamic Supabase Catalog) */}
-      <section id="courses" className="py-20 lg:py-28 bg-white border-b border-[#E2E8F0]">
+      <section id="courses" className="py-20 lg:py-28 bg-white dark:bg-[#050816] border-b border-[#E2E8F0] dark:border-white/10 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ExperienceSkillNovaSection onOpenAccessRequest={() => setShowAccessModal(true)} />
         </div>
       </section>
 
+      {/* 6.5. Professional Brand Statement (Pre-Footer) */}
+      <section className="py-16 sm:py-20 bg-gradient-to-b from-white to-[#F5F9FF] dark:from-[#050816] dark:to-[#0A0E17] border-t border-[#E2E8F0] dark:border-white/10 text-center relative overflow-hidden transition-colors">
+        <div className="absolute inset-0 bg-radial from-[#176BFF]/5 via-transparent to-transparent pointer-events-none" />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#176BFF]/10 dark:bg-[#176BFF]/20 border border-[#176BFF]/25 text-xs font-mono font-bold text-[#176BFF] dark:text-[#38BDF8]">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>FOUNDATIONAL COMMITMENT</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-[#0B1220] dark:text-white">
+            Knowledge First. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#176BFF] via-[#00A3FF] to-[#8B5CF6]">Skills for Life.</span>
+          </h2>
+          <p className="text-base sm:text-lg text-[#475569] dark:text-slate-300 leading-relaxed max-w-2xl mx-auto font-medium">
+            We believe knowledge creates opportunity. Our mission is to empower students with practical skills, meaningful learning experiences, and the confidence to build their future.
+          </p>
+        </div>
+      </section>
+
       {/* 7. Footer – Premium Dark Design (Reference Image 3 - SNKS Inspiration) */}
-      <footer id="contact" className="bg-[#0A0E17] text-white pt-16 pb-12 border-t border-[#1E293B]">
+      <footer id="contact" className="dark-section dark-place bg-[#0A0E17] text-white pt-16 pb-12 border-t border-[#1E293B]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Top Footer Grid */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16">

@@ -8,7 +8,9 @@ import {
   Minimize, 
   RotateCcw, 
   Tv,
-  Film
+  Film,
+  Sparkles,
+  ExternalLink
 } from 'lucide-react';
 
 interface EmbeddedVideoPlayerProps {
@@ -315,7 +317,7 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
             allowFullScreen
           />
         </div>
-      ) : (
+      ) : url ? (
         /* GENERIC / FALLBACK IFRAME EMBED */
         <div className="relative w-full h-full bg-[#050811] flex flex-col items-center justify-center">
           <iframe
@@ -325,6 +327,20 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
             allow="autoplay; fullscreen; encrypted-media"
             allowFullScreen
           />
+        </div>
+      ) : (
+        /* Clean SkillNova-branded fallback screen */
+        <div className="relative w-full h-full bg-[#050811] flex flex-col items-center justify-center p-6 text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#176BFF] to-[#00A3FF] flex items-center justify-center text-white shadow-lg shadow-[#00A3FF]/25">
+            <Sparkles className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <span className="text-xl font-black text-white tracking-tight">
+              Skill<span className="text-[#00A3FF]">Nova</span> Player
+            </span>
+            <h4 className="text-sm font-bold text-slate-200">{title}</h4>
+            <p className="text-xs text-slate-400">Video lecture is ready for playback</p>
+          </div>
         </div>
       )}
     </div>

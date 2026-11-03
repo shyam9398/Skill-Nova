@@ -40,7 +40,7 @@ export const StudentLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F9FF] dark:bg-[#050816] text-[#15243B] dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
+    <div className="min-h-screen bg-[#F5F9FF] dark:bg-[#050816] text-black dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
       {/* Single, Unified SkillNova Header */}
       <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
@@ -61,13 +61,13 @@ export const StudentLayout: React.FC = () => {
                 className="w-10 h-10 rounded-full object-cover border border-[#00A3FF]/30 shrink-0"
               />
               <div className="overflow-hidden">
-                <div className="text-xs font-bold text-[#15243B] truncate">
+                <div className="text-xs font-bold text-black dark:text-white truncate">
                   {currentUser?.full_name || 'Enrolled Student'}
                 </div>
                 <div className="text-[10px] text-[#176BFF] truncate font-medium">
                   {currentUser?.branch || 'Computer Science & Eng'}
                 </div>
-                <div className="text-[10px] text-[#73839B] truncate">
+                <div className="text-[10px] text-black dark:text-[#9BAAC5] font-semibold truncate">
                   {currentUser?.year_of_study || 'Batch 2027'}
                 </div>
               </div>
@@ -84,10 +84,10 @@ export const StudentLayout: React.FC = () => {
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
                         ? 'bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
-                        : 'text-[#73839B] dark:text-[#9BAAC5] hover:text-[#15243B] dark:hover:text-white hover:bg-[#F5F9FF] dark:hover:bg-[#0D1833]'
+                        : 'text-black dark:text-[#9BAAC5] hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
                     }`
                   }
                 >

@@ -45,7 +45,7 @@ export const AdminDashboardPage: React.FC = () => {
               <Shield className="w-3.5 h-3.5" />
               <span>SkillNova Operations Control Center</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-[#F0F5FF]">
+            <h1 className="text-2xl md:text-3xl font-black text-black dark:text-[#F0F5FF]">
               Welcome back, {currentUser?.full_name || 'Administrator'}
             </h1>
             <p className="text-xs md:text-sm text-[#9BAAC2] max-w-xl">

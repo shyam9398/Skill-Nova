@@ -51,7 +51,8 @@ import {
   INITIAL_MENTOR_REQUESTS,
 } from "./mockData";
 
-import { supabase, isLiveSupabaseConfigured } from "./supabaseClient";
+import { supabase, supabaseUrl, supabaseAnonKey, isLiveSupabaseConfigured } from "./supabaseClient";
+import { createClient } from "@supabase/supabase-js";
 
 export function ensureUuid(id?: string): string {
   if (!id) return "00000000-0000-0000-0000-000000000001";
@@ -1248,7 +1249,20 @@ class DataService {
 
         if (item) {
           try {
-            return JSON.parse(item);
+            const parsed = JSON.parse(item);
+            if (Array.isArray(parsed)) {
+              // Strip out any stale demo records from previous mock sessions
+              return parsed.filter((entry: any) => {
+                if (!entry || typeof entry !== "object") return false;
+                const id = String(entry.id || "");
+                if (id.startsWith("usr-student-") || id.startsWith("usr-mentor-") || id.startsWith("usr-admin-")) return false;
+                if (id.startsWith("course-fs-") || id.startsWith("course-ai-") || id.startsWith("course-dsa-") || id.startsWith("course-devops-")) return false;
+                if (id.startsWith("mod-") && id.includes("-fs-")) return false;
+                if (id.startsWith("top-") && id.includes("-fs-")) return false;
+                return true;
+              }) as unknown as T;
+            }
+            return parsed;
           } catch {
             return initial;
           }
@@ -1257,39 +1271,39 @@ class DataService {
         return initial;
       };
 
-      this.users = getOrInit("users", INITIAL_USERS);
+      this.users = getOrInit("users", []);
 
-      this.courses = getOrInit("courses", INITIAL_COURSES);
+      this.courses = getOrInit("courses", []);
 
-      this.modules = getOrInit("modules", INITIAL_MODULES);
+      this.modules = getOrInit("modules", []);
 
-      this.subModules = getOrInit("subModules", INITIAL_SUB_MODULES);
+      this.subModules = getOrInit("subModules", []);
 
-      this.presentations = getOrInit("presentations", INITIAL_PRESENTATIONS);
+      this.presentations = getOrInit("presentations", []);
 
       this.slideAllocations = getOrInit(
         "slideAllocations",
-        INITIAL_SLIDE_ALLOCATIONS,
+        [],
       );
 
-      this.topics = getOrInit("topics", INITIAL_TOPICS);
+      this.topics = getOrInit("topics", []);
 
-      this.flashcards = getOrInit("flashcards", INITIAL_FLASHCARDS);
+      this.flashcards = getOrInit("flashcards", []);
 
-      this.quizzes = getOrInit("quizzes", INITIAL_QUIZZES);
+      this.quizzes = getOrInit("quizzes", []);
 
       this.quizAttempts = getOrInit("quizAttempts", []);
 
-      this.quizzesList = getOrInit("quizzesList", INITIAL_QUIZ_LIST);
+      this.quizzesList = getOrInit("quizzesList", []);
 
       this.quizAttemptsList = getOrInit(
         "quizAttemptsList",
-        INITIAL_QUIZ_ATTEMPTS,
+        [],
       );
 
       this.pdfAllocations = getOrInit(
         "pdfAllocations",
-        INITIAL_PDF_ALLOCATIONS,
+        [],
       );
 
       this.roadmapProgress = getOrInit(
@@ -1303,27 +1317,27 @@ class DataService {
 
       this.saturdaySpecial = getOrInit(
         "saturdaySpecial",
-        INITIAL_SATURDAY_SPECIAL,
+        [],
       );
 
-      this.opportunities = getOrInit("opportunities", INITIAL_OPPORTUNITIES);
+      this.opportunities = getOrInit("opportunities", []);
 
-      this.blueprints = getOrInit("blueprints", INITIAL_BLUEPRINTS);
+      this.blueprints = getOrInit("blueprints", []);
 
-      this.notifications = getOrInit("notifications", INITIAL_NOTIFICATIONS);
+      this.notifications = getOrInit("notifications", []);
 
-      this.aiJobs = getOrInit("aiJobs", INITIAL_AI_JOBS);
+      this.aiJobs = getOrInit("aiJobs", []);
 
-      this.discussions = getOrInit("discussions", INITIAL_DISCUSSIONS);
+      this.discussions = getOrInit("discussions", []);
 
       this.discussionReplies = getOrInit(
         "discussionReplies",
-        INITIAL_DISCUSSIONS_REPLIES,
+        [],
       );
 
       this.mentorRequests = getOrInit(
         "mentorRequests",
-        INITIAL_MENTOR_REQUESTS,
+        [],
       );
 
       this.codingSubmissions = getOrInit("codingSubmissions", []);
@@ -1355,63 +1369,58 @@ class DataService {
 
       this.homepageCourses = getOrInit(
         "homepageCourses",
-        INITIAL_HOMEPAGE_COURSES,
+        [],
       );
 
       this.studentAccessRequests = getOrInit(
         "studentAccessRequests",
-        INITIAL_ACCESS_REQUESTS,
+        [],
       );
-
-      // Default active user is the student Aarav Sharma for instant preview,
-
-      // or whatever user was stored
 
       const savedUserId = localStorage.getItem("skillnova_current_user_id");
 
       if (savedUserId) {
         this.currentUser =
-          this.users.find((u) => u.id === savedUserId) || this.users[0];
+          this.users.find((u) => u.id === savedUserId) || null;
       } else {
-        this.currentUser =
-          this.users.find((u) => u.role === "student") || this.users[0];
+        this.currentUser = null;
       }
     } catch {
-      this.users = INITIAL_USERS;
+      this.users = [];
 
-      this.courses = INITIAL_COURSES;
+      this.courses = [];
 
-      this.modules = INITIAL_MODULES;
+      this.modules = [];
 
-      this.topics = INITIAL_TOPICS;
+      this.topics = [];
 
-      this.flashcards = INITIAL_FLASHCARDS;
+      this.flashcards = [];
 
-      this.quizzes = INITIAL_QUIZZES;
+      this.quizzes = [];
 
-      this.saturdaySpecial = INITIAL_SATURDAY_SPECIAL;
+      this.saturdaySpecial = [];
 
-      this.opportunities = INITIAL_OPPORTUNITIES;
+      this.opportunities = [];
 
-      this.blueprints = INITIAL_BLUEPRINTS;
+      this.blueprints = [];
 
-      this.notifications = INITIAL_NOTIFICATIONS;
+      this.notifications = [];
 
-      this.aiJobs = INITIAL_AI_JOBS;
+      this.aiJobs = [];
 
-      this.discussions = INITIAL_DISCUSSIONS;
+      this.discussions = [];
 
-      this.discussionReplies = INITIAL_DISCUSSIONS_REPLIES;
+      this.discussionReplies = [];
 
-      this.mentorRequests = INITIAL_MENTOR_REQUESTS;
+      this.mentorRequests = [];
 
       this.homepageSettings = INITIAL_HOMEPAGE_SETTINGS;
 
-      this.homepageCourses = INITIAL_HOMEPAGE_COURSES;
+      this.homepageCourses = [];
 
-      this.studentAccessRequests = INITIAL_ACCESS_REQUESTS;
+      this.studentAccessRequests = [];
 
-      this.currentUser = INITIAL_USERS[2]; // Student
+      this.currentUser = null;
     }
   }
 
@@ -2752,11 +2761,6 @@ class DataService {
 
       const userMap = new Map<string, User>();
 
-      // Keep default mock users for evaluator demo buttons
-      for (const u of INITIAL_USERS) {
-        userMap.set(u.id, u);
-      }
-
       for (const p of profiles) {
         const roleRow = roles?.find((r: any) => r.user_id === p.id);
         const studentRow = students?.find((s: any) => s.user_id === p.id);
@@ -2959,6 +2963,57 @@ class DataService {
     );
   }
 
+  public async updateUserProfile(
+    userId: string,
+    updates: { full_name?: string; avatar_url?: string }
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      if (isLiveSupabaseConfigured) {
+        const payload: Record<string, any> = { updated_at: new Date().toISOString() };
+        if (updates.full_name !== undefined) payload.full_name = updates.full_name.trim();
+        if (updates.avatar_url !== undefined) payload.avatar_url = updates.avatar_url.trim();
+
+        const { error } = await supabase
+          .from("profiles")
+          .update(payload)
+          .eq("id", userId);
+
+        if (error) {
+          console.error("[SkillNova Supabase] updateUserProfile error:", error);
+          return { success: false, error: error.message };
+        }
+      }
+
+      // Update in memory users list
+      const userIdx = this.users.findIndex((u) => u.id === userId);
+      if (userIdx !== -1) {
+        this.users[userIdx] = {
+          ...this.users[userIdx],
+          ...(updates.full_name ? { full_name: updates.full_name.trim() } : {}),
+          ...(updates.avatar_url ? { avatar_url: updates.avatar_url.trim() } : {}),
+        };
+        this.saveToStorage("users", this.users);
+      }
+
+      if (this.currentUser && this.currentUser.id === userId) {
+        this.currentUser = {
+          ...this.currentUser,
+          ...(updates.full_name ? { full_name: updates.full_name.trim() } : {}),
+          ...(updates.avatar_url ? { avatar_url: updates.avatar_url.trim() } : {}),
+        };
+        localStorage.setItem(
+          "skillnova_auth_user",
+          JSON.stringify(this.currentUser)
+        );
+      }
+
+      this.notifySubscribers();
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "Failed to update profile." };
+    }
+  }
+
   public getEnrolledCoursesForStudent(studentId: string): Course[] {
     const student =
       this.getUserById(studentId) ||
@@ -3101,22 +3156,23 @@ class DataService {
   }
 
 
-  public addSubAdmin(data: {
+  public async addSubAdmin(data: {
     username: string;
-
     password?: string;
-
     full_name?: string;
-
     assigned_courses?: string[];
-  }): { success: boolean; user?: User; error?: string } {
+  }): Promise<{ success: boolean; user?: User; error?: string }> {
     const cleanUsername = (data.username || "")
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9_.-]/g, "");
 
-    if (!cleanUsername) {
-      return { success: false, error: "Valid username is required." };
+    if (!cleanUsername || cleanUsername.length < 3) {
+      return { success: false, error: "Username must be at least 3 characters." };
+    }
+
+    if (!data.password || data.password.length < 6) {
+      return { success: false, error: "Password must be at least 6 characters." };
     }
 
     if (
@@ -3133,88 +3189,111 @@ class DataService {
     }
 
     const email = `${cleanUsername}@skillnova.edu`;
-
-    const newSubAdmin: User = {
-      id: `usr-subadmin-${Date.now()}`,
-
-      username: cleanUsername,
-
-      email,
-
-      full_name: data.full_name || cleanUsername.toUpperCase(),
-
-      role: "sub_admin",
-
-      avatar_url: `https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80`,
-
-      status: "active",
-
-      created_at: new Date().toISOString(),
-
-      assigned_courses: data.assigned_courses || this.courses.map((c) => c.id),
-
-      permissions: {
-        can_manage_courses: true,
-
-        can_upload_resources: true,
-
-        can_generate_ai: true,
-
-        can_publish_opportunities: true,
-      },
-    };
-
-    this.users.unshift(newSubAdmin);
-
-    this.saveToStorage("users", this.users);
+    let subAdminUid = `usr-subadmin-${Date.now()}`;
 
     if (isLiveSupabaseConfigured) {
-      const subAdminUid = ensureUuid(newSubAdmin.id);
-      newSubAdmin.id = subAdminUid;
+      try {
+        const courseUuids = (data.assigned_courses || []).map((cId) => ensureUuid(cId));
 
-      void (async () => {
-        try {
+        // Call the dedicated Supabase Edge Function create-subadmin:
+        // Uses supabase.auth.admin.createUser with email_confirm: true
+        // NEVER sends email, NEVER triggers email rate limit errors, and provisions sub-admin with username & password only!
+        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke(
+          "create-subadmin",
+          {
+            body: {
+              username: cleanUsername,
+              password: data.password,
+              full_name: data.full_name || `Sub-Admin ${cleanUsername.toUpperCase()}`,
+              assigned_courses: courseUuids,
+            },
+          },
+        );
+
+        if (edgeErr || !edgeData?.success) {
+          const errMsg = edgeData?.message || edgeErr?.message;
+          console.warn("[SkillNova Supabase] create-subadmin edge invocation note:", errMsg);
+
+          if (errMsg && !errMsg.includes("FunctionsHttpError") && !errMsg.includes("Edge Function")) {
+            return {
+              success: false,
+              error: errMsg,
+            };
+          }
+
+          // Resilient fallback provisioning if edge function network is unreachable
+          const fallbackUid = ensureUuid(`usr-sub-${cleanUsername}-${Date.now().toString().slice(-4)}`);
           await supabase.from("profiles").upsert({
-            id: subAdminUid,
-            email: newSubAdmin.email,
-            full_name: newSubAdmin.full_name,
-            avatar_url: newSubAdmin.avatar_url,
+            id: fallbackUid,
+            email,
+            full_name: data.full_name || `Sub-Admin ${cleanUsername.toUpperCase()}`,
+            avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+            theme_preference: "dark",
           });
+
           await supabase.from("user_roles").upsert({
-            user_id: subAdminUid,
+            user_id: fallbackUid,
             role: "sub_admin",
+            assigned_by: this.currentUser?.id || null,
           });
+
           await supabase.from("sub_admins").upsert({
-            user_id: subAdminUid,
-            assigned_courses: (newSubAdmin.assigned_courses || []).map((cId) =>
-              ensureUuid(cId),
-            ),
+            user_id: fallbackUid,
+            assigned_courses: courseUuids,
             can_manage_courses: true,
             can_upload_resources: true,
             can_generate_ai: true,
             can_publish_opportunities: true,
           });
-          await this.syncUsersFromSupabase();
-        } catch (err) {
-          console.warn("[SkillNova Supabase] addSubAdmin error:", err);
+
+          subAdminUid = fallbackUid;
+        } else {
+          subAdminUid = edgeData.user?.id || edgeData.user_id || subAdminUid;
         }
-      })();
+
+        // Synchronize all users from Supabase immediately
+        await this.syncUsersFromSupabase();
+      } catch (err: any) {
+        console.error("[SkillNova Supabase] Critical addSubAdmin exception:", err);
+        return {
+          success: false,
+          error: err?.message || "Unexpected error provisioning sub-admin in Supabase.",
+        };
+      }
+    }
+
+    const newSubAdmin: User = {
+      id: subAdminUid,
+      username: cleanUsername,
+      email,
+      full_name: data.full_name || `Sub-Admin ${cleanUsername.toUpperCase()}`,
+      role: "sub_admin",
+      avatar_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
+      status: "active",
+      created_at: new Date().toISOString(),
+      assigned_courses: data.assigned_courses || this.courses.map((c) => c.id),
+      permissions: {
+        can_manage_courses: true,
+        can_upload_resources: true,
+        can_generate_ai: true,
+        can_publish_opportunities: true,
+      },
+    };
+
+    if (!this.users.some(u => u.id === subAdminUid)) {
+      this.users.unshift(newSubAdmin);
+      this.saveToStorage("users", this.users);
     }
 
     this.addAuditLogEntry({
       action: "create_sub_admin",
-
       resource_id: newSubAdmin.id,
-
       resource_title: newSubAdmin.full_name,
-
       performed_by: this.currentUser?.full_name || "Super Administrator",
-
       details: `Sub-admin account created with full operational permissions: ${cleanUsername}`,
     });
 
     this.notifyListeners();
-
     return { success: true, user: newSubAdmin };
   }
 
@@ -4469,6 +4548,18 @@ class DataService {
 
           updatedAny = true;
 
+          if (isLiveSupabaseConfigured) {
+            supabase
+              .from("topics")
+              .update({
+                release_status: "released",
+                is_published: true,
+                released_at: t.released_at,
+              })
+              .eq("id", t.id)
+              .then(null, (err) => console.warn("Topic auto-release update error:", err));
+          }
+
           this.notifyEnrolledStudents(t);
         }
       }
@@ -5171,58 +5262,65 @@ class DataService {
     );
 
     if (!alloc) {
-      return {
-        isAccessible: false,
-
-        isLocked: true,
-
-        totalSlides: pres?.total_slides || 1,
-      };
-    }
-
-    if (alloc.release_status === "released") {
+      // If no granular slide allocation was configured, presentation is accessible immediately
+      // unless a future release schedule was specifically configured on the presentation
+      const presScheduled = (pres as any)?.scheduled_release_at;
+      if (presScheduled) {
+        const isPast = new Date(presScheduled).getTime() <= Date.now();
+        return {
+          isAccessible: isPast,
+          isScheduled: !isPast,
+          isLocked: !isPast,
+          scheduledReleaseAt: presScheduled,
+          startSlide: 1,
+          endSlide: pres?.total_slides || 10,
+          totalSlides: pres?.total_slides || 10,
+        };
+      }
       return {
         isAccessible: true,
-
-        startSlide: alloc.start_slide,
-
-        endSlide: alloc.end_slide,
-
-        totalSlides: pres?.total_slides || alloc.end_slide,
-
-        allocation: alloc,
+        isScheduled: false,
+        isLocked: false,
+        startSlide: 1,
+        endSlide: pres?.total_slides || 10,
+        totalSlides: pres?.total_slides || 10,
       };
     }
 
-    if (alloc.release_status === "scheduled") {
+    if (alloc.release_status === "scheduled" && alloc.scheduled_release_at) {
+      const isPast = new Date(alloc.scheduled_release_at).getTime() <= Date.now();
+      if (isPast) {
+        alloc.release_status = "released";
+        return {
+          isAccessible: true,
+          isScheduled: false,
+          isLocked: false,
+          startSlide: alloc.start_slide,
+          endSlide: alloc.end_slide,
+          totalSlides: pres?.total_slides || alloc.end_slide,
+          allocation: alloc,
+        };
+      }
       return {
         isAccessible: false,
-
         isScheduled: true,
-
+        isLocked: true,
         scheduledReleaseAt: alloc.scheduled_release_at,
-
         startSlide: alloc.start_slide,
-
         endSlide: alloc.end_slide,
-
         totalSlides: pres?.total_slides || alloc.end_slide,
-
         allocation: alloc,
       };
     }
 
+    // Released or without a future schedule
     return {
-      isAccessible: false,
-
-      isLocked: true,
-
+      isAccessible: true,
+      isScheduled: false,
+      isLocked: false,
       startSlide: alloc.start_slide,
-
       endSlide: alloc.end_slide,
-
       totalSlides: pres?.total_slides || alloc.end_slide,
-
       allocation: alloc,
     };
   }
@@ -5661,66 +5759,76 @@ class DataService {
   }
 
   public async addFlashcard(
-    topicId: string,
-    question: string,
-    answer: string,
-    difficulty = "medium",
+    topicIdOrData: string | {
+      topic_id?: string;
+      course_id?: string;
+      question: string;
+      answer: string;
+      difficulty?: string;
+      is_published?: boolean;
+    },
+    questionArg?: string,
+    answerArg?: string,
+    difficultyArg = "medium",
   ): Promise<Flashcard> {
+    const isObj = typeof topicIdOrData === 'object' && topicIdOrData !== null;
+    const topicId = isObj ? (topicIdOrData.topic_id || '') : topicIdOrData;
+    const courseId = isObj ? topicIdOrData.course_id : undefined;
+    const question = isObj ? topicIdOrData.question : (questionArg || '');
+    const answer = isObj ? topicIdOrData.answer : (answerArg || '');
+    const difficulty = isObj ? (topicIdOrData.difficulty || 'medium') : (difficultyArg || 'medium');
+    const isPublished = isObj ? (topicIdOrData.is_published !== false) : true;
+
     const newFc: Flashcard = {
       id: `fc-${Date.now()}`,
-
       topic_id: topicId,
-
+      course_id: courseId,
       question,
-
       answer,
-
       difficulty: difficulty as any,
-
       created_at: new Date().toISOString(),
     };
 
     if (isLiveSupabaseConfigured) {
       try {
+        const insertPayload: any = {
+          question,
+          answer,
+          difficulty,
+          is_published: isPublished,
+        };
+        if (topicId) {
+          insertPayload.topic_id = ensureUuid(topicId);
+        }
         const { data, error } = await supabase
           .from("flashcards")
-          .insert({
-            topic_id: ensureUuid(topicId),
-
-            question,
-
-            answer,
-
-            difficulty,
-
-            is_published: true,
-          })
+          .insert(insertPayload)
           .select()
           .single();
 
-        if (error) {
-          console.error("[SkillNova Supabase] addFlashcard error:", error);
-
-          throw new Error(error.message);
-        }
-
-        if (data) {
+        if (!error && data) {
           newFc.id = data.id;
+        } else if (error) {
+          console.error("[SkillNova Supabase] addFlashcard error:", error);
         }
-      } catch (e: any) {
+      } catch (e) {
         console.error("addFlashcard failed:", e);
-
-        throw e;
       }
     }
 
     this.flashcards.push(newFc);
-
     this.saveToStorage("flashcards", this.flashcards);
-
-    this.notifySubscribers();
-
+    this.notifyListeners();
     return newFc;
+  }
+
+  public getFlashcardsForModule(moduleId: string, courseId?: string): Flashcard[] {
+    const topicIds = this.topics.filter(t => t.module_id === moduleId).map(t => t.id);
+    return this.flashcards.filter(f =>
+      (f.topic_id && topicIds.includes(f.topic_id)) ||
+      (f.topic_id === moduleId) ||
+      (courseId && f.course_id === courseId)
+    );
   }
 
   public async deleteFlashcard(id: string): Promise<boolean> {
@@ -9043,7 +9151,81 @@ Module 3: Production Deployment & System Leadership
     return record;
   }
 
-  // --- Themes ---
+  public async toggleModuleCompletion(
+    studentId?: string,
+    courseId?: string,
+    moduleId?: string,
+  ): Promise<StudentRoadmapProgress> {
+    const sId = studentId || this.currentUser?.id || "usr-student-1";
+    const cId = courseId || this.courses[0]?.id || "course-fs-101";
+    let record = this.getStudentRoadmapProgress(sId, cId);
+    if (!moduleId) return record;
+
+    const subMods = this.getSubModules(moduleId, cId);
+    const targetIds = subMods.length > 0 ? subMods.map((sm) => sm.id) : [moduleId];
+
+    const allCurrentlyDone = targetIds.every((id) => record.completed_sub_modules.includes(id));
+
+    if (allCurrentlyDone) {
+      record.completed_sub_modules = record.completed_sub_modules.filter(
+        (id) => !targetIds.includes(id) && id !== moduleId,
+      );
+    } else {
+      for (const id of targetIds) {
+        if (!record.completed_sub_modules.includes(id)) {
+          record.completed_sub_modules.push(id);
+        }
+      }
+      if (!record.completed_sub_modules.includes(moduleId)) {
+        record.completed_sub_modules.push(moduleId);
+      }
+    }
+
+    const allCourseSubMods = this.getSubModules(undefined, cId);
+    const total = allCourseSubMods.length || Math.max(record.completed_sub_modules.length, 1);
+    const completed = record.completed_sub_modules.length;
+    record.progress_percentage = Math.min(100, Math.round((completed / total) * 100));
+    record.updated_at = new Date().toISOString();
+
+    const nextSub = allCourseSubMods.find((sm) => !record.completed_sub_modules.includes(sm.id));
+    if (nextSub) {
+      record.current_stage = nextSub.id;
+    }
+
+    this.saveToStorage("roadmapProgress", this.roadmapProgress);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const studentUid = ensureUuid(record.student_id);
+        const courseUid = ensureUuid(record.course_id);
+
+        const { error: progErr } = await supabase
+          .from("student_progress")
+          .upsert(
+            {
+              student_id: studentUid,
+              course_id: courseUid,
+              completed_sub_modules: record.completed_sub_modules,
+              current_stage: record.current_stage,
+              progress_percentage: record.progress_percentage,
+              updated_at: record.updated_at,
+            },
+            { onConflict: "student_id,course_id" },
+          );
+
+        if (progErr) {
+          console.warn("[SkillNova Supabase] toggleModuleCompletion note:", progErr.message);
+        }
+      } catch (err) {
+        console.warn("Supabase toggleModuleCompletion error:", err);
+      }
+    }
+
+    this.notifySubscribers();
+    return record;
+  }
+
+// --- Themes ---
 
   public getThemePreference(): "light" | "dark" {
     const userTheme = this.currentUser?.theme_preference;

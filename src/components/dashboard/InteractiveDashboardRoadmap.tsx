@@ -42,7 +42,7 @@ export const InteractiveDashboardRoadmap: React.FC<InteractiveDashboardRoadmapPr
   };
 
   return (
-    <div className="rounded-3xl bg-[#0B132B] border border-white/10 p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden">
+    <div className="dark-section rounded-3xl bg-[#0B132B] border border-white/10 p-6 md:p-8 shadow-2xl space-y-6 relative overflow-hidden">
       {/* Decorative fluorescent blue background glow */}
       <div className="absolute top-0 right-0 w-80 h-80 bg-[#00A3FF]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-72 h-72 bg-[#176BFF]/10 rounded-full blur-3xl pointer-events-none" />
@@ -100,7 +100,7 @@ export const InteractiveDashboardRoadmap: React.FC<InteractiveDashboardRoadmapPr
             return (
               <div 
                 key={mod.id} 
-                className={`p-5 rounded-2xl border transition-all duration-300 relative ${
+                className={`dark-card p-5 rounded-2xl border transition-all duration-300 relative ${
                   modCompleted
                     ? 'bg-[#101F3B] border-emerald-500/40 shadow-lg shadow-emerald-500/5'
                     : modActive

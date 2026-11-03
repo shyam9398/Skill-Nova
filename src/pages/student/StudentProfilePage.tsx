@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User as UserIcon, 
   Mail, 
@@ -8,38 +8,118 @@ import {
   Sun,
   Moon,
   Sparkles,
-  Check
+  Check,
+  Lock,
+  Save,
+  Camera,
+  AlertCircle,
+  RefreshCw,
+  Building,
+  GraduationCap,
+  Calendar,
+  Layers
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
+import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
 export const StudentProfilePage: React.FC = () => {
   const { theme, setTheme } = useTheme();
+  const { currentUser, refreshUser } = useAuth();
 
-  const user = dataService.getCurrentUser() || {
-    id: 'usr-student-1',
-    full_name: 'Aarav Sharma',
-    email: 'aarav.sharma@skillnova.edu',
+  // Active user resolution
+  const user = currentUser || dataService.getCurrentUser() || {
+    id: 'student-session',
+    full_name: 'SkillNova Student',
+    email: 'student@skillnova.edu',
+    username: 'student',
     avatar_url: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-    college: 'National Institute of Technology',
+    college: 'SkillNova Engineering Academy',
     branch: 'Computer Science & Engineering',
-    year_of_study: '3rd Year',
-    status: 'active' as const
+    year_of_study: '3rd Year (Batch 2026)',
+    status: 'active' as const,
+    role: 'student' as const
   };
+
+  // Editable fields strictly restricted to: 1. Full name, 2. Profile image
+  const [fullName, setFullName] = useState(user.full_name || '');
+  const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Sync state if user changes
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '');
+      setAvatarUrl(user.avatar_url || '');
+    }
+  }, [user.id, user.full_name, user.avatar_url]);
 
   const enrolledCourses = dataService.getEnrolledCourses(user.id);
   const attempts = dataService.getQuizAttempts(user.id);
 
+  // Handle Save Profile Changes
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fullName.trim()) {
+      setSaveStatus({ type: 'error', message: 'Full name cannot be empty.' });
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveStatus(null);
+
+    try {
+      const res = await dataService.updateUserProfile(user.id, {
+        full_name: fullName.trim(),
+        avatar_url: avatarUrl.trim()
+      });
+
+      if (res.success) {
+        setSaveStatus({
+          type: 'success',
+          message: 'Profile updated successfully and synced to Supabase database!'
+        });
+        refreshUser();
+      } else {
+        setSaveStatus({
+          type: 'error',
+          message: res.error || 'Failed to update profile in database.'
+        });
+      }
+    } catch (err: any) {
+      setSaveStatus({
+        type: 'error',
+        message: err?.message || 'Unexpected error while updating profile.'
+      });
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => {
+        setSaveStatus(null);
+      }, 5000);
+    }
+  };
+
+  const presetAvatars = [
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80'
+  ];
+
   return (
     <div className="space-y-8 animate-fadeIn max-w-4xl mx-auto pb-16">
-      {/* Header */}
+      {/* Page Header */}
       <div>
         <div className="flex items-center gap-2 mb-1">
           <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/40 flex items-center gap-1.5 font-mono">
             <UserIcon className="w-3.5 h-3.5 text-[#00A3FF]" />
-            Student Identity & Verified Credentials
+            Student Identity & Settings
           </span>
-          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">Roll: SN-2026-001</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+            ID: {user.username || user.email?.split('@')[0] || user.id.slice(0, 8)}
+          </span>
         </div>
         <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white">
           My Academic Profile & Settings
@@ -49,28 +129,50 @@ export const StudentProfilePage: React.FC = () => {
         </p>
       </div>
 
-      {/* Main Profile Card */}
+      {/* Profile Update Feedback */}
+      {saveStatus && (
+        <div
+          className={`p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 transition-all ${
+            saveStatus.type === 'success'
+              ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
+              : 'bg-rose-500/15 border border-rose-500/40 text-rose-700 dark:text-rose-300'
+          }`}
+        >
+          {saveStatus.type === 'success' ? (
+            <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+          )}
+          <span>{saveStatus.message}</span>
+        </div>
+      )}
+
+      {/* Main Profile & Editable Section */}
       <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-6">
+        
+        {/* Profile Card Header */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-6 border-b border-slate-200 dark:border-white/10 text-center sm:text-left">
-          <div className="relative">
+          <div className="relative group">
             <img
-              src={user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
-              alt={user.full_name}
+              src={avatarUrl || user.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'}
+              alt={fullName || user.full_name}
               className="w-24 h-24 rounded-2xl object-cover border-2 border-[#00A3FF] shadow-[0_0_20px_rgba(0,163,255,0.3)]"
             />
             <span className="absolute -bottom-2 -right-2 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[10px] font-black uppercase tracking-wider">
-              Active
+              {user.status || 'Active'}
             </span>
           </div>
 
-          <div className="space-y-1">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white">{user.full_name}</h2>
+          <div className="space-y-1.5 flex-1">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white">
+              {fullName || user.full_name}
+            </h2>
             <p className="text-xs text-slate-500 dark:text-[#9BAAC2] flex items-center justify-center sm:justify-start gap-1.5 font-mono">
               <Mail className="w-3.5 h-3.5 text-[#00A3FF]" /> {user.email}
             </p>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-2">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
               <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#060B18] text-xs text-[#00A3FF] border border-slate-200 dark:border-white/5 font-mono">
-                {user.college || 'National Institute of Technology'}
+                {user.college || 'SkillNova Engineering Academy'}
               </span>
               <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#060B18] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/5 font-mono">
                 {user.branch || 'Computer Science & Engineering'} • {user.year_of_study || '3rd Year'}
@@ -79,7 +181,7 @@ export const StudentProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Academic Details Grid */}
+        {/* Academic Details Summary Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
             <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider">Status</span>
@@ -103,7 +205,200 @@ export const StudentProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* THEME CUSTOMIZATION SECTION */}
+        {/* SECTION 1: EDITABLE PROFILE SETTINGS (Strictly Full Name & Profile Image) */}
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Camera className="w-4 h-4 text-[#00A3FF]" />
+                <span>Editable Profile Information</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-[#9BAAC2]">
+                As a student, you can update your Full Name and Profile Photo. Changes are saved directly to Supabase.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 uppercase font-bold">
+              Student Permitted
+            </span>
+          </div>
+
+          <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Full Name */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  Full Name <span className="text-[#00A3FF]">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="w-full bg-slate-50 dark:bg-[#060B18] border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white outline-none focus:border-[#00A3FF] transition font-medium"
+                />
+              </div>
+
+              {/* Profile Image URL */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  Profile Photo URL
+                </label>
+                <input
+                  type="url"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="https://images.unsplash.com/... or public image link"
+                  className="w-full bg-slate-50 dark:bg-[#060B18] border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white outline-none focus:border-[#00A3FF] transition font-mono"
+                />
+              </div>
+            </div>
+
+            {/* Quick Avatar Chooser */}
+            <div className="space-y-2 pt-1">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-[#9BAAC2] block">
+                Or select a preset avatar:
+              </span>
+              <div className="flex items-center gap-3">
+                {presetAvatars.map((url, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setAvatarUrl(url)}
+                    className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${
+                      avatarUrl === url
+                        ? 'border-[#00A3FF] ring-2 ring-[#00A3FF]/40 scale-105'
+                        : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
+                    }`}
+                  >
+                    <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="pt-2 flex items-center justify-end">
+              <button
+                type="submit"
+                disabled={isSaving}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] hover:opacity-95 text-white text-xs font-black shadow-lg shadow-[#00A3FF]/25 flex items-center gap-2 transition disabled:opacity-50"
+              >
+                {isSaving ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving to Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Profile Changes</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+
+        {/* SECTION 2: INSTITUTIONAL & ACADEMIC FIELDS (Strictly Read-Only) */}
+        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-500" />
+                <span>Institutional & Academic Credentials (Strictly Read-Only)</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-[#9BAAC2]">
+                These verified attributes are managed exclusively by SkillNova Institutional Administration and cannot be altered by students.
+              </p>
+            </div>
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-500 border border-amber-500/30 uppercase font-bold flex items-center gap-1">
+              <Lock className="w-3 h-3" />
+              Locked by Admin
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5 pt-1">
+            {/* Username */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider">
+                  Username
+                </span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-mono font-bold text-slate-900 dark:text-white">
+                {user.username || user.email?.split('@')[0] || 'student'}
+              </p>
+            </div>
+
+            {/* Email Address */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider">
+                  Email Address
+                </span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-mono font-bold text-slate-900 dark:text-white truncate">
+                {user.email}
+              </p>
+            </div>
+
+            {/* Role */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider">
+                  System Role
+                </span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-bold text-[#00A3FF] uppercase font-mono">
+                {user.role || 'Student'}
+              </p>
+            </div>
+
+            {/* Assigned College */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider flex items-center gap-1">
+                  <Building className="w-3 h-3" /> Assigned College
+                </span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-900 dark:text-white">
+                {user.college || 'SkillNova Engineering Academy'}
+              </p>
+            </div>
+
+            {/* Academic Branch */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider flex items-center gap-1">
+                  <GraduationCap className="w-3 h-3" /> Academic Branch
+                </span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-900 dark:text-white">
+                {user.branch || 'Computer Science & Engineering'}
+              </p>
+            </div>
+
+            {/* Year of Study */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider flex items-center gap-1">
+                  <Calendar className="w-3 h-3" /> Year of Study
+                </span>
+                <Lock className="w-3 h-3 text-slate-400" />
+              </div>
+              <p className="text-xs font-bold text-slate-900 dark:text-white">
+                {user.year_of_study || '3rd Year (Batch 2026)'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 3: THEME CUSTOMIZATION */}
         <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
@@ -151,7 +446,6 @@ export const StudentProfilePage: React.FC = () => {
                 Clean light background with electric-blue highlights, clear dark typography, subtle blue shadows, and restrained blue sprinkles.
               </p>
 
-              {/* Theme Preview Swatches */}
               <div className="flex items-center gap-2 pt-1">
                 <span className="w-4 h-4 rounded-full bg-white border border-slate-300" title="Clean White" />
                 <span className="w-4 h-4 rounded-full bg-[#00A3FF]" title="Fluorescent Blue" />
@@ -190,7 +484,6 @@ export const StudentProfilePage: React.FC = () => {
                 Deep black background with luminous fluorescent blue bottom glow, falling sparkling particles, and high-contrast text.
               </p>
 
-              {/* Theme Preview Swatches */}
               <div className="flex items-center gap-2 pt-1">
                 <span className="w-4 h-4 rounded-full bg-[#050811] border border-white/20" title="Deep Black" />
                 <span className="w-4 h-4 rounded-full bg-[#00A3FF]" title="Fluorescent Blue" />
@@ -201,27 +494,40 @@ export const StudentProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* Enrolled Courses Summary */}
+        {/* SECTION 4: ENROLLED COURSES SUMMARY (Read-Only) */}
         <div className="space-y-3 pt-4 border-t border-slate-200 dark:border-white/10">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#9BAAC2] font-mono">
-            Assigned Technology Tracks
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {enrolledCourses.map((c: any) => (
-              <div 
-                key={c.id} 
-                className="p-4 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center justify-between"
-              >
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900 dark:text-white">{c.title}</h4>
-                  <p className="text-[11px] text-slate-500 dark:text-[#9BAAC2] font-mono">Mentor: {c.mentor_name || 'Senior Mentor'}</p>
-                </div>
-                <span className="text-xs font-bold text-[#00A3FF] font-mono">
-                  {c.progressPercentage}%
-                </span>
-              </div>
-            ))}
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#9BAAC2] font-mono flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-[#00A3FF]" />
+              Assigned Technology Tracks ({enrolledCourses.length})
+            </h3>
+            <span className="text-[10px] font-mono text-slate-400">Strictly Read-Only</span>
           </div>
+
+          {enrolledCourses.length === 0 ? (
+            <div className="p-5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 text-center text-xs text-slate-500 dark:text-[#9BAAC2]">
+              No active course enrollments found for this account.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {enrolledCourses.map((c: any) => (
+                <div 
+                  key={c.id} 
+                  className="p-4 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white">{c.title}</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-[#9BAAC2] font-mono">
+                      Mentor: {c.mentor_name || 'Senior Mentor'}
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-[#00A3FF] font-mono">
+                    {c.progressPercentage}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>

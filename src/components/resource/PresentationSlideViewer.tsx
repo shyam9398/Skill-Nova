@@ -24,6 +24,28 @@ export const PresentationSlideViewer: React.FC<PresentationSlideViewerProps> = (
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [viewMode, setViewMode] = useState<'embedded' | 'interactive'>(() => {
+    return presentation.ppt_url ? 'embedded' : 'interactive';
+  });
+
+  const getEmbeddablePptUrl = (rawUrl?: string): string => {
+    if (!rawUrl) return '';
+    const clean = rawUrl.trim();
+    if (clean.includes('docs.google.com/presentation')) {
+      return clean.replace(/\/edit(\?.*)?$/, '/embed?start=false&loop=false&delayms=3000').replace(/\/pub(\?.*)?$/, '/embed?start=false&loop=false&delayms=3000');
+    }
+    if (clean.includes('drive.google.com')) {
+      const match = clean.match(/\/d\/([a-zA-Z0-9_-]+)/) || clean.match(/id=([a-zA-Z0-9_-]+)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/file/d/${match[1]}/preview`;
+      }
+      return clean.replace(/\/view(\?.*)?$/, '/preview');
+    }
+    if (clean.endsWith('.ppt') || clean.endsWith('.pptx') || clean.includes('.ppt') || clean.includes('.pptx')) {
+      return `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(clean)}`;
+    }
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(clean)}&embedded=true`;
+  };
 
   // Get authorization for this sub-module
   const authInfo = dataService.getAuthorizedSlidesForSubModule(presentation.id, subModuleId);
@@ -246,6 +268,34 @@ export const PresentationSlideViewer: React.FC<PresentationSlideViewerProps> = (
           </div>
 
           <div className="flex items-center gap-2">
+            {/* View Mode Toggle when PPT URL exists */}
+            {presentation.ppt_url && (
+              <div className="flex items-center p-0.5 rounded-xl bg-[#1E293B] border border-white/10 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('embedded')}
+                  className={`px-3 py-1 rounded-lg font-bold transition ${
+                    viewMode === 'embedded'
+                      ? 'bg-[#176BFF] text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Presentation View
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('interactive')}
+                  className={`px-3 py-1 rounded-lg font-bold transition ${
+                    viewMode === 'interactive'
+                      ? 'bg-[#176BFF] text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Interactive Slides
+                </button>
+              </div>
+            )}
+
             {/* Zoom Controls */}
             <div className="hidden md:flex items-center gap-1 bg-[#1E293B] px-2 py-1 rounded-xl text-xs text-slate-300">
               <button
@@ -331,6 +381,17 @@ export const PresentationSlideViewer: React.FC<PresentationSlideViewerProps> = (
               <div className="text-xs text-slate-500 font-mono">
                 Allocated Slide Range: {startSlide}–{endSlide} • Presentation: {presentation.title}
               </div>
+            </div>
+          ) : viewMode === 'embedded' && presentation.ppt_url ? (
+            /* Embedded In-Platform Presentation View */
+            <div className="w-full h-full max-w-5xl rounded-2xl overflow-hidden border border-[#334155] shadow-2xl bg-black flex flex-col">
+              <iframe
+                src={getEmbeddablePptUrl(presentation.ppt_url)}
+                title={presentation.title}
+                className="w-full h-full border-0 flex-1"
+                allow="autoplay; fullscreen"
+                allowFullScreen
+              />
             </div>
           ) : (
             /* Accessible Slide Stage */

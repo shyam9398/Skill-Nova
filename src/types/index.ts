@@ -248,11 +248,16 @@ export interface Topic {
   // Specific Resource Types & Slide/Doc Ranges
 
   resource_type?:
+    | "video"
+    | "ppt"
+    | "notes"
+    | "interview"
     | "drive_video"
     | "ppt_presentation"
     | "doc_questions"
     | "flashcards"
-    | "quiz";
+    | "quiz"
+    | string;
 
   drive_video_url?: string;
 

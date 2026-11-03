@@ -74,9 +74,9 @@ export const StudentDashboardPage: React.FC = () => {
   });
 
   return (
-    <div className="space-y-8 animate-fadeIn max-w-7xl mx-auto pb-16 text-[#F0F5FF]">
+    <div className="space-y-8 animate-fadeIn max-w-7xl mx-auto pb-16 text-black dark:text-[#F0F5FF]">
       {/* 1. Welcome & High-Impact Analytics Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#0E1729] via-[#15233A] to-[#0A101D] border border-white/10 p-6 md:p-8 shadow-2xl relative overflow-hidden">
+      <div className="dark-section rounded-3xl bg-gradient-to-r from-[#0E1729] via-[#15233A] to-[#0A101D] border border-white/10 p-6 md:p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#00D4B8]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-[#397BFF]/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -178,7 +178,7 @@ export const StudentDashboardPage: React.FC = () => {
       </div>
 
       {/* 3. Contribution-Style Streak Grid (Fluorescent Blue Shades) */}
-      <div className="rounded-3xl bg-[#101A2D] border border-[#1F2E47] p-6 shadow-xl space-y-4">
+      <div className="dark-section rounded-3xl bg-[#101A2D] border border-[#1F2E47] p-6 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="space-y-0.5">
             <h3 className="text-sm font-extrabold text-[#F0F5FF] flex items-center gap-2">
@@ -243,7 +243,7 @@ export const StudentDashboardPage: React.FC = () => {
       )}
 
       {/* 5. PROMINENT SECTION: My Learning Curriculum (Full-Width Dashboard Section) */}
-      <div className="rounded-3xl bg-[#101A2D] border border-[#1F2E47] p-6 md:p-8 shadow-2xl space-y-6">
+      <div className="dark-section rounded-3xl bg-[#101A2D] border border-[#1F2E47] p-6 md:p-8 shadow-2xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1F2E47]">
           <div>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#00D4B8]/15 text-[#00D4B8] border border-[#00D4B8]/30 mb-1">
@@ -276,7 +276,7 @@ export const StudentDashboardPage: React.FC = () => {
             return (
               <div
                 key={course.id}
-                className="bg-[#0A101D] rounded-3xl border border-white/10 p-6 space-y-6"
+                className="dark-card bg-[#0A101D] rounded-3xl border border-white/10 p-6 space-y-6"
               >
                 {/* Course Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/5">

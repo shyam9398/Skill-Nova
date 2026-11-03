@@ -635,3 +635,80 @@ html:not(.dark) [class*="bg-gradient"] .text-white {
     overflow-x: auto;
   }
 }
+
+/* ==========================================================================
+   GLOBAL QUIZ LEADERBOARD PODIUM & CELEBRATION STYLES
+   ========================================================================== */
+@keyframes gold-sparkle {
+  0%, 100% {
+    opacity: 0.8;
+    transform: scale(1);
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.4), inset 0 0 15px rgba(251, 191, 36, 0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+    box-shadow: 0 0 45px rgba(245, 158, 11, 0.75), inset 0 0 25px rgba(251, 191, 36, 0.5);
+  }
+}
+
+@keyframes silver-sparkle {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow: 0 0 18px rgba(203, 213, 225, 0.3);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 30px rgba(203, 213, 225, 0.55);
+  }
+}
+
+@keyframes bronze-sparkle {
+  0%, 100% {
+    opacity: 0.85;
+    box-shadow: 0 0 15px rgba(180, 83, 9, 0.25);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 25px rgba(180, 83, 9, 0.45);
+  }
+}
+
+@keyframes confetti-pop {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-80px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.podium-gold-glow {
+  animation: gold-sparkle 3s ease-in-out infinite;
+}
+
+.podium-silver-glow {
+  animation: silver-sparkle 4s ease-in-out infinite;
+}
+
+.podium-bronze-glow {
+  animation: bronze-sparkle 4s ease-in-out infinite;
+}
+
+.confetti-particle {
+  position: absolute;
+  pointer-events: none;
+  animation: confetti-pop 2.5s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .podium-gold-glow,
+  .podium-silver-glow,
+  .podium-bronze-glow,
+  .confetti-particle {
+    animation: none !important;
+  }
+}
+

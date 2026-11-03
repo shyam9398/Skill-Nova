@@ -22,3 +22,4 @@ BEGIN
       USING (bucket_id = 'user-avatars');
   END IF;
 END $$;
+

@@ -6709,7 +6709,7 @@ class DataService {
     });
 
     // 6. Interview Questions
-    this.getInterviewQuestions().forEach((iq: InterviewQuestion) => {
+    this.getInterviewQuestions().forEach((iq: any) => {
       if (iq.is_published === false) return;
       const parentTopic = this.topics.find((t) => t.id === iq.topic_id);
       if (!parentTopic || !enrolledCourseIds.has(parentTopic.course_id)) return;
@@ -8986,7 +8986,7 @@ Module 3: Production Deployment & System Leadership
       // Dynamic student profile & profile picture lookup
       const studentProfile = this.users.find((u) => u.id === entry.student_id);
       const studentName = studentProfile?.full_name || entry.student_name || "Student";
-      const avatarUrl = studentProfile?.avatar_url || studentProfile?.avatar || "";
+      const avatarUrl = studentProfile?.avatar_url || "";
 
       const quizObj = this.getQuizById(quizId);
       const totalQuestions =

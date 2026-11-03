@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   User as UserIcon, 
   Mail, 
@@ -17,9 +17,13 @@ import {
   Building,
   GraduationCap,
   Calendar,
-  Layers
+  Layers,
+  Upload,
+  Trash2,
+  Image as ImageIcon
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
+import { storageService } from '../../services/storageService';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 
@@ -44,6 +48,11 @@ export const StudentProfilePage: React.FC = () => {
   // Editable fields strictly restricted to: 1. Full name, 2. Profile image
   const [fullName, setFullName] = useState(user.full_name || '');
   const [avatarUrl, setAvatarUrl] = useState(user.avatar_url || '');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [isSaving, setIsSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -52,11 +61,43 @@ export const StudentProfilePage: React.FC = () => {
     if (user) {
       setFullName(user.full_name || '');
       setAvatarUrl(user.avatar_url || '');
+      setPreviewUrl(null);
+      setSelectedFile(null);
     }
   }, [user.id, user.full_name, user.avatar_url]);
 
   const enrolledCourses = dataService.getEnrolledCourses(user.id);
   const attempts = dataService.getQuizAttempts(user.id);
+
+  // File selection & validation
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    setFileError(null);
+    if (!file) return;
+
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!validTypes.includes(file.type)) {
+      setFileError('Invalid format. Please select a JPG, JPEG, PNG, or WEBP image.');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setFileError('File size exceeds 5MB limit. Please choose a smaller photo.');
+      return;
+    }
+
+    setSelectedFile(file);
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+  };
+
+  // Remove current / preview image
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setPreviewUrl(null);
+    setAvatarUrl('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
   // Handle Save Profile Changes
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -68,17 +109,32 @@ export const StudentProfilePage: React.FC = () => {
 
     setIsSaving(true);
     setSaveStatus(null);
+    setFileError(null);
 
     try {
+      let finalAvatarUrl = avatarUrl;
+
+      // If user uploaded a new local file from their device
+      if (selectedFile) {
+        const uploadRes = await storageService.uploadUserAvatar(selectedFile, user.id);
+        if (!uploadRes.success || !uploadRes.url) {
+          throw new Error(uploadRes.error || 'Failed to upload photo to Supabase storage.');
+        }
+        finalAvatarUrl = uploadRes.url;
+        setAvatarUrl(finalAvatarUrl);
+      }
+
       const res = await dataService.updateUserProfile(user.id, {
         full_name: fullName.trim(),
-        avatar_url: avatarUrl.trim()
+        avatar_url: finalAvatarUrl
       });
 
       if (res.success) {
+        setSelectedFile(null);
+        setPreviewUrl(null);
         setSaveStatus({
           type: 'success',
-          message: 'Profile updated successfully and synced to Supabase database!'
+          message: 'Leaderboard profile picture and identity updated in Supabase database!'
         });
         refreshUser();
       } else {
@@ -205,29 +261,104 @@ export const StudentProfilePage: React.FC = () => {
           </div>
         </div>
 
-        {/* SECTION 1: EDITABLE PROFILE SETTINGS (Strictly Full Name & Profile Image) */}
-        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
-          <div className="flex items-center justify-between">
+        {/* SECTION 1: LEADERBOARD PROFILE PICTURE & IDENTITY */}
+        <div className="space-y-6 pt-4 border-t border-slate-200 dark:border-white/10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="space-y-0.5">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <Camera className="w-4 h-4 text-[#00A3FF]" />
-                <span>Editable Profile Information</span>
+              <h3 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                <Camera className="w-5 h-5 text-[#00A3FF]" />
+                <span>Leaderboard Profile Picture</span>
               </h3>
               <p className="text-xs text-slate-500 dark:text-[#9BAAC2]">
-                As a student, you can update your Full Name and Profile Photo. Changes are saved directly to Supabase.
+                Your official photo displayed on the Winner Podium, Global Quiz Leaderboard, and Student Dashboard.
               </p>
             </div>
-            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 uppercase font-bold">
-              Student Permitted
+            <span className="text-[10px] font-mono px-2.5 py-1 rounded bg-[#00A3FF]/10 text-[#00A3FF] border border-[#00A3FF]/30 font-bold uppercase self-start sm:self-auto">
+              Supabase Storage
             </span>
           </div>
 
-          <form onSubmit={handleSaveProfile} className="space-y-4 pt-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Full Name */}
+          <form onSubmit={handleSaveProfile} className="space-y-6">
+            {/* Upload & Preview Card */}
+            <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex flex-col sm:flex-row items-center gap-6">
+              {/* Picture Preview */}
+              <div className="relative group shrink-0">
+                <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-[#00A3FF] shadow-lg shadow-[#00A3FF]/20 bg-slate-200 dark:bg-slate-800 flex items-center justify-center">
+                  {(previewUrl || avatarUrl || user.avatar_url) ? (
+                    <img
+                      src={previewUrl || avatarUrl || user.avatar_url}
+                      alt={fullName || user.full_name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-tr from-[#176BFF] to-[#00A3FF] text-white font-mono text-2xl font-black">
+                      {(fullName || user.full_name || 'S').slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                {previewUrl && (
+                  <span className="absolute -top-2 -right-2 px-2 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider animate-pulse">
+                    New Preview
+                  </span>
+                )}
+              </div>
+
+              {/* Upload Controls & Actions */}
+              <div className="space-y-3 flex-1 text-center sm:text-left">
+                <div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                    {selectedFile ? selectedFile.name : ((previewUrl || avatarUrl || user.avatar_url) ? 'Active Leaderboard Photo' : 'No Profile Picture Uploaded')}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC2] mt-0.5">
+                    Select a photo from your device. Allowed formats: <strong>JPG, JPEG, PNG, WEBP</strong> (Max 5MB).
+                  </p>
+                </div>
+
+                {fileError && (
+                  <div className="p-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-semibold flex items-center gap-2 justify-center sm:justify-start">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>{fileError}</span>
+                  </div>
+                )}
+
+                {/* Hidden File Picker Input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/jpg"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 rounded-xl bg-[#00A3FF] hover:bg-[#008de0] text-white text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-[#00A3FF]/20"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{(previewUrl || avatarUrl || user.avatar_url) ? 'Change Image' : 'Upload Image'}</span>
+                  </button>
+
+                  {(previewUrl || avatarUrl || user.avatar_url) && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveImage}
+                      className="px-4 py-2 rounded-xl bg-slate-200 dark:bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-slate-700 dark:text-slate-300 text-xs font-bold transition flex items-center gap-1.5 border border-slate-300 dark:border-white/10"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Remove Image</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Full Name & Preset Quick Options */}
+            <div className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                  Full Name <span className="text-[#00A3FF]">*</span>
+                  Student Full Name (Displayed on Leaderboard) <span className="text-[#00A3FF]">*</span>
                 </label>
                 <input
                   type="text"
@@ -239,44 +370,35 @@ export const StudentProfilePage: React.FC = () => {
                 />
               </div>
 
-              {/* Profile Image URL */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
-                  Profile Photo URL
-                </label>
-                <input
-                  type="url"
-                  value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/... or public image link"
-                  className="w-full bg-slate-50 dark:bg-[#060B18] border border-slate-300 dark:border-white/10 rounded-xl px-4 py-2.5 text-xs text-slate-900 dark:text-white outline-none focus:border-[#00A3FF] transition font-mono"
-                />
+              {/* Preset Avatars for Fast Selection */}
+              <div className="space-y-2 pt-1">
+                <span className="text-[11px] font-medium text-slate-500 dark:text-[#9BAAC2] block">
+                  Or pick a curated avatar preset:
+                </span>
+                <div className="flex items-center gap-3">
+                  {presetAvatars.map((url, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => {
+                        setAvatarUrl(url);
+                        setPreviewUrl(null);
+                        setSelectedFile(null);
+                      }}
+                      className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${
+                        (avatarUrl === url && !previewUrl)
+                          ? 'border-[#00A3FF] ring-2 ring-[#00A3FF]/40 scale-105'
+                          : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
+                      }`}
+                    >
+                      <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
-            {/* Quick Avatar Chooser */}
-            <div className="space-y-2 pt-1">
-              <span className="text-[11px] font-medium text-slate-500 dark:text-[#9BAAC2] block">
-                Or select a preset avatar:
-              </span>
-              <div className="flex items-center gap-3">
-                {presetAvatars.map((url, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setAvatarUrl(url)}
-                    className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${
-                      avatarUrl === url
-                        ? 'border-[#00A3FF] ring-2 ring-[#00A3FF]/40 scale-105'
-                        : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
-                    }`}
-                  >
-                    <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
+            {/* Save Changes Button */}
             <div className="pt-2 flex items-center justify-end">
               <button
                 type="submit"
@@ -291,7 +413,7 @@ export const StudentProfilePage: React.FC = () => {
                 ) : (
                   <>
                     <Save className="w-3.5 h-3.5" />
-                    <span>Save Profile Changes</span>
+                    <span>Save Changes</span>
                   </>
                 )}
               </button>

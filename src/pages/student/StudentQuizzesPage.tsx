@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useAuth } from '../../context/AuthContext';
+import { GlobalQuizLeaderboardView } from '../../components/quizzes/GlobalQuizLeaderboardView';
 import type { Quiz, QuizAttempt, QuizLeaderboardEntry, QuizQuestionItem } from '../../types';
 
 export const StudentQuizzesPage: React.FC = () => {
@@ -377,163 +378,20 @@ export const StudentQuizzesPage: React.FC = () => {
   }
 
   // -------------------------------------------------------------
-  // VIEW: 2. QUIZ RESULT & WINNING LEADERBOARD MODAL
+  // VIEW: 2. GLOBAL QUIZ LEADERBOARD VIEW (POST SUBMISSION)
   // -------------------------------------------------------------
   if (lastSubmissionResult && activeResultQuiz) {
-    const leaderboard = dataService.getQuizLeaderboard(activeResultQuiz.id);
-    const topThree = leaderboard.slice(0, 3);
-    const remaining = leaderboard.slice(3);
-
     return (
-      <div className="max-w-4xl mx-auto space-y-6 pb-20 animate-fadeIn text-slate-900 dark:text-white">
-        {/* Score & Accuracy Hero Card */}
-        <div className="rounded-3xl bg-white dark:bg-[#0B132B] border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-md dark:shadow-2xl text-center space-y-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-[#00A3FF]/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-bold bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/30">
-            <Trophy className="w-4 h-4" />
-            <span>ASSESSMENT COMPLETED</span>
-          </div>
-
-          <div>
-            <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white">{activeResultQuiz.title}</h1>
-            <p className="text-xs text-slate-600 dark:text-[#9BAAC2] mt-1">Result Summary & Verified Evaluation</p>
-          </div>
-
-          {/* Scores Matrix */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-2xl mx-auto">
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10">
-              <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2] uppercase font-mono block">Score Earned</span>
-              <span className="text-2xl font-black text-[#00A3FF] dark:text-[#00D1FF] font-mono">
-                {lastSubmissionResult.attempt.score} / {lastSubmissionResult.attempt.total_marks || 100}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10">
-              <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2] uppercase font-mono block">Accuracy</span>
-              <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">
-                {lastSubmissionResult.accuracy}%
-              </span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10">
-              <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2] uppercase font-mono block">Correct</span>
-              <span className="text-2xl font-black text-emerald-700 dark:text-emerald-300 font-mono">
-                {lastSubmissionResult.correctCount} / {lastSubmissionResult.totalQuestions}
-              </span>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10">
-              <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2] uppercase font-mono block">Official Rank</span>
-              <span className="text-2xl font-black text-amber-600 dark:text-amber-300 font-mono">
-                #{lastSubmissionResult.leaderboardPosition}
-              </span>
-            </div>
-          </div>
-
-          {/* First Attempt vs Practice Mode Banner */}
-          <div className="max-w-xl mx-auto p-3 rounded-xl bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-xs text-slate-600 dark:text-[#9BAAC2]">
-            {lastSubmissionResult.attempt.is_first_attempt ? (
-              <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center justify-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
-                This was your official First Attempt. Your rank has been entered on the official leaderboard.
-              </span>
-            ) : (
-              <span className="text-purple-600 dark:text-purple-300 font-semibold flex items-center justify-center gap-1.5">
-                <Sparkles className="w-4 h-4" />
-                Personal Practice Attempt: Your official first-attempt rank is preserved and unaffected.
-              </span>
-            )}
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
-            <button
-              onClick={() => handleStartQuiz(activeResultQuiz, true)}
-              className="px-6 py-2.5 rounded-xl bg-[#176BFF] hover:bg-[#00A3FF] text-white text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-[#176BFF]/25"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Practice Again</span>
-            </button>
-
-            <button
-              onClick={() => {
-                setLastSubmissionResult(null);
-                setActiveResultQuiz(null);
-              }}
-              className="px-6 py-2.5 rounded-xl bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:bg-[#1F2E47] text-slate-800 dark:text-white text-xs font-bold transition border border-slate-200 dark:border-white/10"
-            >
-              Back to Quizzes List
-            </button>
-          </div>
-        </div>
-
-        {/* WINNING LEADERBOARD */}
-        <div className="rounded-3xl bg-white dark:bg-[#091226] border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-md dark:shadow-2xl space-y-6">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center">
-                <Trophy className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white">Official Quiz Leaderboard</h3>
-                <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">
-                  Ranked by Score → Accuracy → Earliest valid completion (First Attempt Rule)
-                </p>
-              </div>
-            </div>
-            <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC2] border border-slate-200 dark:border-white/10">
-              {leaderboard.length} Participants
-            </span>
-          </div>
-
-          {/* Top 3 Podium Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {topThree.map((entry, idx) => {
-              const medalEmoji = idx === 0 ? '🥇 1st Place' : idx === 1 ? '🥈 2nd Place' : '🥉 3rd Place';
-              const medalColor = idx === 0 ? 'border-amber-500/40 bg-amber-50 dark:bg-amber-500/10' : idx === 1 ? 'border-slate-300/40 bg-slate-100 dark:bg-slate-300/10' : 'border-amber-700/40 bg-orange-50 dark:bg-amber-700/10';
-
-              return (
-                <div
-                  key={entry.student_id}
-                  className={`p-5 rounded-2xl border text-center space-y-2 relative overflow-hidden ${medalColor}`}
-                >
-                  <span className="text-sm font-bold block">{medalEmoji}</span>
-                  <h4 className="text-base font-extrabold text-slate-900 dark:text-white truncate">{entry.student_name}</h4>
-                  <div className="text-xs font-mono text-[#00A3FF] dark:text-[#00D1FF] font-bold">
-                    Score: {entry.score} • {entry.accuracy}% Accuracy
-                  </div>
-                  <span className="text-[10px] text-slate-600 dark:text-[#9BAAC2] font-mono block">
-                    Time: {Math.floor(entry.time_spent_seconds / 60)}m {entry.time_spent_seconds % 60}s
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Remaining Participants Table */}
-          {remaining.length > 0 && (
-            <div className="space-y-2 pt-2">
-              <span className="text-xs font-bold text-slate-500 dark:text-[#9BAAC2] uppercase font-mono block">Remaining Participants</span>
-              <div className="divide-y divide-slate-200 dark:divide-white/5 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#101A2D]">
-                {remaining.map(entry => (
-                  <div key={entry.student_id} className="p-3.5 px-5 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <span className="w-6 font-mono font-bold text-slate-500 dark:text-[#9BAAC2]">#{entry.rank}</span>
-                      <span className="font-semibold text-slate-900 dark:text-white">{entry.student_name}</span>
-                    </div>
-                    <div className="flex items-center gap-4 font-mono text-[11px]">
-                      <span className="text-[#00A3FF] dark:text-[#00D1FF] font-bold">Score: {entry.score}</span>
-                      <span className="text-emerald-600 dark:text-emerald-400">{entry.accuracy}% Acc</span>
-                      <span className="text-slate-500 dark:text-[#9BAAC2]">{Math.floor(entry.time_spent_seconds / 60)}m {entry.time_spent_seconds % 60}s</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
+      <GlobalQuizLeaderboardView
+        quiz={activeResultQuiz}
+        currentStudentId={studentId}
+        lastAttempt={lastSubmissionResult.attempt}
+        onPracticeAgain={() => handleStartQuiz(activeResultQuiz, true)}
+        onBackToQuizzes={() => {
+          setLastSubmissionResult(null);
+          setActiveResultQuiz(null);
+        }}
+      />
     );
   }
 
@@ -737,72 +595,21 @@ export const StudentQuizzesPage: React.FC = () => {
 
       {/* Standalone Leaderboard Viewer Modal */}
       {viewingLeaderboardQuizId && (() => {
-        const lbQuiz = quizzes.find(q => q.id === viewingLeaderboardQuizId);
-        const lbEntries = dataService.getQuizLeaderboard(viewingLeaderboardQuizId);
-        const top3 = lbEntries.slice(0, 3);
-        const rest = lbEntries.slice(3);
+        const lbQuiz = quizzes.find((q) => q.id === viewingLeaderboardQuizId);
+        if (!lbQuiz) return null;
 
         return (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md p-4 md:p-8 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-2xl w-full p-6 md:p-8 space-y-5 shadow-2xl max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center">
-                    <Trophy className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{lbQuiz?.title || 'Quiz'} Leaderboard</h3>
-                    <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">Official First-Attempt Rankings</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setViewingLeaderboardQuizId(null)}
-                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition text-slate-800 dark:text-white"
-                >
-                  Close
-                </button>
-              </div>
-
-              {/* Top 3 */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {top3.map((entry, idx) => (
-                  <div
-                    key={entry.student_id}
-                    className="p-4 rounded-2xl bg-amber-50/50 dark:bg-[#101F3B] border border-amber-500/30 text-center space-y-1.5"
-                  >
-                    <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
-                      {idx === 0 ? '🥇 1st Place' : idx === 1 ? '🥈 2nd Place' : '🥉 3rd Place'}
-                    </span>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{entry.student_name}</h4>
-                    <div className="text-xs font-mono font-bold text-[#00A3FF] dark:text-[#00D1FF]">
-                      {entry.score} Pts ({entry.accuracy}%)
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Rest of students */}
-              {rest.length > 0 && (
-                <div className="space-y-1.5 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#101A2D]">
-                  {rest.map(entry => (
-                    <div key={entry.student_id} className="p-3 px-4 flex items-center justify-between text-xs border-b border-slate-200 dark:border-white/5 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-slate-500 dark:text-[#9BAAC2]">#{entry.rank}</span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{entry.student_name}</span>
-                      </div>
-                      <div className="font-mono text-[11px] text-[#00A3FF] dark:text-[#00D1FF]">
-                        {entry.score} Pts • {entry.accuracy}% Acc
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {lbEntries.length === 0 && (
-                <div className="py-8 text-center text-xs text-slate-500 dark:text-[#9BAAC2]">
-                  No submitted attempts recorded yet for this quiz.
-                </div>
-              )}
+          <div className="fixed inset-0 z-50 bg-slate-900/70 dark:bg-black/85 backdrop-blur-md p-3 sm:p-6 md:p-8 flex items-center justify-center overflow-y-auto">
+            <div className="w-full max-w-5xl my-auto animate-fadeIn">
+              <GlobalQuizLeaderboardView
+                quiz={lbQuiz}
+                currentStudentId={studentId}
+                onPracticeAgain={() => {
+                  setViewingLeaderboardQuizId(null);
+                  handleStartQuiz(lbQuiz, true);
+                }}
+                onBackToQuizzes={() => setViewingLeaderboardQuizId(null)}
+              />
             </div>
           </div>
         );

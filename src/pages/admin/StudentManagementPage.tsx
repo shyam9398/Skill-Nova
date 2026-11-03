@@ -36,7 +36,10 @@ export const StudentManagementPage: React.FC = () => {
       setCourses(dataService.getCourses());
     };
     update();
-    return dataService.subscribe(update);
+    const unsubscribe = dataService.subscribe(update);
+    void dataService.syncUsersFromSupabase();
+    void dataService.syncCoursesFromSupabase();
+    return () => unsubscribe();
   }, []);
 
   const filteredStudents = students.filter(s => {

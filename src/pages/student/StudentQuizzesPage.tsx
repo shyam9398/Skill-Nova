@@ -35,6 +35,8 @@ export const StudentQuizzesPage: React.FC = () => {
   );
 
   useEffect(() => {
+    void dataService.syncQuizzesFromSupabase();
+    void dataService.syncQuizAttemptsFromSupabase();
     const unsub = dataService.subscribe(() => {
       setQuizzes(dataService.getQuizzesList());
       setStudentAttempts(dataService.getQuizAttemptsForStudent(undefined, studentId));

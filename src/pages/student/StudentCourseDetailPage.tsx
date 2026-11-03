@@ -28,6 +28,11 @@ export const StudentCourseDetailPage: React.FC = () => {
 
   // Subscribe to realtime updates from Supabase
   useEffect(() => {
+    void dataService.syncCoursesFromSupabase();
+    void dataService.syncModulesFromSupabase();
+    void dataService.syncSubModulesFromSupabase();
+    void dataService.syncTopicsFromSupabase();
+    void dataService.syncPresentationsFromSupabase();
     const unsub = dataService.subscribe(() => {
       setCourse(dataService.getCourseById(courseId || ''));
       setModules(dataService.getModulesForCourse(courseId || ''));

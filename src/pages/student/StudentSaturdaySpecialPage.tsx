@@ -10,6 +10,7 @@ export const StudentSaturdaySpecialPage: React.FC = () => {
   const [sessions, setSessions] = useState<SaturdaySpecial[]>([]);
 
   useEffect(() => {
+    void dataService.syncSaturdaySpecialsFromSupabase();
     const update = () => {
       // Students only see released Saturday sessions
       setSessions(dataService.getSaturdaySpecials());

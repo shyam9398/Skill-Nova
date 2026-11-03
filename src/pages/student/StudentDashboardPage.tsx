@@ -24,6 +24,7 @@ export const StudentDashboardPage: React.FC = () => {
   );
 
   useEffect(() => {
+    void dataService.syncAllFromSupabase();
     const load = () => {
       const courses = currentUser ? dataService.getEnrolledCoursesForStudent(studentId) : [];
       setEnrolledCourses(courses);

@@ -12,12 +12,13 @@ export const StudentOpportunitiesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    void dataService.syncOpportunitiesFromSupabase();
     const update = () => {
       // Only display active, published opportunities to students
-      const all = dataService.getOpportunities();
       setOpportunities(all.filter(o => o.is_active !== false));
     };
-    update();
+    const all = dataService.getOpportunities();
+    setOpportunities(all.filter(o => o.is_active !== false));
     return dataService.subscribe(update);
   }, []);
 

@@ -82,6 +82,9 @@ Module 3: Distributed Systems & Backend
   useEffect(() => {
     loadCourses();
     const unsubscribe = dataService.subscribe(loadCourses);
+    void dataService.syncCoursesFromSupabase();
+    void dataService.syncModulesFromSupabase();
+    void dataService.syncSubModulesFromSupabase();
     return () => unsubscribe();
   }, []);
 

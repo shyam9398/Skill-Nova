@@ -198,6 +198,7 @@ export const AuthProvider: React.FC<{
     const user: User = {
       id: authUserId,
       email: cleanEmail,
+      username: profile?.username || cleanEmail.split('@')[0],
       full_name:
         profile?.full_name ||
         cleanEmail.split('@')[0],
@@ -248,6 +249,7 @@ export const AuthProvider: React.FC<{
 
         if (isMounted) {
           setPersistedUser(user);
+          void dataService.syncAllFromSupabase();
         }
 
       } catch (error) {
@@ -290,6 +292,7 @@ export const AuthProvider: React.FC<{
           setTimeout(() => {
             if (isMounted) {
               void loadUser(session);
+              void dataService.syncAllFromSupabase();
             }
           }, 0);
         }
@@ -344,7 +347,7 @@ export const AuthProvider: React.FC<{
   // --------------------------------------------------
 
   const login = async (
-    email: string,
+    identifier: string,
     password = '',
     expectedRole?: UserRole
   ): Promise<{ success: boolean; error?: string }> => {
@@ -352,90 +355,142 @@ export const AuthProvider: React.FC<{
     setIsLoading(true);
 
     try {
-      const cleanEmail = email.trim().toLowerCase();
+      const cleanInput = identifier.trim().toLowerCase();
 
-      if (!cleanEmail || !password) {
+      if (!cleanInput || !password) {
         return {
           success: false,
-          error: 'Please enter your email and password.',
+          error: 'Please enter your username or email and password.',
         };
       }
 
-      // REAL SUPABASE AUTHENTICATION
-      if (isLiveSupabaseConfigured) {
-        const {
-          data,
-          error,
-        } = await supabase.auth.signInWithPassword({
-          email: cleanEmail,
-          password,
-        });
+      // Build candidate emails to resolve username to Supabase Auth email
+      let candidateEmails: string[] = [];
 
-        if (error || !data.user || !data.session) {
-          console.error(
-            '[SkillNova Auth] Login failed:',
-            error?.message
-          );
-
-          return {
-            success: false,
-            error:
-              error?.message ||
-              'Authentication failed.',
-          };
+      if (cleanInput.includes('@')) {
+        // User entered a full email address (e.g. admin@skillnova.edu, student@skillnova.edu)
+        candidateEmails = [cleanInput];
+      } else {
+        // User entered a username (e.g. mohan, mentor, student)
+        // 1. Check existing local registry
+        const localMatch = dataService.getUserByEmail(cleanInput);
+        if (localMatch?.email) {
+          candidateEmails.push(localMatch.email.toLowerCase());
         }
 
-        // Fetch role from the database.
-        const user = await fetchSupabaseUserProfile(
-          data.user.id,
-          data.user.email || cleanEmail
-        );
-
-        // Verify admin permissions.
-        if (
-          expectedRole === 'admin' &&
-          user.role !== 'admin'
-        ) {
-          await supabase.auth.signOut();
-
-          return {
-            success: false,
-            error:
-              'Unauthorized: Admin privileges required.',
-          };
+        // 2. Synthesize standard platform domains
+        if (expectedRole === 'student') {
+          candidateEmails.push(`${cleanInput}@student.skillnova.edu`);
+          candidateEmails.push(`${cleanInput}@skillnova.edu`);
+        } else {
+          // Admin or sub-admin portal
+          candidateEmails.push(`${cleanInput}@skillnova.edu`);
+          candidateEmails.push(`${cleanInput}@student.skillnova.edu`);
         }
 
-        if (
-          expectedRole === 'sub_admin' &&
-          user.role !== 'sub_admin' &&
-          user.role !== 'admin'
-        ) {
-          await supabase.auth.signOut();
-
-          return {
-            success: false,
-            error:
-              'Unauthorized: Sub-admin privileges required.',
-          };
-        }
-
-        setPersistedUser(user);
-
-        console.log(
-          '[SkillNova Auth] Login successful:',
-          {
-            id: data.user.id,
-            email: data.user.email,
-            role: user.role,
-          }
-        );
-
-        return { success: true };
+        // Deduplicate while preserving priority
+        candidateEmails = Array.from(new Set(candidateEmails));
       }
 
-      // LOCAL FALLBACK FOR DEMO MODE ONLY
+      let lastAuthError: any = null;
+
+      // REAL SUPABASE AUTHENTICATION
+      if (isLiveSupabaseConfigured) {
+        let authSuccessData: any = null;
+        let authenticatedEmail = '';
+
+        for (const candidate of candidateEmails) {
+          const {
+            data,
+            error,
+          } = await supabase.auth.signInWithPassword({
+            email: candidate,
+            password,
+          });
+
+          if (!error && data?.user && data?.session) {
+            authSuccessData = data;
+            authenticatedEmail = candidate;
+            break;
+          }
+
+          lastAuthError = error;
+          const msg = (error?.message || '').toLowerCase();
+          // Stop trying candidate domains if the error is not a bad credential
+          if (
+            !msg.includes('invalid login credentials') &&
+            !msg.includes('invalid credentials') &&
+            !msg.includes('user not found') &&
+            !msg.includes('email not confirmed')
+          ) {
+            break;
+          }
+        }
+
+        if (authSuccessData?.user && authSuccessData?.session) {
+          // Fetch role from the database.
+          const user = await fetchSupabaseUserProfile(
+            authSuccessData.user.id,
+            authSuccessData.user.email || authenticatedEmail
+          );
+
+          // Verify admin portal permissions (both Super Admin and Sub-Admin are authorized).
+          if (
+            expectedRole === 'admin' &&
+            user.role !== 'admin' &&
+            user.role !== 'sub_admin'
+          ) {
+            await supabase.auth.signOut();
+
+            return {
+              success: false,
+              error:
+                'Unauthorized: Administrative privileges required.',
+            };
+          }
+
+          if (
+            expectedRole === 'sub_admin' &&
+            user.role !== 'sub_admin' &&
+            user.role !== 'admin'
+          ) {
+            await supabase.auth.signOut();
+
+            return {
+              success: false,
+              error:
+                'Unauthorized: Sub-admin privileges required.',
+            };
+          }
+
+          setPersistedUser(user);
+          void dataService.syncAllFromSupabase();
+
+          console.log(
+            '[SkillNova Auth] Login successful:',
+            {
+              id: authSuccessData.user.id,
+              email: authSuccessData.user.email,
+              role: user.role,
+            }
+          );
+
+          return { success: true };
+        }
+
+        if (lastAuthError) {
+          console.warn(
+            '[SkillNova Auth] Supabase direct auth attempt note:',
+            lastAuthError.message
+          );
+        }
+      }
+
+      // LOCAL FALLBACK FOR DEMO / EVALUATOR ACCOUNTS
+      const resolvedIdentifier = candidateEmails[0] || cleanInput;
       const existingUser =
-        dataService.getUserByEmail(cleanEmail);
+        dataService.getUserByEmail(cleanInput) ||
+        dataService.getUserByEmail(resolvedIdentifier);
 
       if (
         existingUser &&
@@ -449,7 +504,7 @@ export const AuthProvider: React.FC<{
       }
 
       const localRes = dataService.login(
-        cleanEmail,
+        cleanInput,
         expectedRole
       );
 
@@ -462,7 +517,9 @@ export const AuthProvider: React.FC<{
       return {
         success: false,
         error:
-          localRes.error || 'Authentication failed.',
+          lastAuthError?.message ||
+          localRes.error ||
+          'Authentication failed. Please verify your credentials.',
       };
 
     } catch (error: any) {
@@ -542,6 +599,7 @@ export const AuthProvider: React.FC<{
 
     if (updated) {
       setPersistedUser(updated);
+      void dataService.syncAllFromSupabase();
     }
   };
 

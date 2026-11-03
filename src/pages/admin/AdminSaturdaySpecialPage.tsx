@@ -21,6 +21,7 @@ export const AdminSaturdaySpecialPage: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
 
   React.useEffect(() => {
+    void dataService.syncSaturdaySpecialsFromSupabase();
     const unsub = dataService.subscribe(() => {
       setSessions(dataService.getSaturdaySpecialSessions());
     });

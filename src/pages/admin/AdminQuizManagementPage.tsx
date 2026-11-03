@@ -52,6 +52,8 @@ export const AdminQuizManagementPage: React.FC = () => {
   const [courses, setCourses] = useState<Course[]>(() => dataService.getCoursesForCurrentUser());
 
   useEffect(() => {
+    void dataService.syncQuizzesFromSupabase();
+    void dataService.syncCoursesFromSupabase();
     const unsub = dataService.subscribe(() => {
       setQuizzes(dataService.getQuizzesList());
       setCourses(dataService.getCoursesForCurrentUser());

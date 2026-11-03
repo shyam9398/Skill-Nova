@@ -100,6 +100,11 @@ EXPLANATION: WebAssembly allows Python 3 to execute completely client-side in an
   const [quickModuleDesc, setQuickModuleDesc] = useState('');
 
   useEffect(() => {
+    void dataService.syncCoursesFromSupabase();
+    void dataService.syncModulesFromSupabase();
+    void dataService.syncSubModulesFromSupabase();
+    void dataService.syncTopicsFromSupabase();
+    void dataService.syncPresentationsFromSupabase();
     loadData();
     const unsubscribe = dataService.subscribe(loadData);
     return () => unsubscribe();

@@ -1,14 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { BookOpen, Clock, ArrowRight, UserCheck, Search, Filter, Video, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { dataService } from '../../services/dataService';
+import type { Course } from '../../types';
 
 export const StudentCoursesPage: React.FC = () => {
   const { currentUser } = useAuth();
-  const enrolledCourses = currentUser
-    ? dataService.getEnrolledCoursesForStudent(currentUser.id)
-    : [];
+  const [enrolledCourses, setEnrolledCourses] = useState<Course[]>(() => 
+    currentUser ? dataService.getEnrolledCoursesForStudent(currentUser.id) : []
+  );
+
+  useEffect(() => {
+    void dataService.syncCoursesFromSupabase();
+    void dataService.syncUsersFromSupabase();
+    const update = () => {
+      setEnrolledCourses(currentUser ? dataService.getEnrolledCoursesForStudent(currentUser.id) : []);
+    };
+    update();
+    return dataService.subscribe(update);
+  }, [currentUser]);
 
   const topics = dataService.getTopics();
   const [search, setSearch] = useState('');

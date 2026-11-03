@@ -24,6 +24,8 @@ export const StudentResourcesFeedPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
+    void dataService.syncTopicsFromSupabase();
+    void dataService.syncCoursesFromSupabase();
     // Initial fetch
     setResources(dataService.getResources());
     setCourses(dataService.getCourses());
@@ -31,6 +33,7 @@ export const StudentResourcesFeedPage: React.FC = () => {
     // Subscribe to reactive store so newly published resources appear immediately
     const unsubscribe = dataService.subscribe(() => {
       setResources(dataService.getResources());
+      setCourses(dataService.getCourses());
     });
 
     return () => unsubscribe();

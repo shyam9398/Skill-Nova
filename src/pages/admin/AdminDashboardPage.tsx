@@ -18,6 +18,7 @@ export const AdminDashboardPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    void dataService.syncAllFromSupabase();
     const refresh = () => {
       setCurrentUser(dataService.getCurrentUser());
       setStudents(dataService.getStudents());

@@ -24,6 +24,7 @@ export const AdminOpportunitiesPage: React.FC = () => {
   const [notification, setNotification] = useState<string | null>(null);
 
   React.useEffect(() => {
+    void dataService.syncOpportunitiesFromSupabase();
     const unsub = dataService.subscribe(() => {
       setOpportunities(dataService.getOpportunities());
     });

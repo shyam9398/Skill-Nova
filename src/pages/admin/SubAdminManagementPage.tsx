@@ -30,7 +30,11 @@ export const SubAdminManagementPage: React.FC = () => {
       setAuditLogs(dataService.getAuditLogs());
     };
     update();
-    return dataService.subscribe(update);
+    const unsubscribe = dataService.subscribe(update);
+    void dataService.syncUsersFromSupabase();
+    void dataService.syncCoursesFromSupabase();
+    void dataService.syncAuditLogsFromSupabase();
+    return () => unsubscribe();
   }, []);
 
   const handleCreateSubAdmin = (e: React.FormEvent) => {

@@ -92,14 +92,14 @@ export const AdminLoginPage: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="text-xs font-bold text-[#73839B] block mb-1.5">
-                Authorized Admin or Faculty Email
+                Authorized Admin Email or Sub-admin Username
               </label>
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@skillnova.edu"
+                placeholder="admin@skillnova.edu or sub-admin username"
                 className="w-full px-4 py-3 rounded-2xl bg-[#F5F9FF] border border-[#DFE9F6] text-xs text-[#15243B] focus:outline-hidden focus:border-[#176BFF] transition"
               />
             </div>
@@ -149,10 +149,10 @@ export const AdminLoginPage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => handleDemoFill('mentor@skillnova.edu')}
+                onClick={() => handleDemoFill('mentor')}
                 className="p-2 rounded-xl bg-[#F5F9FF] hover:bg-[#EAF3FF] border border-[#DFE9F6] text-[11px] font-bold text-[#15243B] transition"
               >
-                Sub-Admin (Vikram Patel)
+                Sub-Admin (@mentor)
               </button>
             </div>
           </div>

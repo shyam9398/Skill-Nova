@@ -4,7 +4,7 @@ import { GraduationCap, ArrowRight, Lock, AlertCircle, Sparkles, HelpCircle, Che
 import { useAuth } from '../../context/AuthContext';
 
 export const StudentLoginPage: React.FC = () => {
-  const [email, setEmail] = useState('student@skillnova.edu');
+  const [email, setEmail] = useState('student');
   const [password, setPassword] = useState('SkillNova@2026');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -89,14 +89,14 @@ export const StudentLoginPage: React.FC = () => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="text-xs font-bold text-[#73839B] block mb-1.5">
-                Registered Student Email or Username
+                Registered Student Username or Email
               </label>
               <input
-                type="email"
+                type="text"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="student@skillnova.edu"
+                placeholder="Username (e.g. mohan) or registered email"
                 className="w-full px-4 py-3 rounded-2xl bg-[#F5F9FF] border border-[#DFE9F6] text-xs text-[#15243B] focus:outline-hidden focus:border-[#176BFF] transition"
               />
             </div>
@@ -146,17 +146,17 @@ export const StudentLoginPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => handleDemoFill('student@skillnova.edu')}
+                onClick={() => handleDemoFill('student')}
                 className="p-2 rounded-xl bg-[#F5F9FF] hover:bg-[#EAF3FF] border border-[#DFE9F6] text-[11px] font-bold text-[#15243B] transition"
               >
-                Aarav Sharma (CS)
+                Aarav Sharma (@student)
               </button>
               <button
                 type="button"
-                onClick={() => handleDemoFill('pooja.verma@skillnova.edu')}
+                onClick={() => handleDemoFill('pooja.verma')}
                 className="p-2 rounded-xl bg-[#F5F9FF] hover:bg-[#EAF3FF] border border-[#DFE9F6] text-[11px] font-bold text-[#15243B] transition"
               >
-                Pooja Verma (IT)
+                Pooja Verma (@pooja.verma)
               </button>
             </div>
           </div>

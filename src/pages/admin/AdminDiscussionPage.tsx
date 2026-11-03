@@ -23,7 +23,12 @@ export const AdminDiscussionPage: React.FC = () => {
       setDiscussions(dataService.getDiscussions());
     };
     update();
-    return dataService.subscribe(update);
+    const unsub = dataService.subscribe(update);
+    void dataService.syncMentorRequestsFromSupabase();
+    void dataService.syncMentorRequestRepliesFromSupabase();
+    void dataService.syncDiscussionsFromSupabase();
+    void dataService.syncDiscussionRepliesFromSupabase();
+    return unsub;
   }, []);
 
   const handleSendReply = async (e: React.FormEvent) => {

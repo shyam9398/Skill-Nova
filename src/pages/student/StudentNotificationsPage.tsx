@@ -12,7 +12,12 @@ export const StudentNotificationsPage: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
+      void dataService.syncNotificationsFromSupabase();
       setNotifications(dataService.getNotifications(currentUser.id));
+      const unsub = dataService.subscribe(() => {
+        setNotifications(dataService.getNotifications(currentUser.id));
+      });
+      return unsub;
     }
   }, [currentUser]);
 

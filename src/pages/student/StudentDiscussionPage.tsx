@@ -36,6 +36,9 @@ export const StudentDiscussionPage: React.FC = () => {
   const [mentorReplyInput, setMentorReplyInput] = useState('');
 
   useEffect(() => {
+    void dataService.syncDiscussionsFromSupabase();
+    void dataService.syncMentorRequestsFromSupabase();
+    void dataService.syncCoursesFromSupabase();
     const refresh = () => {
       setDiscussions(dataService.getDiscussions());
       if (currentUser) {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BookOpen, 
   Sparkles, 
@@ -16,10 +16,21 @@ import { dataService } from '../../services/dataService';
 import type { InterviewQuestion } from '../../types';
 
 export const StudentInterviewPrepPage: React.FC = () => {
-  const [questions] = useState<InterviewQuestion[]>(dataService.getInterviewQuestions());
+  const [questions, setQuestions] = useState<InterviewQuestion[]>(() => dataService.getInterviewQuestions());
   const [search, setSearch] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('all');
-  const [expandedId, setExpandedId] = useState<string | null>(questions[0]?.id || null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void dataService.syncInterviewQuestionsFromSupabase();
+    const update = () => {
+      const q = dataService.getInterviewQuestions();
+      setQuestions(q);
+      setExpandedId(prev => prev ?? (q[0]?.id || null));
+    };
+    update();
+    return dataService.subscribe(update);
+  }, []);
 
   const filtered = questions.filter(q => {
     const diff = q.difficulty || 'medium';

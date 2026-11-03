@@ -1443,88 +1443,85 @@ class DataService {
 
   // --- Real-time Supabase Synchronization Engine ---
 
+  private syncInFlight: Promise<void> | null = null;
+
+  public async syncAllFromSupabase(force = false): Promise<void> {
+    if (!isLiveSupabaseConfigured) return;
+
+    if (this.syncInFlight && !force) {
+      return this.syncInFlight;
+    }
+
+    this.syncInFlight = (async () => {
+      try {
+        await Promise.allSettled([
+          this.syncUsersFromSupabase(),
+          this.syncCoursesFromSupabase(),
+          this.syncModulesFromSupabase(),
+          this.syncSubModulesFromSupabase(),
+          this.syncPresentationsFromSupabase(),
+          this.syncSlideAllocationsFromSupabase(),
+          this.syncTopicsFromSupabase(),
+          this.syncHomepageFromSupabase(),
+          this.syncHomepageCoursesFromSupabase(),
+          this.syncAccessRequestsFromSupabase(),
+          this.syncQuizzesFromSupabase(),
+          this.syncQuizAttemptsFromSupabase(),
+          this.syncPdfAllocationsFromSupabase(),
+          this.syncRoadmapProgressFromSupabase(),
+          this.syncOpportunitiesFromSupabase(),
+          this.syncSaturdaySpecialsFromSupabase(),
+          this.syncNotificationsFromSupabase(),
+          this.syncDiscussionsFromSupabase(),
+          this.syncDiscussionRepliesFromSupabase(),
+          this.syncMentorRequestsFromSupabase(),
+          this.syncMentorRequestRepliesFromSupabase(),
+          this.syncPracticalSubmissionsFromSupabase(),
+          this.syncFlashcardsFromSupabase(),
+          this.syncInterviewQuestionsFromSupabase(),
+          this.syncAuditLogsFromSupabase(),
+        ]);
+
+        this.notifySubscribers();
+      } catch (err) {
+        console.warn("[SkillNova Supabase] syncAllFromSupabase error:", err);
+      } finally {
+        this.syncInFlight = null;
+      }
+    })();
+
+    return this.syncInFlight;
+  }
+
   private async initSupabaseSync() {
     if (!isLiveSupabaseConfigured) return;
 
     try {
-      await Promise.allSettled([
-        this.syncCoursesFromSupabase(),
-
-        this.syncModulesFromSupabase(),
-
-        this.syncSubModulesFromSupabase(),
-
-        this.syncPresentationsFromSupabase(),
-
-        this.syncSlideAllocationsFromSupabase(),
-
-        this.syncTopicsFromSupabase(),
-
-        this.syncHomepageFromSupabase(),
-
-        this.syncHomepageCoursesFromSupabase(),
-
-        this.syncAccessRequestsFromSupabase(),
-
-        this.syncQuizzesFromSupabase(),
-
-        this.syncQuizAttemptsFromSupabase(),
-
-        this.syncPdfAllocationsFromSupabase(),
-
-        this.syncRoadmapProgressFromSupabase(),
-
-        this.syncOpportunitiesFromSupabase(),
-
-        this.syncSaturdaySpecialsFromSupabase(),
-
-        this.syncNotificationsFromSupabase(),
-
-        this.syncDiscussionsFromSupabase(),
-
-        this.syncDiscussionRepliesFromSupabase(),
-
-        this.syncMentorRequestsFromSupabase(),
-
-        this.syncMentorRequestRepliesFromSupabase(),
-
-        this.syncPracticalSubmissionsFromSupabase(),
-
-        this.syncFlashcardsFromSupabase(),
-
-        this.syncInterviewQuestionsFromSupabase(),
-      ]);
+      await this.syncAllFromSupabase();
 
       // Set up real-time listener channel
-
       supabase
-
         .channel("skillnova_data_sync")
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "courses" },
           () => this.syncCoursesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "modules" },
           () => this.syncModulesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "sub_modules" },
           () => this.syncSubModulesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "presentations" },
           () => this.syncPresentationsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           {
@@ -1534,115 +1531,121 @@ class DataService {
           },
           () => this.syncSlideAllocationsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "topics" },
           () => this.syncTopicsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "homepage_settings" },
           () => this.syncHomepageFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "homepage_courses" },
           () => this.syncHomepageCoursesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "student_access_requests" },
           () => this.syncAccessRequestsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "quizzes" },
           () => this.syncQuizzesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "quiz_attempts" },
           () => this.syncQuizAttemptsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "pdf_page_allocations" },
           () => this.syncPdfAllocationsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "student_progress" },
           () => this.syncRoadmapProgressFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "opportunities" },
           () => this.syncOpportunitiesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "saturday_special" },
           () => this.syncSaturdaySpecialsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "notifications" },
           () => this.syncNotificationsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "discussion_posts" },
           () => this.syncDiscussionsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "discussion_replies" },
           () => this.syncDiscussionRepliesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "mentor_requests" },
           () => this.syncMentorRequestsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "mentor_request_replies" },
           () => this.syncMentorRequestRepliesFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "practical_submissions" },
           () => this.syncPracticalSubmissionsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "flashcards" },
           () => this.syncFlashcardsFromSupabase(),
         )
-
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "interview_questions" },
           () => this.syncInterviewQuestionsFromSupabase(),
         )
-
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "profiles" },
+          () => this.syncUsersFromSupabase(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "students" },
+          () => this.syncUsersFromSupabase(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "sub_admins" },
+          () => this.syncUsersFromSupabase(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "course_enrollments" },
+          () => this.syncUsersFromSupabase(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "audit_logs" },
+          () => this.syncAuditLogsFromSupabase(),
+        )
         .subscribe((status) => {
           if (status === "SUBSCRIBED") {
             console.log(
@@ -1664,7 +1667,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("courses").select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remoteCourses: Course[] = data.map((c: any) => ({
           id: c.id,
 
@@ -1729,7 +1732,7 @@ class DataService {
         .select("*")
         .order("order_index");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.modules = data.map((m: any) => ({
           id: m.id,
 
@@ -1760,7 +1763,7 @@ class DataService {
         .select("*")
         .order("order_index");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.subModules = data.map((sm: any) => ({
           id: sm.id,
 
@@ -1792,7 +1795,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("presentations").select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remotePres: Presentation[] = data.map((p: any) => ({
           id: p.id,
 
@@ -1836,7 +1839,7 @@ class DataService {
         .from("presentation_slide_allocations")
         .select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remoteAllocs: PresentationSlideAllocation[] = data.map(
           (a: any) => ({
             id: a.id,
@@ -1880,7 +1883,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("topics").select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remoteTopics: Topic[] = data.map((t: any) => ({
           id: t.id,
 
@@ -1975,7 +1978,7 @@ class DataService {
         .select("*")
         .order("order_index");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.homepageCourses = data;
 
         this.saveToStorage("homepageCourses", this.homepageCourses);
@@ -1994,7 +1997,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.studentAccessRequests = data;
 
         this.saveToStorage("studentAccessRequests", this.studentAccessRequests);
@@ -2013,7 +2016,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!qErr && qData && qData.length > 0) {
+      if (!qErr && Array.isArray(qData)) {
         const { data: questionsData } = await supabase
           .from("quiz_questions")
           .select("*")
@@ -2111,7 +2114,7 @@ class DataService {
         .select("*")
         .order("completed_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remoteAttempts: QuizAttempt[] = data.map((a: any) => ({
           id: a.id,
 
@@ -2162,7 +2165,7 @@ class DataService {
         .from("pdf_page_allocations")
         .select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remotePdfAllocs: PdfPageAllocation[] = data.map((pa: any) => ({
           id: pa.id,
 
@@ -2212,7 +2215,7 @@ class DataService {
         .from("student_progress")
         .select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const remoteProgress: StudentRoadmapProgress[] = data.map(
           (rp: any) => ({
             id: rp.id,
@@ -2255,7 +2258,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.opportunities = data.map((o: any) => ({
           id: o.id,
 
@@ -2324,7 +2327,7 @@ class DataService {
         .select("*")
         .order("session_date", { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.saturdaySpecial = data.map((s: any) => ({
           id: s.id,
 
@@ -2380,7 +2383,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.notifications = data.map((n: any) => ({
           id: n.id,
 
@@ -2418,7 +2421,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.discussions = data.map((d: any) => ({
           id: d.id,
 
@@ -2473,7 +2476,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.discussionReplies = data.map((r: any) => ({
           id: r.id,
 
@@ -2516,7 +2519,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.mentorRequests = data.map((m: any) => ({
           id: m.id,
 
@@ -2569,7 +2572,7 @@ class DataService {
         .select("*")
         .order("created_at", { ascending: true });
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         const replyMap = new Map<string, any[]>();
 
         data.forEach((r: any) => {
@@ -2621,7 +2624,7 @@ class DataService {
         .from("practical_submissions")
         .select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.codingSubmissions = data.map((ps: any) => ({
           id: ps.id,
 
@@ -2659,7 +2662,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("flashcards").select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.flashcards = data.map((fc: any) => ({
           id: fc.id,
 
@@ -2695,7 +2698,7 @@ class DataService {
         .from("interview_questions")
         .select("*");
 
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         this.interviews = data.map((iq: any) => ({
           id: iq.id,
 
@@ -2722,6 +2725,118 @@ class DataService {
       }
     } catch (e) {
       console.warn("Sync interview questions error:", e);
+    }
+  }
+
+  public async syncUsersFromSupabase(): Promise<void> {
+    if (!isLiveSupabaseConfigured) return;
+
+    try {
+      const { data: profiles, error: pErr } = await supabase
+        .from("profiles")
+        .select("*");
+
+      if (pErr) {
+        console.warn("[SkillNova Supabase] syncUsers profiles warning:", pErr.message);
+        return;
+      }
+
+      if (!profiles || profiles.length === 0) return;
+
+      const { data: roles } = await supabase.from("user_roles").select("*");
+      const { data: students } = await supabase.from("students").select("*");
+      const { data: subAdmins } = await supabase.from("sub_admins").select("*");
+      const { data: enrollments } = await supabase
+        .from("course_enrollments")
+        .select("*");
+
+      const userMap = new Map<string, User>();
+
+      // Keep default mock users for evaluator demo buttons
+      for (const u of INITIAL_USERS) {
+        userMap.set(u.id, u);
+      }
+
+      for (const p of profiles) {
+        const roleRow = roles?.find((r: any) => r.user_id === p.id);
+        const studentRow = students?.find((s: any) => s.user_id === p.id);
+        const subAdminRow = subAdmins?.find((sa: any) => sa.user_id === p.id);
+        const userEnrollments =
+          enrollments?.filter((e: any) => e.student_id === p.id) || [];
+
+        const assignedCourses =
+          subAdminRow?.assigned_courses ||
+          userEnrollments.map((e: any) => e.course_id);
+
+        const mappedUser: User = {
+          id: p.id,
+          email: p.email,
+          username:
+            (p as any).username || (p.email ? p.email.split("@")[0] : ""),
+          full_name:
+            p.full_name || (p.email ? p.email.split("@")[0] : "User"),
+          phone_number: (p as any).phone_number || undefined,
+          phone: (p as any).phone_number || undefined,
+          role: (roleRow?.role as UserRole) || "student",
+          avatar_url:
+            p.avatar_url ||
+            "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150",
+          college: studentRow?.college || undefined,
+          branch: studentRow?.branch || undefined,
+          year_of_study: studentRow?.year_of_study || undefined,
+          status: (studentRow?.status as any) || "active",
+          created_at: p.created_at || new Date().toISOString(),
+          assigned_courses: assignedCourses,
+          permissions: subAdminRow
+            ? {
+                can_manage_courses: subAdminRow.can_manage_courses !== false,
+                can_upload_resources:
+                  subAdminRow.can_upload_resources !== false,
+                can_generate_ai: subAdminRow.can_generate_ai !== false,
+                can_publish_opportunities:
+                  subAdminRow.can_publish_opportunities !== false,
+              }
+            : undefined,
+        };
+
+        userMap.set(p.id, mappedUser);
+      }
+
+      this.users = Array.from(userMap.values());
+      this.saveToStorage("users", this.users);
+      this.notifySubscribers();
+    } catch (e) {
+      console.warn("[SkillNova Supabase] syncUsers error:", e);
+    }
+  }
+
+  public async syncAuditLogsFromSupabase(): Promise<void> {
+    if (!isLiveSupabaseConfigured) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("audit_logs")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+
+      if (!error && Array.isArray(data)) {
+        this.auditLogs = data.map((l: any) => ({
+          id: l.id,
+          action: l.action,
+          resource_id: l.entity_id || l.course_id || "",
+          resource_title: l.details || l.action,
+          course_id: l.course_id || undefined,
+          performed_by: l.actor_email || "System",
+          timestamp: l.created_at || new Date().toISOString(),
+          details: l.details || "",
+        }));
+
+        this.saveToStorage("auditLogs", this.auditLogs);
+        this.notifySubscribers();
+      }
+    } catch (e) {
+      console.warn("[SkillNova Supabase] syncAuditLogs error:", e);
     }
   }
 
@@ -2757,6 +2872,10 @@ class DataService {
     localStorage.setItem("skillnova_current_user_id", user.id);
 
     this.notifyListeners();
+
+    if (isLiveSupabaseConfigured) {
+      void this.syncAllFromSupabase();
+    }
   }
 
   public switchRole(role: "admin" | "sub_admin" | "student") {
@@ -2768,12 +2887,10 @@ class DataService {
   }
 
   public login(
-    email: string,
+    emailOrUsername: string,
     role?: UserRole,
   ): { success: boolean; user?: User; error?: string } {
-    const user = this.users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase(),
-    );
+    const user = this.getUserByEmail(emailOrUsername);
 
     if (!user) {
       return {
@@ -2843,12 +2960,16 @@ class DataService {
   }
 
   public getEnrolledCoursesForStudent(studentId: string): Course[] {
-    const student = this.getUserById(studentId);
+    const student =
+      this.getUserById(studentId) ||
+      (this.currentUser?.id === studentId ? this.currentUser : undefined);
 
     if (!student) return [];
 
     const assignedIds =
       student.assigned_courses || student.enrolledCourseIds || [];
+
+    if (assignedIds.length === 0) return [];
 
     return this.courses.filter((c) => assignedIds.includes(c.id));
   }
@@ -3048,25 +3169,36 @@ class DataService {
     this.saveToStorage("users", this.users);
 
     if (isLiveSupabaseConfigured) {
-      supabase
-        .from("profiles")
-        .upsert({
-          id: newSubAdmin.id,
+      const subAdminUid = ensureUuid(newSubAdmin.id);
+      newSubAdmin.id = subAdminUid;
 
-          email: newSubAdmin.email,
-
-          full_name: newSubAdmin.full_name,
-
-          role: "sub_admin",
-
-          status: "active",
-        })
-        .then(null, (err) =>
-          console.warn(
-            "[SkillNova Supabase] addSubAdmin profile warning:",
-            err,
-          ),
-        );
+      void (async () => {
+        try {
+          await supabase.from("profiles").upsert({
+            id: subAdminUid,
+            email: newSubAdmin.email,
+            full_name: newSubAdmin.full_name,
+            avatar_url: newSubAdmin.avatar_url,
+          });
+          await supabase.from("user_roles").upsert({
+            user_id: subAdminUid,
+            role: "sub_admin",
+          });
+          await supabase.from("sub_admins").upsert({
+            user_id: subAdminUid,
+            assigned_courses: (newSubAdmin.assigned_courses || []).map((cId) =>
+              ensureUuid(cId),
+            ),
+            can_manage_courses: true,
+            can_upload_resources: true,
+            can_generate_ai: true,
+            can_publish_opportunities: true,
+          });
+          await this.syncUsersFromSupabase();
+        } catch (err) {
+          console.warn("[SkillNova Supabase] addSubAdmin error:", err);
+        }
+      })();
     }
 
     this.addAuditLogEntry({
@@ -3162,15 +3294,30 @@ class DataService {
   }
 
   public toggleUserStatus(userId: string) {
+    let nextStatus: "active" | "inactive" = "active";
     this.users = this.users.map((u) => {
       if (u.id === userId) {
-        return { ...u, status: u.status === "active" ? "inactive" : "active" };
+        nextStatus = u.status === "active" ? "inactive" : "active";
+        return { ...u, status: nextStatus };
       }
 
       return u;
     });
 
     this.saveToStorage("users", this.users);
+
+    if (isLiveSupabaseConfigured) {
+      const userUid = ensureUuid(userId);
+      supabase
+        .from("students")
+        .update({ status: nextStatus })
+        .eq("user_id", userUid)
+        .then(null, (err) =>
+          console.warn("[SkillNova Supabase] toggleUserStatus student note:", err),
+        );
+    }
+
+    this.notifySubscribers();
   }
 
   public async assignStudentCourses(
@@ -4058,6 +4205,22 @@ class DataService {
     this.auditLogs.unshift(newLog);
 
     this.saveToStorage("auditLogs", this.auditLogs);
+
+    if (isLiveSupabaseConfigured) {
+      supabase
+        .from("audit_logs")
+        .insert({
+          action: newLog.action,
+          entity_type: "resource",
+          entity_id: newLog.resource_id,
+          course_id: newLog.course_id ? ensureUuid(newLog.course_id) : null,
+          details: newLog.details || newLog.resource_title,
+          actor_email: this.currentUser?.email || "admin@skillnova.edu",
+        })
+        .then(null, (err) =>
+          console.warn("[SkillNova Supabase] audit_logs insert note:", err),
+        );
+    }
 
     return newLog;
   }

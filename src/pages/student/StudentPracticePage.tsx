@@ -22,6 +22,9 @@ export const StudentPracticePage: React.FC = () => {
   const [mode, setMode] = useState<'flashcards' | 'quiz'>('flashcards');
 
   React.useEffect(() => {
+    void dataService.syncCoursesFromSupabase();
+    void dataService.syncQuizzesFromSupabase();
+    void dataService.syncQuizAttemptsFromSupabase();
     const unsub = dataService.subscribe(() => {
       setTick(t => t + 1);
     });

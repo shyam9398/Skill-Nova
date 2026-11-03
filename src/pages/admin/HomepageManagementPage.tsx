@@ -74,6 +74,8 @@ Module 3: Capstone Deployment
   const [isPublishing, setIsPublishing] = useState(false);
 
   useEffect(() => {
+    void dataService.syncHomepageFromSupabase();
+    void dataService.syncHomepageCoursesFromSupabase();
     const update = () => {
       const s = dataService.getHomepageSettings();
       setSettings(s);

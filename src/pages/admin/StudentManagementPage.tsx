@@ -248,7 +248,7 @@ export const StudentManagementPage: React.FC = () => {
       {/* Students Table */}
       <div className="bg-[#101A2D] border border-[#1F2E47] rounded-2xl overflow-hidden shadow-xl">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-[#9BAAC2]">
+          <table className="w-full min-w-[640px] text-left text-xs text-[#9BAAC2]">
             <thead className="bg-[#0A101D] text-[#77B4FF] uppercase text-[10px] tracking-wider border-b border-[#1F2E47]">
               <tr>
                 <th className="py-3 px-4">Student & Username</th>

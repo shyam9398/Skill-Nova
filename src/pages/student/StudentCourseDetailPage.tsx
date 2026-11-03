@@ -4,7 +4,7 @@ import {
   ArrowLeft, Layers, Video, FileText, Sparkles,
   CheckCircle2, Clock, Play, ExternalLink,
   Presentation as PresIcon, Download, BookOpen, Compass, Code2,
-  ChevronRight, Lock, Calendar, AlertCircle, Eye, ShieldCheck, Check,
+  ChevronRight, ChevronDown, ChevronUp, Lock, Calendar, AlertCircle, Eye, ShieldCheck, Check,
   HelpCircle, RotateCcw
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
@@ -48,6 +48,11 @@ export const StudentCourseDetailPage: React.FC = () => {
 
   // Workspace Tabs: Modules vs Python Lab vs Feed
   const [activeTab, setActiveTab] = useState<'modules' | 'python_lab' | 'flashcards' | 'all_feed'>('modules');
+
+  // Dedicated Horizontal Resource Category Filter
+  type ResourceCategory = 'all' | 'videos' | 'ppt' | 'interview' | 'notes' | 'pdfs' | 'flashcards';
+  const [activeResourceCategory, setActiveResourceCategory] = useState<ResourceCategory>('videos');
+  const [expandedInterviewId, setExpandedInterviewId] = useState<string | null>(null);
 
   // Dedicated PPT Slide-Level Viewer Modal State
   const [activePptPresentation, setActivePptPresentation] = useState<Presentation | null>(null);
@@ -148,12 +153,33 @@ export const StudentCourseDetailPage: React.FC = () => {
     return p.module_id === activeModule?.id;
   });
 
-  // 3. Interview Questions / Notes & Documents
+  // 3. Interview Questions
+  const interviewQuestionsList = currentTopics.filter(t =>
+    t.resource_category === 'doc_questions' || t.resource_type === 'doc_questions' || (t as any).type === 'questions'
+  );
+  const globalInterviewQuestions = dataService.getInterviewQuestions();
+  const allInterviewQuestions = interviewQuestionsList.length > 0
+    ? interviewQuestionsList
+    : globalInterviewQuestions.slice(0, 6).map(q => ({
+        id: q.id,
+        title: q.question,
+        description: q.sampleAnswer || q.model_answer || 'Technical interview answer and explanation.',
+        difficulty: q.difficulty || 'medium',
+        topic_name: q.role_category || 'Core Concepts',
+        course_id: course.id,
+        module_id: activeModule?.id || '',
+        sub_module_id: activeSubModule?.id || '',
+        is_published: true,
+        order_index: 0,
+        created_at: new Date().toISOString()
+      }));
+
+  // 4. Notes & Documents
   const notesResources = currentTopics.filter(t =>
-    t.drive_notes_url || t.drive_notes_link || t.resource_category === 'doc_questions' || t.resource_category === 'notes' || t.has_notes
+    t.drive_notes_url || t.drive_notes_link || t.resource_category === 'notes' || t.has_notes || ((t as any).type === 'notes' && !t.pdf_file_url)
   );
 
-  // 4. PDFs
+  // 5. PDFs
   const pdfResources = currentTopics.filter(t =>
     t.pdf_file_url || t.pdf_url || t.resource_category === 'pdf'
   );
@@ -169,8 +195,27 @@ export const StudentCourseDetailPage: React.FC = () => {
     }
   }, [selectedSubModuleId, pdfResources.length]);
 
-  // 5. Flashcards
+  // 6. Flashcards
   const flashcardResources = dataService.getFlashcards(course.id);
+
+  // All 7 Horizontal Navigation Categories
+  const totalResourceCount = 
+    videoResources.length + 
+    pptList.length + 
+    allInterviewQuestions.length + 
+    notesResources.length + 
+    pdfResources.length + 
+    flashcardResources.length;
+
+  const resourceCategories = [
+    { id: 'all' as const, label: 'All Resources', icon: Layers, count: totalResourceCount },
+    { id: 'videos' as const, label: 'Videos', icon: Video, count: videoResources.length },
+    { id: 'ppt' as const, label: 'PPT Presentations', icon: PresIcon, count: pptList.length },
+    { id: 'interview' as const, label: 'Interview Questions', icon: HelpCircle, count: allInterviewQuestions.length },
+    { id: 'notes' as const, label: 'Notes & Documents', icon: FileText, count: notesResources.length },
+    { id: 'pdfs' as const, label: 'PDFs', icon: Download, count: pdfResources.length },
+    { id: 'flashcards' as const, label: 'Flashcards', icon: BookOpen, count: flashcardResources.length },
+  ];
 
   // Roadmap progress
   const roadmapProgress = dataService.getStudentRoadmapProgress(undefined, course.id);
@@ -407,31 +452,63 @@ export const StudentCourseDetailPage: React.FC = () => {
             </button>
           </div>
 
-          {/* THE 5 CLEARLY SEPARATED RESOURCE SECTIONS */}
-          <div className="space-y-8">
+          {/* HORIZONTAL SCROLLABLE RESOURCE NAVIGATION BAR */}
+          <div className="bg-white dark:bg-[#0D1833] rounded-2xl border border-slate-200 dark:border-white/10 p-2 shadow-xs">
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar scroll-smooth">
+              {resourceCategories.map((cat) => {
+                const isSelected = activeResourceCategory === cat.id;
+                const Icon = cat.icon;
+                return (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveResourceCategory(cat.id)}
+                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all duration-200 flex items-center gap-2 border ${
+                      isSelected
+                        ? 'bg-[#00A8FF] text-white border-[#00A8FF] shadow-md shadow-[#00A8FF]/25 font-bold'
+                        : 'bg-slate-50 dark:bg-[#0B1530] text-slate-600 dark:text-[#9BAAC5] border-slate-200 dark:border-white/10 hover:border-[#00A8FF]/50 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[#00A8FF]'}`} />
+                    <span>{cat.label}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#9BAAC5]'
+                    }`}>
+                      {cat.count}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* DYNAMIC CONTENT AREA: DISPLAY ONLY THE SELECTED RESOURCE CATEGORY */}
+          <div className="space-y-6 animate-fadeIn">
             
             {/* 1. VIDEOS SECTION - INLINE RESPONSIVE VIDEO PLAYER ON SAME PAGE */}
-            <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm space-y-6">
+            {(activeResourceCategory === 'videos' || activeResourceCategory === 'all') && (
+            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
                     <Video className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">1. Videos</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Video Lectures & Recordings</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
                       Play lecture recordings & masterclasses directly on this page
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
                   {videoResources.length} Video{videoResources.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
               {/* In-Page Video Player */}
               {activeVideoTopic ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <EmbeddedVideoPlayer
                     url={activeVideoTopic.recording_url || activeVideoTopic.recording_link || ''}
                     title={activeVideoTopic.title}
@@ -444,7 +521,7 @@ export const StudentCourseDetailPage: React.FC = () => {
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2 font-mono">
                         Available Video Recordings in this Unit:
                       </span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {videoResources.map((vid) => {
                           const isCurrent = vid.id === activeVideoTopic.id;
                           return (
@@ -453,15 +530,15 @@ export const StudentCourseDetailPage: React.FC = () => {
                               onClick={() => setActiveVideoTopic(vid)}
                               className={`p-3 rounded-xl border text-left transition flex items-center justify-between gap-2 ${
                                 isCurrent
-                                  ? 'bg-[#00A3FF]/15 border-[#00A3FF] text-[#00A3FF]'
-                                  : 'bg-slate-50 dark:bg-[#060B18] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-[#00A3FF]'
+                                  ? 'bg-[#00A8FF]/15 border-[#00A8FF] text-[#00A8FF]'
+                                  : 'bg-slate-50 dark:bg-[#0B1530] border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#9BAAC5] hover:border-[#00A8FF]'
                               }`}
                             >
                               <div className="truncate">
                                 <h5 className="text-xs font-bold truncate">{vid.title}</h5>
-                                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">HD Quality</span>
+                                <span className="text-[10px] text-slate-500 dark:text-[#9BAAC5] font-mono">HD Quality</span>
                               </div>
-                              <Play className={`w-4 h-4 shrink-0 ${isCurrent ? 'fill-[#00A3FF]' : ''}`} />
+                              <Play className={`w-4 h-4 shrink-0 ${isCurrent ? 'fill-[#00A8FF]' : ''}`} />
                             </button>
                           );
                         })}
@@ -470,37 +547,51 @@ export const StudentCourseDetailPage: React.FC = () => {
                   )}
                 </div>
               ) : (
-                <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                  No video lectures configured for this sub-module yet.
+                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
+                    <Video className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Video Lectures Released Yet</h4>
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
+                    Video recordings for this sub-module will appear here once published by the instructor.
+                  </p>
                 </div>
               )}
             </div>
+            )}
 
             {/* 2. PPT PRESENTATIONS (With Slide-Level Access Control) */}
-            <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm space-y-6">
+            {(activeResourceCategory === 'ppt' || activeResourceCategory === 'all') && (
+            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
                     <PresIcon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">2. PPT Presentations</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Curriculum Presentation Decks</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
                       In-platform presentation slide viewer with allocated slide-range restrictions
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
                   {pptList.length} Deck{pptList.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
               {pptList.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                  No presentation slide decks assigned to this unit yet.
+                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
+                    <PresIcon className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Presentation Decks Assigned</h4>
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
+                    Slide decks assigned to this unit will appear here with allocated slide-level permissions.
+                  </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {pptList.map(pres => {
                     const allocAuth = dataService.getAuthorizedSlidesForSubModule(pres.id, activeSubModule?.id || '');
                     const isReleased = allocAuth.isAccessible;
@@ -509,38 +600,38 @@ export const StudentCourseDetailPage: React.FC = () => {
                     return (
                       <div
                         key={pres.id}
-                        className="p-5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/10 hover:border-[#00A3FF] transition flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                        className="p-5 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 hover:border-[#00A8FF] transition flex flex-col justify-between gap-4"
                       >
                         <div className="space-y-1.5">
-                          <div className="flex items-center gap-2">
-                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">{pres.title}</h4>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{pres.title}</h4>
                             {isReleased ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-mono">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/30 font-mono shrink-0">
                                 Released (Slides {allocAuth.startSlide}–{allocAuth.endSlide})
                               </span>
                             ) : isScheduled ? (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 font-mono">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500/10 text-amber-500 border border-amber-500/30 font-mono shrink-0">
                                 Scheduled (Slides {allocAuth.startSlide}–{allocAuth.endSlide})
                               </span>
                             ) : (
-                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-white/20 font-mono">
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-[#9BAAC5] border border-slate-300 dark:border-white/20 font-mono shrink-0">
                                 Locked
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-400 max-w-xl">
+                          <p className="text-xs text-slate-600 dark:text-[#9BAAC5] line-clamp-2">
                             {pres.description || 'Curriculum presentation slides for active unit.'}
                           </p>
-                          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                            Total Deck Slides: {pres.total_slides} • Sub-Unit Target: Slides {allocAuth.startSlide} to {allocAuth.endSlide}
+                          <div className="text-[11px] text-slate-500 dark:text-[#9BAAC5] font-mono">
+                            Total Deck Slides: {pres.total_slides} • Scope: Slides {allocAuth.startSlide} to {allocAuth.endSlide}
                           </div>
                         </div>
 
                         <button
                           onClick={() => setActivePptPresentation(pres)}
-                          className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shrink-0 transition ${
+                          className={`w-full px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition ${
                             isReleased
-                              ? 'bg-[#00A3FF] hover:bg-[#176BFF] text-white shadow-md shadow-[#00A3FF]/25'
+                              ? 'bg-[#00A8FF] hover:bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
                               : 'bg-slate-800 hover:bg-slate-700 text-white'
                           }`}
                         >
@@ -562,47 +653,137 @@ export const StudentCourseDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+            )}
 
-            {/* 3. INTERVIEW QUESTIONS / NOTES & DOCUMENTS */}
-            <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm space-y-6">
+            {/* 3. INTERVIEW QUESTIONS CATEGORY */}
+            {(activeResourceCategory === 'interview' || activeResourceCategory === 'all') && (
+            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center">
-                    <FileText className="w-5 h-5" />
+                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
+                    <HelpCircle className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      3. Interview Questions / Notes & Documents
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Curated interview Q&As, code cheat sheets, and technical study notes
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Technical Interview Q&A</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
+                      Curated engineering questions, model answers, and core architectural principles
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                  {allInterviewQuestions.length} Question{allInterviewQuestions.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {allInterviewQuestions.length === 0 ? (
+                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
+                    <HelpCircle className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Interview Questions Assigned</h4>
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
+                    Technical interview questions tailored to this curriculum unit will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {allInterviewQuestions.map((q, idx) => {
+                    const isExpanded = expandedInterviewId === q.id || (idx === 0 && expandedInterviewId === null);
+                    return (
+                      <div
+                        key={q.id}
+                        className="rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 overflow-hidden transition"
+                      >
+                        <button
+                          onClick={() => setExpandedInterviewId(isExpanded ? '' : q.id)}
+                          className="w-full p-4 sm:p-5 text-left flex items-start justify-between gap-3 hover:bg-slate-100 dark:hover:bg-white/5 transition"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase">
+                                Q{idx + 1}
+                              </span>
+                              {(q as any).difficulty && (
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-mono ${
+                                  (q as any).difficulty === 'hard'
+                                    ? 'bg-rose-500/10 text-rose-500 border border-rose-500/30'
+                                    : (q as any).difficulty === 'easy'
+                                    ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/30'
+                                    : 'bg-amber-500/10 text-amber-500 border border-amber-500/30'
+                                }`}>
+                                  {(q as any).difficulty}
+                                </span>
+                              )}
+                            </div>
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-white">
+                              {q.title}
+                            </h4>
+                          </div>
+                          <div className="p-1.5 rounded-lg bg-slate-200 dark:bg-white/10 text-slate-600 dark:text-[#9BAAC5] shrink-0 mt-1">
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </div>
+                        </button>
+
+                        {isExpanded && (
+                          <div className="px-4 sm:px-5 pb-5 pt-1 border-t border-slate-200 dark:border-white/10 space-y-3 bg-white dark:bg-[#0D1833]">
+                            <div className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-sans pt-3 whitespace-pre-line">
+                              {q.description}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            )}
+
+            {/* 4. NOTES & DOCUMENTS CATEGORY */}
+            {(activeResourceCategory === 'notes' || activeResourceCategory === 'all') && (
+            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Notes & Study Cheat-Sheets</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
+                      Technical study documentation, architecture summaries, and reference sheets
+                    </p>
+                  </div>
+                </div>
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
                   {notesResources.length} Document{notesResources.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
               {notesResources.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                  No interview notes or documents assigned to this unit yet.
+                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
+                    <FileText className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No Notes or Documents Assigned</h4>
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
+                    Study notes and reference documentation for this lesson will be listed here.
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {notesResources.map(t => (
                     <div
                       key={t.id}
-                      className="p-5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/10 hover:border-[#00A3FF] transition flex items-center justify-between gap-3"
+                      className="p-5 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 hover:border-[#00A8FF] transition flex items-center justify-between gap-3"
                     >
                       <div className="overflow-hidden space-y-1">
-                        <span className="text-[10px] font-mono font-bold text-[#00A3FF] uppercase block">Interview Sheet</span>
+                        <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase block">Study Note</span>
                         <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{t.title}</h4>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{t.description || 'Technical interview preparation guide'}</p>
+                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5] truncate">{t.description || 'Technical lesson summary and cheat sheet'}</p>
                       </div>
                       <button
                         onClick={() => setActiveNotesTopic(t)}
-                        className="px-3.5 py-2 rounded-xl bg-[#00A3FF]/15 hover:bg-[#00A3FF] text-[#00A3FF] hover:text-white border border-[#00A3FF]/30 text-xs font-bold shrink-0 transition flex items-center gap-1.5"
+                        className="px-3.5 py-2 rounded-xl bg-[#00A8FF]/15 hover:bg-[#00A8FF] text-[#00A8FF] hover:text-white border border-[#00A8FF]/30 text-xs font-bold shrink-0 transition flex items-center gap-1.5"
                       >
                         <FileText className="w-3.5 h-3.5" />
                         <span>Read</span>
@@ -612,29 +793,37 @@ export const StudentCourseDetailPage: React.FC = () => {
                 </div>
               )}
             </div>
+            )}
 
-            {/* 4. PDFS - RESPONSIVE VIEWER WITH PAGE-RANGE RESTRICTIONS */}
-            <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm space-y-6">
+            {/* 5. PDFS CATEGORY */}
+            {(activeResourceCategory === 'pdfs' || activeResourceCategory === 'all') && (
+            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
                     <Download className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">4. PDFs</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">PDF Reference Manuals</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
                       In-platform PDF viewer with page-range security and full-screen controls
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
                   {pdfResources.length} File{pdfResources.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
               {pdfResources.length === 0 ? (
-                <div className="py-12 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                  No PDF reference manuals assigned to this unit yet.
+                <div className="py-12 px-4 text-center bg-slate-50 dark:bg-[#0B1530] rounded-2xl border border-dashed border-slate-200 dark:border-white/10 space-y-3">
+                  <div className="w-12 h-12 rounded-2xl bg-[#00A8FF]/10 text-[#00A8FF] flex items-center justify-center mx-auto">
+                    <Download className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white">No PDF Manuals Assigned</h4>
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] max-w-md mx-auto">
+                    PDF reference manuals and chapters will be displayed here with authorized page ranges.
+                  </p>
                 </div>
               ) : activePdfTopic ? (
                 <div className="space-y-4">
@@ -674,8 +863,8 @@ export const StudentCourseDetailPage: React.FC = () => {
                             onClick={() => setActivePdfTopic(pdf)}
                             className={`px-3 py-1.5 rounded-xl text-xs font-medium border transition ${
                               pdf.id === activePdfTopic.id
-                                ? 'bg-[#00A3FF] text-white border-[#00A3FF]'
-                                : 'bg-slate-100 dark:bg-[#060B18] border-slate-200 dark:border-white/10 text-slate-700 dark:text-slate-300 hover:border-[#00A3FF]'
+                                ? 'bg-[#00A8FF] text-white border-[#00A8FF]'
+                                : 'bg-slate-100 dark:bg-[#0B1530] border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#9BAAC5] hover:border-[#00A8FF]'
                             }`}
                           >
                             {pdf.title}
@@ -687,44 +876,102 @@ export const StudentCourseDetailPage: React.FC = () => {
                 </div>
               ) : null}
             </div>
+            )}
 
-            {/* 5. FLASHCARDS */}
-            <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm space-y-6">
+            {/* 6. FLASHCARDS CATEGORY */}
+            {(activeResourceCategory === 'flashcards' || activeResourceCategory === 'all') && (
+            <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6 animate-fadeIn">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-[#00A8FF]/15 text-[#00A8FF] border border-[#00A8FF]/30 flex items-center justify-center">
                     <BookOpen className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">5. Flashcards</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Rapid active-recall memory drills & core concept definitions
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">Active Recall Flashcards</h3>
+                    <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">
+                      Cognitive drills and spaced repetition flashcard decks for topic mastery
                     </p>
                   </div>
                 </div>
-                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10">
+                <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
                   {flashcardResources.length} Cards
                 </span>
               </div>
 
-              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="p-6 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="space-y-1">
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white">
                     {activeSubModule?.title || course.title} Active Recall Deck
                   </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-500 dark:text-[#9BAAC5] leading-relaxed">
                     Test your understanding with double-sided flashcards before attempting weekly evaluations.
                   </p>
                 </div>
                 <button
                   onClick={() => setActiveTab('flashcards')}
-                  className="px-5 py-2.5 rounded-xl bg-[#00A3FF] hover:bg-[#176BFF] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#00A3FF]/25 shrink-0 transition"
+                  className="px-5 py-2.5 rounded-xl bg-[#00A8FF] hover:bg-[#176BFF] text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-[#00A8FF]/25 shrink-0 transition"
                 >
                   <BookOpen className="w-4 h-4" />
                   <span>Launch Flashcard Deck</span>
                 </button>
               </div>
+
+              {flashcardResources.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
+                  {flashcardResources.slice(0, 3).map((fc, i) => (
+                    <div
+                      key={fc.id || i}
+                      className="p-4 rounded-xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 space-y-2"
+                    >
+                      <span className="text-[10px] font-mono font-bold text-[#00A8FF] uppercase">Card {i + 1}</span>
+                      <h5 className="text-xs font-bold text-slate-900 dark:text-white line-clamp-2">{fc.question}</h5>
+                      <p className="text-[11px] text-slate-500 dark:text-[#9BAAC5] line-clamp-2">{fc.answer}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+            )}
+
+            {/* 7. ALL RESOURCES OVERVIEW */}
+            {activeResourceCategory === 'all' && (
+              <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 shadow-sm animate-fadeIn">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                  Unit Resource Breakdown & Direct Shortcuts
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-[#9BAAC5] mb-5">
+                  Select any resource category below to filter the view:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {resourceCategories.filter(c => c.id !== 'all').map(cat => {
+                    const Icon = cat.icon;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setActiveResourceCategory(cat.id)}
+                        className="p-4 rounded-2xl bg-slate-50 dark:bg-[#0B1530] border border-slate-200 dark:border-white/10 hover:border-[#00A8FF] transition flex items-center justify-between text-left group"
+                      >
+                        <div className="flex items-center gap-3 truncate">
+                          <div className="w-8 h-8 rounded-lg bg-[#00A8FF]/15 text-[#00A8FF] flex items-center justify-center shrink-0">
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="truncate">
+                            <div className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-[#00A8FF] transition truncate">
+                              {cat.label}
+                            </div>
+                            <div className="text-[10px] text-slate-500 dark:text-[#9BAAC5] font-mono">
+                              {cat.count} item{cat.count !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#00A8FF] group-hover:translate-x-0.5 transition-transform shrink-0" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
           </div>
         </div>

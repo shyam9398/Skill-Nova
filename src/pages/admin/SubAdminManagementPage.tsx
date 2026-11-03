@@ -257,7 +257,7 @@ export const SubAdminManagementPage: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-[#9BAAC2]">
+            <table className="w-full min-w-[640px] text-left text-xs text-[#9BAAC2]">
               <thead className="bg-[#0A101D] text-[#77B4FF] uppercase text-[10px] tracking-wider border-b border-[#1F2E47]">
                 <tr>
                   <th className="py-3 px-4">Timestamp (IST)</th>

@@ -143,7 +143,7 @@ export const AdminAccessRequestsPage: React.FC = () => {
       {/* Requests Table */}
       <div className="bg-white rounded-3xl border border-[#DFE9F6] overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
+          <table className="w-full min-w-[700px] text-left border-collapse text-xs">
             <thead>
               <tr className="bg-[#F5F9FF] border-b border-[#DFE9F6] text-[#73839B] uppercase font-mono text-[10px] tracking-wider">
                 <th className="py-3.5 px-4 font-bold">Student Name & Email</th>

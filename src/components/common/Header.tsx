@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell, Shield, GraduationCap, Users, LogOut,
-  Menu, X, Sparkles, ChevronDown, Check
+  Menu, X, Sparkles, ChevronDown, Check, Sun, Moon
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { dataService } from '../../services/dataService';
 import type { Notification } from '../../types';
 
@@ -14,6 +15,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { currentUser, role, logout, switchRole } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [notifications, setNotifications] = useState<Notification[]>(
     currentUser ? dataService.getNotifications(currentUser.id) : []
   );
@@ -219,6 +221,24 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             </div>
           )}
         </div>
+
+        {/* Global Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className={`p-2 sm:p-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 shadow-xs ${
+            theme === 'dark'
+              ? 'bg-[#0D1833] hover:bg-[#132247] border-white/10 text-amber-300 hover:text-amber-200 shadow-[0_0_12px_rgba(255,215,0,0.2)]'
+              : 'bg-white hover:bg-[#EAF3FF] border-[#DFE9F6] text-[#176BFF] hover:text-[#00A8FF]'
+          }`}
+          title={theme === 'dark' ? 'Switch to Clean Light Theme' : 'Switch to Cosmic Dark Theme'}
+          aria-label="Toggle dark/light theme"
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
+        </button>
 
         {/* User Info & Logout */}
         <div className="flex items-center gap-2 pl-2 border-l border-[#DFE9F6]">

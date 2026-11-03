@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { GraduationCap, ArrowRight, Lock, AlertCircle, Sparkles, HelpCircle, CheckCircle2 } from 'lucide-react';
+import { GraduationCap, ArrowRight, Lock, AlertCircle, Sparkles, HelpCircle, CheckCircle2, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 
 export const StudentLoginPage: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const [email, setEmail] = useState('student');
   const [password, setPassword] = useState('SkillNova@2026');
   const [error, setError] = useState<string | null>(null);
@@ -57,13 +59,28 @@ export const StudentLoginPage: React.FC = () => {
           </div>
         </Link>
 
-        <Link
-          to="/admin/login"
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-[#F5F9FF] border border-[#DFE9F6] text-xs font-bold text-[#73839B] hover:text-[#176BFF] transition shadow-xs"
-        >
-          <Lock className="w-3.5 h-3.5 text-[#176BFF]" />
-          <span>Admin Portal</span>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className={`p-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center shadow-xs ${
+              theme === 'dark'
+                ? 'bg-[#0D1833] hover:bg-[#132247] border-white/10 text-amber-300'
+                : 'bg-white hover:bg-[#EAF3FF] border-[#DFE9F6] text-[#176BFF]'
+            }`}
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Cosmic Dark Theme'}
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          </button>
+
+          <Link
+            to="/admin/login"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white hover:bg-[#F5F9FF] border border-[#DFE9F6] text-xs font-bold text-[#73839B] hover:text-[#176BFF] transition shadow-xs"
+          >
+            <Lock className="w-3.5 h-3.5 text-[#176BFF]" />
+            <span>Admin Portal</span>
+          </Link>
+        </div>
       </nav>
 
       {/* Main Container */}

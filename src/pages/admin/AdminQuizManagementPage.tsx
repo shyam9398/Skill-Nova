@@ -307,7 +307,7 @@ export const AdminQuizManagementPage: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[650px] text-left text-xs">
               <thead>
                 <tr className="border-b border-white/5 text-[#9BAAC2] font-mono">
                   <th className="pb-3 font-semibold">Quiz Title & Info</th>

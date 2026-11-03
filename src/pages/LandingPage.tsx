@@ -6,13 +6,17 @@ import {
   Code2, Terminal, UserPlus, MessageCircle, Star, Lightbulb,
   Users, Briefcase, Trophy, FileText, Cpu, TrendingUp,
   Menu, X, ChevronRight, HelpCircle, Laptop, Calendar,
-  ArrowUpRight, Target, Flame, Layers
+  ArrowUpRight, Target, Flame, Layers, Sun, Moon
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 import { ExperienceSkillNovaSection } from '../components/homepage/ExperienceSkillNovaSection';
 import { FloatingSocialConnect } from '../components/common/FloatingSocialConnect';
 import { StudentAccessRequestModal } from '../components/homepage/StudentAccessRequestModal';
+import mountainJourneyImg from '../assets/mountain-journey.jpg';
+import heroImg from '../assets/hero.png';
 
 export const LandingPage: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logoutToast, setLogoutToast] = useState<string | null>(null);
@@ -158,6 +162,24 @@ export const LandingPage: React.FC = () => {
 
           {/* Right Action Buttons */}
           <div className="hidden sm:flex items-center gap-3">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`p-2.5 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 shadow-xs ${
+                theme === 'dark'
+                  ? 'bg-[#0D1833] hover:bg-[#132247] border-white/10 text-amber-300 hover:text-amber-200 shadow-[0_0_12px_rgba(255,215,0,0.2)]'
+                  : 'bg-white hover:bg-[#EAF3FF] border-[#DFE9F6] text-[#176BFF] hover:text-[#00A8FF]'
+              }`}
+              title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Cosmic Dark Theme'}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? (
+                <Sun className="w-4 h-4" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+            </button>
+
             <button
               onClick={() => setShowAccessModal(true)}
               className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#176BFF] bg-[#F0F6FF] hover:bg-[#E2EDFF] border border-[#BFDBFE] transition"
@@ -183,9 +205,20 @@ export const LandingPage: React.FC = () => {
 
           {/* Mobile Hamburger Toggle */}
           <div className="flex sm:hidden items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-xl border transition-all duration-300 flex items-center justify-center shrink-0 ${
+                theme === 'dark'
+                  ? 'bg-[#0D1833] border-white/10 text-amber-300'
+                  : 'bg-white border-[#DFE9F6] text-[#176BFF]'
+              }`}
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
             <Link
               to="/student/login"
-              className="px-3.5 py-1.5 rounded-lg bg-[#176BFF] text-white text-xs font-bold"
+              className="px-3 py-1.5 rounded-lg bg-[#176BFF] text-white text-xs font-bold"
             >
               Login
             </Link>
@@ -328,17 +361,26 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Right Angled Image (Cols 8-12) */}
-            <div className="lg:col-span-5 relative h-72 sm:h-96 lg:h-full min-h-[380px] lg:min-h-[640px] flex items-center justify-center overflow-hidden">
+            <div className="lg:col-span-5 relative w-full h-64 sm:h-80 md:h-96 lg:h-full min-h-[260px] sm:min-h-[340px] lg:min-h-[580px] flex items-center justify-center overflow-hidden my-4 lg:my-0">
               {/* Angled container with mountain / learning visual */}
-              <div className="relative w-full h-full lg:[clip-path:polygon(10%_0%,_100%_0%,_100%_100%,_0%_100%)] overflow-hidden">
+              <div className="relative w-full h-full rounded-2xl lg:rounded-none lg:[clip-path:polygon(10%_0%,_100%_0%,_100%_100%,_0%_100%)] overflow-hidden shadow-2xl bg-[#0B1220]">
                 <img
-                  src="/mountain-journey.jpg"
+                  src={mountainJourneyImg}
                   alt="SkillNova Pathway to Success"
-                  className="w-full h-full object-cover object-center filter brightness-90 contrast-105"
+                  className="w-full h-full object-cover object-center filter brightness-95 contrast-105 transition-transform duration-700 hover:scale-105"
+                  loading="eager"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (target.src !== window.location.origin + '/mountain-journey.jpg') {
+                      target.src = '/mountain-journey.jpg';
+                    } else if (target.src !== heroImg) {
+                      target.src = heroImg;
+                    }
+                  }}
                 />
                 {/* Gradient Overlay to blend seamlessly into the dark background */}
-                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#0B1220] via-transparent to-transparent opacity-90 lg:opacity-80" />
-                <div className="absolute inset-0 bg-[#0B1220]/20" />
+                <div className="absolute inset-0 bg-gradient-to-t lg:bg-gradient-to-r from-[#0B1220] via-[#0B1220]/40 to-transparent opacity-85 lg:opacity-75 pointer-events-none" />
+                <div className="absolute inset-0 bg-[#00A8FF]/10 pointer-events-none" />
               </div>
             </div>
           </div>

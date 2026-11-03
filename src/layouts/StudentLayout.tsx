@@ -40,21 +40,21 @@ export const StudentLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F9FF] text-[#15243B] flex flex-col font-sans selection:bg-[#00A3FF]/20">
+    <div className="min-h-screen bg-[#F5F9FF] dark:bg-[#050816] text-[#15243B] dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
       {/* Single, Unified SkillNova Header */}
       <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
 
       <div className="flex-1 flex overflow-hidden">
         {/* Responsive Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white border-r border-[#DFE9F6] flex flex-col transition-transform duration-300 shadow-sm ${
+          className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col transition-transform duration-300 shadow-sm ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
           style={{ top: '64px' }}
         >
           {/* Student Profile Card */}
-          <div className="p-4 border-b border-[#DFE9F6]">
-            <div className="bg-[#F5F9FF] rounded-2xl p-3 border border-[#DFE9F6] flex items-center gap-3">
+          <div className="p-4 border-b border-[#DFE9F6] dark:border-white/10">
+            <div className="bg-[#F5F9FF] dark:bg-[#0D1833] rounded-2xl p-3 border border-[#DFE9F6] dark:border-white/10 flex items-center gap-3">
               <img
                 src={currentUser?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
                 alt="Student Avatar"
@@ -86,8 +86,8 @@ export const StudentLayout: React.FC = () => {
                   className={({ isActive }) =>
                     `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                       isActive
-                        ? 'bg-[#176BFF] text-white shadow-md shadow-[#00A3FF]/25'
-                        : 'text-[#73839B] hover:text-[#15243B] hover:bg-[#F5F9FF]'
+                        ? 'bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
+                        : 'text-[#73839B] dark:text-[#9BAAC5] hover:text-[#15243B] dark:hover:text-white hover:bg-[#F5F9FF] dark:hover:bg-[#0D1833]'
                     }`
                   }
                 >
@@ -96,7 +96,7 @@ export const StudentLayout: React.FC = () => {
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] text-[#176BFF] border border-[#00A3FF]/20">
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] border border-[#00A8FF]/20">
                       {item.badge}
                     </span>
                   )}
@@ -106,22 +106,22 @@ export const StudentLayout: React.FC = () => {
           </nav>
 
           {/* Visible Logout Option at the Bottom of Student Sidebar */}
-          <div className="p-3 border-t border-[#DFE9F6] bg-white space-y-2">
+          <div className="p-3 border-t border-[#DFE9F6] dark:border-white/10 bg-white dark:bg-[#0B1530] space-y-2">
             <button
               onClick={() => logout()}
-              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 border border-transparent hover:border-red-200 transition"
+              className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/30 transition"
               title="Sign Out of SkillNova"
             >
               <div className="flex items-center gap-2.5">
-                <LogOut className="w-4 h-4 text-red-600" />
+                <LogOut className="w-4 h-4 text-red-600 dark:text-red-400" />
                 <span>Logout</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 text-red-400" />
             </button>
 
-            <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#73839B]">
+            <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#73839B] dark:text-[#9BAAC5]">
               <span className="font-medium">Active Batch 2027</span>
-              <span className="text-emerald-600 font-bold flex items-center gap-1">
+              <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 VERIFIED
               </span>
@@ -133,12 +133,12 @@ export const StudentLayout: React.FC = () => {
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-[#15243B]/40 backdrop-blur-xs z-20 lg:hidden"
+            className="fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
           />
         )}
 
         {/* Main Content Workspace */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 bg-[#F5F9FF] relative">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] relative transition-colors duration-300">
           <Outlet />
         </main>
       </div>

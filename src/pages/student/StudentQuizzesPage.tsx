@@ -71,6 +71,25 @@ export const StudentQuizzesPage: React.FC = () => {
   // Active Leaderboard Viewer Modal
   const [viewingLeaderboardQuizId, setViewingLeaderboardQuizId] = useState<string | null>(null);
 
+  // Escape listener and scroll lock for leaderboard viewer modal
+  useEffect(() => {
+    if (viewingLeaderboardQuizId) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setViewingLeaderboardQuizId(null);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [viewingLeaderboardQuizId]);
+
   // Timer Ref
   const timerRef = useRef<number | null>(null);
 
@@ -424,8 +443,8 @@ export const StudentQuizzesPage: React.FC = () => {
 
           <div className="flex items-center gap-3 shrink-0">
             <div className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10 text-right">
-              <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2] block uppercase font-mono">Attempted</span>
-              <span className="text-lg font-black text-[#00A3FF] dark:text-[#00D1FF] font-mono">{studentAttempts.length} Drills</span>
+              <span className="text-[10px] text-slate-700 dark:text-[#9BAAC2] block uppercase font-mono font-bold">Attempted</span>
+              <span className="text-lg font-black text-slate-900 dark:text-[#00D1FF] font-mono">{studentAttempts.length} Drills</span>
             </div>
           </div>
         </div>
@@ -501,7 +520,7 @@ export const StudentQuizzesPage: React.FC = () => {
                       </span>
                     )}
 
-                    <span className="text-xs font-mono text-[#00A3FF] font-bold">
+                    <span className="text-xs font-mono text-slate-900 dark:text-[#00A3FF] font-black">
                       {quiz.total_marks || 20} Marks • {quiz.duration_minutes || 30} Mins
                     </span>
                   </div>
@@ -522,21 +541,30 @@ export const StudentQuizzesPage: React.FC = () => {
                   </div>
 
                   {/* Previous Result Badge if completed */}
-                  {firstAttempt && (
-                    <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-between text-xs">
-                      <div>
-                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold uppercase font-mono block">First Attempt Result</span>
-                        <span className="text-sm font-black text-slate-900 dark:text-white font-mono">
-                          Score: {firstAttempt.score}/{firstAttempt.total_marks || 100} ({firstAttempt.accuracy}% Acc)
+                  {firstAttempt && (() => {
+                    const isPassed = !quiz.end_time || Date.now() >= new Date(quiz.end_time).getTime();
+                    return (
+                      <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-between text-xs">
+                        <div>
+                          <span className="text-[10px] text-emerald-800 dark:text-emerald-400 font-bold uppercase font-mono block">
+                            {isPassed ? 'Official Result' : 'Submission Received'}
+                          </span>
+                          <span className="text-sm font-black text-slate-900 dark:text-white font-mono">
+                            {isPassed
+                              ? `Score: ${firstAttempt.score}/${firstAttempt.total_marks || 100} (${firstAttempt.accuracy}% Acc)`
+                              : `Unlocks at ${formatIST(quiz.end_time)}`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-mono font-bold">
+                          {isPassed ? 'Verified' : 'Saved'}
                         </span>
                       </div>
-                      <span className="text-[10px] text-emerald-600 dark:text-emerald-300 font-mono">Verified</span>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {/* Practice Attempts Count */}
                   {practiceAttempts.length > 0 && (
-                    <div className="text-[11px] text-purple-600 dark:text-purple-300 font-mono">
+                    <div className="text-[11px] text-purple-800 dark:text-purple-300 font-mono font-semibold">
                       Personal Practice Attempts: {practiceAttempts.length}
                     </div>
                   )}
@@ -599,8 +627,13 @@ export const StudentQuizzesPage: React.FC = () => {
         if (!lbQuiz) return null;
 
         return (
-          <div className="fixed inset-0 z-50 bg-slate-900/70 dark:bg-black/85 backdrop-blur-md p-3 sm:p-6 md:p-8 flex items-center justify-center overflow-y-auto">
-            <div className="w-full max-w-5xl my-auto animate-fadeIn">
+          <div 
+            className="fixed inset-0 z-50 bg-slate-900/80 dark:bg-black/85 backdrop-blur-md p-2 sm:p-6 md:p-8 flex items-start sm:items-center justify-center overflow-y-auto animate-fadeIn"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setViewingLeaderboardQuizId(null);
+            }}
+          >
+            <div className="w-full max-w-5xl my-4 sm:my-auto animate-scaleUp relative">
               <GlobalQuizLeaderboardView
                 quiz={lbQuiz}
                 currentStudentId={studentId}

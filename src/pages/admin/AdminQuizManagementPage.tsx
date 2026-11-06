@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Sparkles, 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Trophy, 
-  HelpCircle, 
-  Calendar, 
-  FileText, 
-  Check, 
+import {
+  Sparkles,
+  Plus,
+  Trash2,
+  Edit3,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  Trophy,
+  HelpCircle,
+  Calendar,
+  FileText,
+  Check,
   Layers,
   Search,
   ExternalLink,
@@ -56,7 +56,14 @@ export const AdminQuizManagementPage: React.FC = () => {
     void dataService.syncCoursesFromSupabase();
     const unsub = dataService.subscribe(() => {
       setQuizzes(dataService.getQuizzesList());
-      setCourses(dataService.getCoursesForCurrentUser());
+      const loadedCourses = dataService.getCoursesForCurrentUser();
+      setCourses(loadedCourses);
+      setSelectedCourseId((prev) => {
+        if (!prev || prev === 'course-fs-101' || !loadedCourses.some(c => c.id === prev)) {
+          return loadedCourses[0]?.id || prev;
+        }
+        return prev;
+      });
     });
     return unsub;
   }, []);
@@ -92,6 +99,27 @@ export const AdminQuizManagementPage: React.FC = () => {
 
   // Leaderboard Modal
   const [selectedLeaderboardQuiz, setSelectedLeaderboardQuiz] = useState<Quiz | null>(null);
+
+  // Modal background scroll lock & escape listener (Requirement 1)
+  useEffect(() => {
+    const isAnyModalOpen = isCreateModalOpen || Boolean(selectedLeaderboardQuiz);
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setIsCreateModalOpen(false);
+          setSelectedLeaderboardQuiz(null);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [isCreateModalOpen, selectedLeaderboardQuiz]);
 
   // Notification / Feedback State
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -252,7 +280,7 @@ export const AdminQuizManagementPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 pb-20 animate-fadeIn text-[#F0F5FF]">
+    <div className="space-y-6 pb-20 animate-fadeIn text-slate-900 dark:text-[#F0F5FF]">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-6 right-6 z-50 px-5 py-3 rounded-2xl bg-[#00A3FF] text-white text-xs font-bold shadow-2xl flex items-center gap-2 animate-bounce">
@@ -262,22 +290,22 @@ export const AdminQuizManagementPage: React.FC = () => {
       )}
 
       {/* Header Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-[#0E1729] via-[#15233A] to-[#0A101D] border border-white/10 p-6 md:p-8 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="rounded-3xl bg-gradient-to-r from-sky-50 via-white to-blue-50 dark:from-[#0E1729] dark:via-[#15233A] dark:to-[#0A101D] border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm dark:shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-[#00A3FF]/20 text-[#00A3FF] border border-[#00A3FF]/30">
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-sky-100 dark:bg-[#00A3FF]/20 text-[#0284C7] dark:text-[#00A3FF] border border-sky-200 dark:border-[#00A3FF]/30">
               ADMINISTRATIVE QUIZ SUITE
             </span>
-            <span className="text-xs text-[#9BAAC2] font-mono">
+            <span className="text-xs text-slate-500 dark:text-[#9BAAC2] font-mono">
               Bulk Text Parser & Auto-Scheduler
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             Quiz Management & Scheduling
           </h1>
 
-          <p className="text-xs sm:text-sm text-[#9BAAC2] max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-[#9BAAC2] max-w-2xl leading-relaxed">
             Create multi-question assessments by pasting text in standard bulk format. Configure release deadlines in IST, enforce first-attempt leaderboards, and sync permanently with Supabase.
           </p>
         </div>
@@ -292,83 +320,95 @@ export const AdminQuizManagementPage: React.FC = () => {
       </div>
 
       {/* Quizzes Overview Table */}
-      <div className="rounded-3xl bg-[#091226] border border-white/10 p-6 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between border-b border-white/10 pb-4">
-          <h2 className="text-base font-bold text-white flex items-center gap-2">
+      <div className="rounded-3xl bg-white dark:bg-[#091226] border border-slate-200 dark:border-white/10 p-6 shadow-sm dark:shadow-2xl space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-[#00A3FF]" />
             <span>Configured Assessments ({quizzes.length})</span>
           </h2>
-          <span className="text-xs font-mono text-[#9BAAC2]">Asia/Kolkata (IST) Active Timers</span>
+          <span className="text-xs font-mono text-slate-500 dark:text-[#9BAAC2]">Asia/Kolkata (IST) Active Timers</span>
         </div>
 
         {quizzes.length === 0 ? (
-          <div className="py-12 text-center text-xs text-[#9BAAC2]">
+          <div className="py-12 text-center text-xs text-slate-500 dark:text-[#9BAAC2]">
             No quizzes created yet. Click "Create New Quiz" to bulk-paste questions.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[650px] text-left text-xs">
+            <table className="w-full min-w-[750px] text-left text-xs">
               <thead>
-                <tr className="border-b border-white/5 text-[#9BAAC2] font-mono">
+                <tr className="border-b border-slate-200 dark:border-white/5 text-slate-500 dark:text-[#9BAAC2] font-mono">
                   <th className="pb-3 font-semibold">Quiz Title & Info</th>
                   <th className="pb-3 font-semibold">Status</th>
                   <th className="pb-3 font-semibold">Start Time (IST)</th>
                   <th className="pb-3 font-semibold">Close Time (IST)</th>
-                  <th className="pb-3 font-semibold">Questions</th>
+                  <th className="pb-3 font-semibold">Live Participants</th>
                   <th className="pb-3 font-semibold">Total Marks</th>
                   <th className="pb-3 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100 dark:divide-white/5">
                 {quizzes.map(quiz => {
                   const questionsCount = quiz.questions?.length || 0;
                   const isActive = quiz.status === 'active';
                   const isUpcoming = quiz.status === 'upcoming';
+                  const stats = dataService.getQuizParticipantStats(quiz.id);
 
                   return (
-                    <tr key={quiz.id} className="hover:bg-white/5 transition">
+                    <tr key={quiz.id} className="hover:bg-slate-50 dark:hover:bg-white/5 transition">
                       <td className="py-4 pr-3">
-                        <div className="font-bold text-white text-sm">{quiz.title}</div>
-                        <div className="text-[11px] text-[#9BAAC2] max-w-xs truncate">{quiz.description}</div>
+                        <div className="font-bold text-slate-900 dark:text-white text-sm">{quiz.title}</div>
+                        <div className="text-[11px] text-slate-500 dark:text-[#9BAAC2] max-w-xs truncate">{quiz.description}</div>
                       </td>
 
                       <td className="py-4 pr-3">
                         {isActive ? (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-mono">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/30 font-mono">
                             Active
                           </span>
                         ) : isUpcoming ? (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30 font-mono">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 font-mono">
                             Upcoming
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-800 text-slate-400 border border-white/10 font-mono">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-white/10 font-mono">
                             Closed
                           </span>
                         )}
                       </td>
 
-                      <td className="py-4 pr-3 font-mono text-[11px] text-slate-300">
+                      <td className="py-4 pr-3 font-mono text-[11px] text-slate-700 dark:text-slate-300">
                         {formatIST(quiz.start_time)}
                       </td>
 
-                      <td className="py-4 pr-3 font-mono text-[11px] text-slate-300">
+                      <td className="py-4 pr-3 font-mono text-[11px] text-slate-700 dark:text-slate-300">
                         {formatIST(quiz.end_time)}
                       </td>
 
-                      <td className="py-4 pr-3 font-mono text-[#00A3FF] font-bold">
-                        {questionsCount} Qs
+                      <td className="py-4 pr-3 font-mono text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="px-2 py-0.5 rounded-full bg-sky-100 dark:bg-[#00A3FF]/15 text-[#0284C7] dark:text-[#00E5FF] font-bold text-[11px]">
+                            {stats.submittedCount}/{stats.assignedCount} Submitted
+                          </span>
+                          {stats.startedCount > stats.submittedCount && (
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" title="Active student attempts taking quiz" />
+                          )}
+                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-[#9BAAC2] mt-0.5">
+                          {stats.startedCount} started • {stats.notSubmittedCount} pending
+                        </div>
                       </td>
 
-                      <td className="py-4 pr-3 font-mono text-white font-bold">
+                      <td className="py-4 pr-3 font-mono text-slate-900 dark:text-white font-bold">
                         {quiz.total_marks} Pts ({quiz.duration_minutes}m)
+                        <span className="block text-[10px] text-slate-500 dark:text-[#9BAAC2] font-normal">{questionsCount} Questions</span>
                       </td>
 
                       <td className="py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setSelectedLeaderboardQuiz(quiz)}
-                            className="p-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 transition"
+                            className="p-1.5 rounded-lg bg-amber-50 dark:bg-amber-500/10 hover:bg-amber-100 dark:hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-500/30 transition"
                             title="View Leaderboard"
                           >
                             <Trophy className="w-4 h-4" />
@@ -376,7 +416,7 @@ export const AdminQuizManagementPage: React.FC = () => {
 
                           <button
                             onClick={() => handleOpenCreateModal(quiz)}
-                            className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-white transition"
+                            className="p-1.5 rounded-lg bg-slate-100 dark:bg-white/5 hover:bg-slate-200 dark:hover:bg-white/10 text-slate-700 dark:text-white border border-slate-200 dark:border-white/10 transition"
                             title="Edit Quiz"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -384,7 +424,7 @@ export const AdminQuizManagementPage: React.FC = () => {
 
                           <button
                             onClick={() => handleDeleteQuiz(quiz.id, quiz.title)}
-                            className="p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 transition"
+                            className="p-1.5 rounded-lg bg-rose-50 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-500/30 transition"
                             title="Delete Quiz"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -402,241 +442,248 @@ export const AdminQuizManagementPage: React.FC = () => {
 
       {/* CREATE / EDIT QUIZ MODAL */}
       {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-4 md:p-8 flex items-center justify-center">
-          <div className="bg-[#0B132B] rounded-3xl border border-white/10 max-w-4xl w-full p-6 md:p-8 space-y-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsCreateModalOpen(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+            {/* Pinned Modal Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#080E21]">
               <div>
-                <h3 className="text-xl font-bold text-white">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                   {editingQuizId ? 'Edit Quiz Assessment' : 'Create & Schedule New Quiz'}
                 </h3>
-                <p className="text-xs text-[#9BAAC2]">
+                <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">
                   Paste bulk questions, preview parsed structures, and configure release window in IST
                 </p>
               </div>
 
               <button
                 onClick={() => setIsCreateModalOpen(false)}
-                className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition"
+                className="p-2 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-600 dark:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Error Banner */}
-            {parseError && (
-              <div className="p-3.5 rounded-2xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{parseError}</span>
-              </div>
-            )}
+            {/* Scrollable Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
+              {/* Error Banner */}
+              {parseError && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{parseError}</span>
+                </div>
+              )}
 
-            {/* Form Fields: Metadata & Schedule */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Quiz Title *</label>
-                <input
-                  type="text"
-                  value={quizTitle}
-                  onChange={e => setQuizTitle(e.target.value)}
-                  placeholder="e.g. Python Fundamentals Assessment"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#101A2D] border border-white/10 text-white text-xs focus:border-[#00A3FF] outline-none"
-                />
-              </div>
+              {/* Form Fields: Metadata & Schedule */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300">Quiz Title *</label>
+                  <input
+                    type="text"
+                    value={quizTitle}
+                    onChange={e => setQuizTitle(e.target.value)}
+                    placeholder="e.g. Python Fundamentals Assessment"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#101A2D] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:border-[#00A3FF] outline-none"
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Target Course *</label>
-                <select
-                  value={selectedCourseId}
-                  onChange={e => setSelectedCourseId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#101A2D] border border-white/10 text-white text-xs focus:border-[#00A3FF] outline-none"
-                >
-                  {courses.map(c => (
-                    <option key={c.id} value={c.id}>{c.title}</option>
-                  ))}
-                </select>
-              </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300">Target Course *</label>
+                  <select
+                    value={selectedCourseId}
+                    onChange={e => setSelectedCourseId(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#101A2D] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:border-[#00A3FF] outline-none"
+                  >
+                    {courses.map(c => (
+                      <option key={c.id} value={c.id}>{c.title}</option>
+                    ))}
+                  </select>
+                </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Start Date & Time (IST) *</label>
-                <input
-                  type="datetime-local"
-                  value={startTimeInput}
-                  onChange={e => setStartTimeInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#101A2D] border border-white/10 text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
-                />
-              </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300">Start Date & Time (IST) *</label>
+                  <input
+                    type="datetime-local"
+                    value={startTimeInput}
+                    onChange={e => setStartTimeInput(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#101A2D] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Close Date & Time (IST) *</label>
-                <input
-                  type="datetime-local"
-                  value={endTimeInput}
-                  onChange={e => setEndTimeInput(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#101A2D] border border-white/10 text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
-                />
-              </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300">Close Date & Time (IST) *</label>
+                  <input
+                    type="datetime-local"
+                    value={endTimeInput}
+                    onChange={e => setEndTimeInput(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#101A2D] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Time Limit (Minutes)</label>
-                <input
-                  type="number"
-                  value={durationMinutes}
-                  onChange={e => setDurationMinutes(Number(e.target.value))}
-                  min={5}
-                  max={180}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#101A2D] border border-white/10 text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
-                />
-              </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300">Time Limit (Minutes)</label>
+                  <input
+                    type="number"
+                    value={durationMinutes}
+                    onChange={e => setDurationMinutes(Number(e.target.value))}
+                    min={5}
+                    max={180}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#101A2D] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
+                  />
+                </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-300">Total Marks</label>
-                <input
-                  type="number"
-                  value={totalMarks}
-                  onChange={e => setTotalMarks(Number(e.target.value))}
-                  min={5}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#101A2D] border border-white/10 text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
-                />
-              </div>
-            </div>
-
-            {/* Bulk Text Parser Box */}
-            <div className="space-y-2 pt-2 border-t border-white/10">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <FileText className="w-4 h-4 text-[#00A3FF]" />
-                  <span>Paste Questions in Structured Text Format</span>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setBulkText(SAMPLE_BULK_INPUT)}
-                  className="text-xs text-[#00A3FF] hover:underline font-mono"
-                >
-                  Insert Sample Questions
-                </button>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300">Total Marks</label>
+                  <input
+                    type="number"
+                    value={totalMarks}
+                    onChange={e => setTotalMarks(Number(e.target.value))}
+                    min={5}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#101A2D] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs focus:border-[#00A3FF] outline-none font-mono"
+                  />
+                </div>
               </div>
 
-              <textarea
-                rows={6}
-                value={bulkText}
-                onChange={e => setBulkText(e.target.value)}
-                placeholder={`Q1. What is Python?\nA. Programming Language\nB. Operating System\nCorrect Answer: A\nExplanation: ...`}
-                className="w-full p-3.5 rounded-2xl bg-[#070C18] border border-white/10 text-white text-xs font-mono leading-relaxed focus:border-[#00A3FF] outline-none"
-              />
-
-              <div className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={handleParseBulk}
-                  className="px-5 py-2 rounded-xl bg-[#00A3FF]/20 hover:bg-[#00A3FF]/30 text-[#00A3FF] border border-[#00A3FF]/40 text-xs font-bold transition flex items-center gap-2"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Parse & Preview Questions</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleAddBlankQuestion}
-                  className="text-xs text-slate-300 hover:text-white transition flex items-center gap-1 font-mono"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Add Blank Question
-                </button>
-              </div>
-            </div>
-
-            {/* PREVIEW OF PARSED QUESTIONS */}
-            {parsedQuestions.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-white/10">
+              {/* Bulk Text Parser Box */}
+              <div className="space-y-2 pt-2 border-t border-slate-200 dark:border-white/10">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Parsed Questions Preview ({parsedQuestions.length})</span>
-                  </h4>
-                  <span className="text-xs text-[#9BAAC2] font-mono">
-                    Verify options and correct answer keys before saving
-                  </span>
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-300 flex items-center gap-1.5">
+                    <FileText className="w-4 h-4 text-[#00A3FF]" />
+                    <span>Paste Questions in Structured Text Format</span>
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setBulkText(SAMPLE_BULK_INPUT)}
+                    className="text-xs text-[#00A3FF] hover:underline font-mono"
+                  >
+                    Insert Sample Questions
+                  </button>
                 </div>
 
-                <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
-                  {parsedQuestions.map((q, qIdx) => (
-                    <div
-                      key={q.id || qIdx}
-                      className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-3"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-bold text-[#00A3FF]">
-                          Question #{qIdx + 1}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteQuestion(qIdx)}
-                          className="p-1 text-rose-400 hover:text-rose-300"
-                          title="Delete this question"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                <textarea
+                  rows={6}
+                  value={bulkText}
+                  onChange={e => setBulkText(e.target.value)}
+                  placeholder={`Q1. What is Python?\nA. Programming Language\nB. Operating System\nCorrect Answer: A\nExplanation: ...`}
+                  className="w-full p-3.5 rounded-2xl bg-slate-50 dark:bg-[#070C18] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs font-mono leading-relaxed focus:border-[#00A3FF] outline-none placeholder-slate-400 dark:placeholder-slate-500"
+                />
 
-                      {/* Question Text */}
-                      <input
-                        type="text"
-                        value={q.question}
-                        onChange={e => handleUpdateQuestion(qIdx, { question: e.target.value })}
-                        className="w-full px-3 py-1.5 rounded-lg bg-[#070C18] border border-white/10 text-white text-xs outline-none focus:border-[#00A3FF]"
-                      />
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={handleParseBulk}
+                    className="px-5 py-2 rounded-xl bg-sky-100 dark:bg-[#00A3FF]/20 hover:bg-sky-200 dark:hover:bg-[#00A3FF]/30 text-[#176BFF] dark:text-[#00A3FF] border border-sky-300 dark:border-[#00A3FF]/40 text-xs font-bold transition flex items-center gap-2"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Parse & Preview Questions</span>
+                  </button>
 
-                      {/* Options */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {q.options.map((opt, oIdx) => {
-                          const optKey = typeof opt === 'string' ? String.fromCharCode(65 + oIdx) : opt.key;
-                          const optText = typeof opt === 'string' ? opt : opt.text;
-                          const isCorrect = q.correct_answer === optKey;
-
-                          return (
-                            <div
-                              key={optKey}
-                              onClick={() => handleUpdateQuestion(qIdx, { correct_answer: optKey })}
-                              className={`p-2 rounded-xl border text-xs flex items-center justify-between gap-2 cursor-pointer transition ${
-                                isCorrect
-                                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 font-bold'
-                                  : 'bg-[#070C18] border-white/5 text-slate-300'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2 truncate">
-                                <span className={`w-5 h-5 rounded-md font-mono text-[10px] flex items-center justify-center font-bold ${
-                                  isCorrect ? 'bg-emerald-500 text-white' : 'bg-white/10 text-[#9BAAC2]'
-                                }`}>
-                                  {optKey}
-                                </span>
-                                <span className="truncate">{optText}</span>
-                              </div>
-                              {isCorrect && <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      {/* Explanation */}
-                      <input
-                        type="text"
-                        value={q.explanation || ''}
-                        onChange={e => handleUpdateQuestion(qIdx, { explanation: e.target.value })}
-                        placeholder="Answer explanation..."
-                        className="w-full px-3 py-1.5 rounded-lg bg-[#070C18] border border-white/10 text-[#9BAAC2] text-[11px] outline-none"
-                      />
-                    </div>
-                  ))}
+                  <button
+                    type="button"
+                    onClick={handleAddBlankQuestion}
+                    className="text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition flex items-center gap-1 font-mono font-semibold"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Blank Question
+                  </button>
                 </div>
               </div>
-            )}
 
-            {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-white/10">
+              {/* PREVIEW OF PARSED QUESTIONS */}
+              {parsedQuestions.length > 0 && (
+                <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-white/10">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Parsed Questions Preview ({parsedQuestions.length})</span>
+                    </h4>
+                    <span className="text-xs text-slate-500 dark:text-[#9BAAC2] font-mono">
+                      Verify options and correct answer keys before saving
+                    </span>
+                  </div>
+
+                  <div className="space-y-4 max-h-72 overflow-y-auto pr-2">
+                    {parsedQuestions.map((q, qIdx) => (
+                      <div
+                        key={q.id || qIdx}
+                        className="p-4 rounded-2xl bg-slate-50 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-mono font-black text-slate-900 dark:text-[#00A3FF]">
+                            Question #{qIdx + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuestion(qIdx)}
+                            className="p-1 text-rose-500 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300"
+                            title="Delete this question"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Question Text */}
+                        <input
+                          type="text"
+                          value={q.question}
+                          onChange={e => handleUpdateQuestion(qIdx, { question: e.target.value })}
+                          className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-[#070C18] border border-slate-300 dark:border-white/10 text-slate-900 dark:text-white text-xs outline-none focus:border-[#00A3FF]"
+                        />
+
+                        {/* Options */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {q.options.map((opt, oIdx) => {
+                            const optKey = typeof opt === 'string' ? String.fromCharCode(65 + oIdx) : opt.key;
+                            const optText = typeof opt === 'string' ? opt : opt.text;
+                            const isCorrect = q.correct_answer === optKey;
+
+                            return (
+                              <div
+                                key={optKey}
+                                onClick={() => handleUpdateQuestion(qIdx, { correct_answer: optKey })}
+                                className={`p-2 rounded-xl border text-xs flex items-center justify-between gap-2 cursor-pointer transition ${isCorrect
+                                    ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                                    : 'bg-white dark:bg-[#070C18] border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300'
+                                  }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <span className={`w-5 h-5 rounded-md font-mono text-[10px] flex items-center justify-center font-bold ${isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 dark:bg-white/10 text-slate-600 dark:text-[#9BAAC2]'
+                                    }`}>
+                                    {optKey}
+                                  </span>
+                                  <span className="truncate">{optText}</span>
+                                </div>
+                                {isCorrect && <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Explanation */}
+                        <input
+                          type="text"
+                          value={q.explanation || ''}
+                          onChange={e => handleUpdateQuestion(qIdx, { explanation: e.target.value })}
+                          placeholder="Answer explanation..."
+                          className="w-full px-3 py-1.5 rounded-lg bg-white dark:bg-[#070C18] border border-slate-300 dark:border-white/10 text-slate-600 dark:text-[#9BAAC2] text-[11px] outline-none"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Pinned Modal Actions */}
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#080E21] shrink-0">
               <button
                 type="button"
                 onClick={() => setIsCreateModalOpen(false)}
-                className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold transition"
+                className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-white text-xs font-bold transition"
               >
                 Cancel
               </button>
@@ -661,66 +708,85 @@ export const AdminQuizManagementPage: React.FC = () => {
         const remaining = entries.slice(3);
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-4 md:p-8 flex items-center justify-center">
-            <div className="bg-[#0B132B] rounded-3xl border border-white/10 max-w-2xl w-full p-6 md:p-8 space-y-5 shadow-2xl max-h-[85vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+          <div
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setSelectedLeaderboardQuiz(null);
+            }}
+          >
+            <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+              {/* Pinned Header */}
+              <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#080E21]">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/30 flex items-center justify-center">
                     <Trophy className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3 className="text-base font-bold text-white">{selectedLeaderboardQuiz.title}</h3>
-                    <p className="text-xs text-[#9BAAC2]">Official First-Attempt Verified Leaderboard</p>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedLeaderboardQuiz.title}</h3>
+                    <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">Official First-Attempt Verified Leaderboard</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedLeaderboardQuiz(null)}
-                  className="px-3.5 py-1.5 rounded-xl bg-white/10 text-xs font-bold hover:bg-white/20 transition text-white"
+                  className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-white/10 text-xs font-bold hover:bg-slate-200 dark:hover:bg-white/20 transition text-slate-700 dark:text-white"
                 >
                   Close
                 </button>
               </div>
 
-              {/* Podium */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {top3.map((entry, idx) => (
-                  <div
-                    key={entry.student_id}
-                    className="p-4 rounded-2xl bg-[#101F3B] border border-amber-500/30 text-center space-y-1.5"
-                  >
-                    <span className="text-xs font-bold text-amber-400">
-                      {idx === 0 ? '🥇 1st Place' : idx === 1 ? '🥈 2nd Place' : '🥉 3rd Place'}
-                    </span>
-                    <h4 className="text-sm font-bold text-white truncate">{entry.student_name}</h4>
-                    <div className="text-xs font-mono font-bold text-[#00D1FF]">
-                      Score: {entry.score} • {entry.accuracy}% Acc
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Remaining */}
-              {remaining.length > 0 && (
-                <div className="divide-y divide-white/5 border border-white/5 rounded-2xl overflow-hidden bg-[#101A2D]">
-                  {remaining.map(entry => (
-                    <div key={entry.student_id} className="p-3 px-4 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-[#9BAAC2]">#{entry.rank}</span>
-                        <span className="font-semibold text-white">{entry.student_name}</span>
-                      </div>
-                      <div className="font-mono text-[11px] text-[#00D1FF]">
-                        {entry.score} Pts • {entry.accuracy}% Acc
+              {/* Scrollable Leaderboard Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+                {/* Podium */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {top3.map((entry, idx) => (
+                    <div
+                      key={entry.student_id}
+                      className="p-4 rounded-2xl bg-amber-50/70 dark:bg-[#101F3B] border border-amber-300 dark:border-amber-500/30 text-center space-y-1.5"
+                    >
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-400">
+                        {idx === 0 ? '🥇 1st Place' : idx === 1 ? '🥈 2nd Place' : '🥉 3rd Place'}
+                      </span>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white truncate">{entry.student_name}</h4>
+                      <div className="text-xs font-mono font-bold text-[#0284C7] dark:text-[#00D1FF]">
+                        Score: {entry.score} • {entry.accuracy}% Acc
                       </div>
                     </div>
                   ))}
                 </div>
-              )}
 
-              {entries.length === 0 && (
-                <div className="py-8 text-center text-xs text-[#9BAAC2]">
-                  No submitted attempts recorded yet for this quiz.
-                </div>
-              )}
+                {/* Remaining */}
+                {remaining.length > 0 && (
+                  <div className="divide-y divide-slate-100 dark:divide-white/5 border border-slate-200 dark:border-white/5 rounded-2xl overflow-hidden bg-slate-50 dark:bg-[#101A2D]">
+                    {remaining.map(entry => (
+                      <div key={entry.student_id} className="p-3 px-4 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-3">
+                          <span className="font-mono text-slate-500 dark:text-[#9BAAC2]">#{entry.rank}</span>
+                          <span className="font-semibold text-slate-900 dark:text-white">{entry.student_name}</span>
+                        </div>
+                        <div className="font-mono text-[11px] text-[#0284C7] dark:text-[#00D1FF] font-semibold">
+                          {entry.score} Pts • {entry.accuracy}% Acc
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {entries.length === 0 && (
+                  <div className="py-8 text-center text-xs text-slate-500 dark:text-[#9BAAC2]">
+                    No submitted attempts recorded yet for this quiz.
+                  </div>
+                )}
+              </div>
+
+              {/* Pinned Footer */}
+              <div className="px-6 py-3 border-t border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#080E21] flex justify-end shrink-0">
+                <button
+                  onClick={() => setSelectedLeaderboardQuiz(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-xs font-bold text-slate-700 dark:text-white transition"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         );

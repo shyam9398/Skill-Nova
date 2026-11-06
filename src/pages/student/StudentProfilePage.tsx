@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  User as UserIcon, 
-  Mail, 
-  BookOpen, 
-  Award, 
+import {
+  User as UserIcon,
+  Mail,
+  BookOpen,
+  Award,
   ShieldCheck,
   Sun,
   Moon,
@@ -188,11 +188,10 @@ export const StudentProfilePage: React.FC = () => {
       {/* Profile Update Feedback */}
       {saveStatus && (
         <div
-          className={`p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 transition-all ${
-            saveStatus.type === 'success'
-              ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
-              : 'bg-rose-500/15 border border-rose-500/40 text-rose-700 dark:text-rose-300'
-          }`}
+          className={`p-4 rounded-2xl text-xs font-semibold flex items-center gap-3 transition-all ${saveStatus.type === 'success'
+            ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
+            : 'bg-rose-500/15 border border-rose-500/40 text-rose-700 dark:text-rose-300'
+            }`}
         >
           {saveStatus.type === 'success' ? (
             <Check className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -205,7 +204,7 @@ export const StudentProfilePage: React.FC = () => {
 
       {/* Main Profile & Editable Section */}
       <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 sm:p-8 shadow-sm space-y-6">
-        
+
         {/* Profile Card Header */}
         <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 pb-6 border-b border-slate-200 dark:border-white/10 text-center sm:text-left">
           <div className="relative group">
@@ -226,14 +225,6 @@ export const StudentProfilePage: React.FC = () => {
             <p className="text-xs text-slate-500 dark:text-[#9BAAC2] flex items-center justify-center sm:justify-start gap-1.5 font-mono">
               <Mail className="w-3.5 h-3.5 text-[#00A3FF]" /> {user.email}
             </p>
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
-              <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#060B18] text-xs text-[#00A3FF] border border-slate-200 dark:border-white/5 font-mono">
-                {user.college || 'SkillNova Engineering Academy'}
-              </span>
-              <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-[#060B18] text-xs text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/5 font-mono">
-                {user.branch || 'Computer Science & Engineering'} • {user.year_of_study || '3rd Year'}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -385,11 +376,10 @@ export const StudentProfilePage: React.FC = () => {
                         setPreviewUrl(null);
                         setSelectedFile(null);
                       }}
-                      className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${
-                        (avatarUrl === url && !previewUrl)
-                          ? 'border-[#00A3FF] ring-2 ring-[#00A3FF]/40 scale-105'
-                          : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
-                      }`}
+                      className={`w-10 h-10 rounded-xl overflow-hidden border-2 transition-all ${(avatarUrl === url && !previewUrl)
+                        ? 'border-[#00A3FF] ring-2 ring-[#00A3FF]/40 scale-105'
+                        : 'border-slate-200 dark:border-white/10 opacity-70 hover:opacity-100'
+                        }`}
                     >
                       <img src={url} alt={`Preset ${i}`} className="w-full h-full object-cover" />
                     </button>
@@ -478,45 +468,6 @@ export const StudentProfilePage: React.FC = () => {
                 {user.role || 'Student'}
               </p>
             </div>
-
-            {/* Assigned College */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider flex items-center gap-1">
-                  <Building className="w-3 h-3" /> Assigned College
-                </span>
-                <Lock className="w-3 h-3 text-slate-400" />
-              </div>
-              <p className="text-xs font-bold text-slate-900 dark:text-white">
-                {user.college || 'SkillNova Engineering Academy'}
-              </p>
-            </div>
-
-            {/* Academic Branch */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider flex items-center gap-1">
-                  <GraduationCap className="w-3 h-3" /> Academic Branch
-                </span>
-                <Lock className="w-3 h-3 text-slate-400" />
-              </div>
-              <p className="text-xs font-bold text-slate-900 dark:text-white">
-                {user.branch || 'Computer Science & Engineering'}
-              </p>
-            </div>
-
-            {/* Year of Study */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-semibold text-slate-500 dark:text-[#9BAAC2] uppercase tracking-wider flex items-center gap-1">
-                  <Calendar className="w-3 h-3" /> Year of Study
-                </span>
-                <Lock className="w-3 h-3 text-slate-400" />
-              </div>
-              <p className="text-xs font-bold text-slate-900 dark:text-white">
-                {user.year_of_study || '3rd Year (Batch 2026)'}
-              </p>
-            </div>
           </div>
         </div>
 
@@ -541,11 +492,10 @@ export const StudentProfilePage: React.FC = () => {
             {/* Light Theme Card */}
             <div
               onClick={() => setTheme('light')}
-              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all space-y-3 relative overflow-hidden ${
-                theme === 'light'
-                  ? 'border-[#00A3FF] bg-[#EAF4FF] shadow-lg shadow-[#00A3FF]/15 scale-[1.02]'
-                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#060B18] opacity-80 hover:opacity-100'
-              }`}
+              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all space-y-3 relative overflow-hidden ${theme === 'light'
+                ? 'border-[#00A3FF] bg-[#EAF4FF] shadow-lg shadow-[#00A3FF]/15 scale-[1.02]'
+                : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#060B18] opacity-80 hover:opacity-100'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -579,11 +529,10 @@ export const StudentProfilePage: React.FC = () => {
             {/* Dark Theme Card */}
             <div
               onClick={() => setTheme('dark')}
-              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all space-y-3 relative overflow-hidden ${
-                theme === 'dark'
-                  ? 'border-[#00A3FF] bg-[#0A1A3F] shadow-lg shadow-[#00A3FF]/20 scale-[1.02]'
-                  : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#060B18] opacity-80 hover:opacity-100'
-              }`}
+              className={`p-5 rounded-2xl border-2 cursor-pointer transition-all space-y-3 relative overflow-hidden ${theme === 'dark'
+                ? 'border-[#00A3FF] bg-[#0A1A3F] shadow-lg shadow-[#00A3FF]/20 scale-[1.02]'
+                : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#060B18] opacity-80 hover:opacity-100'
+                }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -633,8 +582,8 @@ export const StudentProfilePage: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {enrolledCourses.map((c: any) => (
-                <div 
-                  key={c.id} 
+                <div
+                  key={c.id}
                   className="p-4 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center justify-between"
                 >
                   <div>

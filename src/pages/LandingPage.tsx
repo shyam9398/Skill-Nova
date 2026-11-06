@@ -145,7 +145,7 @@ export const LandingPage: React.FC = () => {
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-[#475569] dark:text-[#9BAAC5]">
+          <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-800 dark:text-slate-200">
             <a href="#about" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               About
             </a>
@@ -188,9 +188,9 @@ export const LandingPage: React.FC = () => {
 
             <Link
               to="/admin/login"
-              className="px-4 py-2.5 rounded-xl text-xs font-bold text-[#475569] dark:text-[#9BAAC5] hover:text-[#0B1220] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-white/5 border border-[#E2E8F0] dark:border-white/10 transition flex items-center gap-1.5"
+              className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200 hover:text-[#176BFF] dark:hover:text-white hover:bg-[#F1F5F9] dark:hover:bg-white/5 border border-[#CBD5E1] dark:border-white/10 transition flex items-center gap-1.5"
             >
-              <Lock className="w-3.5 h-3.5 text-[#64748B] dark:text-[#9BAAC5]" />
+              <Lock className="w-3.5 h-3.5 text-[#176BFF] dark:text-[#9BAAC5]" />
               <span>Admin</span>
             </Link>
 
@@ -233,7 +233,7 @@ export const LandingPage: React.FC = () => {
         {/* Collapsible Mobile Drawer */}
         {mobileMenuOpen && (
           <div className="sm:hidden border-t border-[#E2E8F0] dark:border-white/10 bg-white dark:bg-[#0B1530] px-4 py-4 space-y-3 animate-fadeIn">
-            <nav className="flex flex-col space-y-2 text-sm font-semibold text-[#475569] dark:text-[#9BAAC5]">
+            <nav className="flex flex-col space-y-2 text-sm font-bold text-slate-800 dark:text-slate-200">
               <a
                 href="#about"
                 onClick={() => setMobileMenuOpen(false)}
@@ -416,7 +416,7 @@ export const LandingPage: React.FC = () => {
             </div>
 
             <div className="p-8 rounded-3xl bg-[#F8FAFC] dark:bg-[#0D1833] border border-[#E2E8F0] dark:border-white/10 space-y-3 transition-colors">
-              <span className="text-xs font-bold font-mono uppercase tracking-wider text-[#00A3FF]">
+              <span className="text-xs font-bold font-mono uppercase tracking-wider text-[#176BFF] dark:text-[#00A8FF]">
                 Long-Term Horizon
               </span>
               <h3 className="text-xl sm:text-2xl font-bold text-[#0B1220] dark:text-[#F4F7FF]">

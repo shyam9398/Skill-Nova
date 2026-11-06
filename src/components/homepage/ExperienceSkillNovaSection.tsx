@@ -33,13 +33,13 @@ export const ExperienceSkillNovaSection: React.FC<{ onOpenAccessRequest?: () => 
     // YouTube
     const ytMatch = rawUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
     if (ytMatch && ytMatch[1]) {
-      return `https://www.youtube.com/embed/${ytMatch[1]}?autoplay=1&rel=0`;
+      return `https://www.youtube-nocookie.com/embed/${ytMatch[1]}?autoplay=1&rel=0&playsinline=1&modestbranding=1&enablejsapi=1`;
     }
 
     // Vimeo
     const vimeoMatch = rawUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
     if (vimeoMatch && vimeoMatch[1]) {
-      return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1`;
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}?autoplay=1&playsinline=1`;
     }
 
     // Google Drive
@@ -73,7 +73,7 @@ export const ExperienceSkillNovaSection: React.FC<{ onOpenAccessRequest?: () => 
           </div>
 
           {/* Video Player Card */}
-          <div className="max-w-4xl mx-auto rounded-3xl bg-[#080E1C] border border-[#00D9FF]/30 p-2 sm:p-3 shadow-2xl shadow-[#00A3FF]/20 overflow-hidden">
+          <div className="dark-section dark-card max-w-4xl mx-auto rounded-3xl bg-[#080E1C] border border-[#00D9FF]/30 p-2 sm:p-3 shadow-2xl shadow-[#00A3FF]/20 overflow-hidden">
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center">
               {isPlaying ? (
                 <iframe
@@ -217,7 +217,7 @@ export const ExperienceSkillNovaSection: React.FC<{ onOpenAccessRequest?: () => 
 
       {/* 3. Prominent Full-Width Curriculum Showcase Section */}
       {courses.length > 0 && (
-        <div className="max-w-6xl mx-auto rounded-3xl bg-[#080E1C] border border-[#00D9FF]/30 p-6 md:p-10 shadow-2xl space-y-6 text-white relative overflow-hidden">
+        <div className="dark-section dark-card max-w-6xl mx-auto rounded-3xl bg-[#080E1C] border border-[#00D9FF]/30 p-6 md:p-10 shadow-2xl space-y-6 text-white relative overflow-hidden">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-white/10">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00D9FF]/20 text-[#00D9FF] text-xs font-mono font-bold border border-[#00D9FF]/40 mb-1">

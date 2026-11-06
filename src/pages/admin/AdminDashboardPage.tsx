@@ -37,7 +37,7 @@ export const AdminDashboardPage: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-[#101A2D] via-[#15233A] to-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
+      <div className="dark-section dark-card bg-gradient-to-r from-[#101A2D] via-[#15233A] to-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#397BFF]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -46,7 +46,7 @@ export const AdminDashboardPage: React.FC = () => {
               <Shield className="w-3.5 h-3.5" />
               <span>SkillNova Operations Control Center</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black text-black dark:text-[#F0F5FF]">
+            <h1 className="text-2xl md:text-3xl font-black text-white !text-white">
               Welcome back, {currentUser?.full_name || 'Administrator'}
             </h1>
             <p className="text-xs md:text-sm text-[#9BAAC2] max-w-xl">

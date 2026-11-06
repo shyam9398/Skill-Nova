@@ -2154,6 +2154,10 @@ class DataService {
 
           correct_count: Number(a.correct_count) || 0,
 
+          incorrect_count: Number(a.incorrect_count) || 0,
+
+          unanswered_count: Number(a.unanswered_count) || 0,
+
           accuracy: Number(a.accuracy) || 0,
 
           answers:
@@ -2172,7 +2176,11 @@ class DataService {
           completed_at: a.completed_at || new Date().toISOString(),
         }));
 
-        this.quizAttemptsList = remoteAttempts;
+        const remoteIds = new Set(remoteAttempts.map(r => r.id));
+        this.quizAttemptsList = [
+          ...remoteAttempts,
+          ...this.quizAttemptsList.filter(l => !remoteIds.has(l.id))
+        ];
 
         this.saveToStorage("quizAttemptsList", this.quizAttemptsList);
 
@@ -2744,6 +2752,10 @@ class DataService {
 
           is_published: iq.is_published ?? true,
 
+          release_status: iq.release_status || (iq.is_published === false ? 'held' : 'released'),
+
+          scheduled_release_at: iq.scheduled_release_at,
+
           created_at: iq.created_at || new Date().toISOString(),
         }));
 
@@ -2842,16 +2854,29 @@ class DataService {
         .limit(100);
 
       if (!error && Array.isArray(data)) {
-        this.auditLogs = data.map((l: any) => ({
-          id: l.id,
-          action: l.action,
-          resource_id: l.entity_id || l.course_id || "",
-          resource_title: l.details || l.action,
-          course_id: l.course_id || undefined,
-          performed_by: l.actor_email || "System",
-          timestamp: l.created_at || new Date().toISOString(),
-          details: l.details || "",
-        }));
+        this.auditLogs = data.map((l: any) => {
+          const meta = l.metadata || {};
+          return {
+            id: l.id,
+            action: l.action,
+            entity_type: l.entity_type,
+            entity_id: l.entity_id || l.course_id || "",
+            resource_id: l.entity_id || l.course_id || "",
+            resource_title: l.details || l.action,
+            course_id: l.course_id || undefined,
+            performed_by: l.actor_email || meta.username || "System",
+            actor_email: l.actor_email || "",
+            timestamp: l.created_at || new Date().toISOString(),
+            details: l.details || "",
+            user_role: meta.role || (l.action?.toLowerCase().includes('admin') ? 'admin' : 'student'),
+            username: meta.username || l.actor_email?.split('@')[0],
+            login_time: meta.login_time || (l.action === 'LOGIN_SUCCESS' ? l.created_at : undefined),
+            logout_time: meta.logout_time || (l.action === 'LOGOUT' ? l.created_at : undefined),
+            session_duration: meta.session_duration,
+            status: meta.status || (l.action === 'LOGIN_SUCCESS' ? 'active' : l.action === 'LOGOUT' ? 'logged_out' : 'failed'),
+            metadata: meta,
+          };
+        });
 
         this.saveToStorage("auditLogs", this.auditLogs);
         this.notifySubscribers();
@@ -3067,15 +3092,14 @@ class DataService {
   }): Promise<{ success: boolean; user?: User; error?: string }> {
 
     try {
-      // 1. Prepare username
+      // 1. Prepare username - preserve exact casing
       const rawUsername =
         studentData.username ||
         (studentData.email ? studentData.email.split("@")[0] : "");
 
       const cleanUsername = rawUsername
         .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_.-]/g, "");
+        .replace(/[^a-zA-Z0-9_.-]/g, "");
 
       if (!cleanUsername) {
         return { success: false, error: "Valid username is required." };
@@ -3091,8 +3115,8 @@ class DataService {
       if (
         this.users.some(
           (u) =>
-            (u.username && u.username.toLowerCase() === cleanUsername) ||
-            u.email.split("@")[0].toLowerCase() === cleanUsername,
+            u.username === cleanUsername ||
+            u.email.toLowerCase() === `${cleanUsername.toLowerCase()}@student.skillnova.edu`,
         )
       ) {
         return {
@@ -3120,9 +3144,16 @@ class DataService {
 
       if (error) {
         console.error("[SkillNova] Create student error:", error);
+        let detailMsg = error.message || "Unable to create student account.";
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const errJson = await error.context.json();
+            if (errJson?.message) detailMsg = errJson.message;
+          }
+        } catch (_) {}
         return {
           success: false,
-          error: error.message || "Unable to create student account.",
+          error: detailMsg,
         };
       }
 
@@ -3413,7 +3444,123 @@ class DataService {
         );
     }
 
+    const updatedUser = this.getUserById(userId);
+    void this.recordAuditEvent({
+      action: nextStatus === 'active' ? 'activate_student' : 'deactivate_student',
+      entity_type: 'student',
+      entity_id: userId,
+      details: `Student account @${updatedUser?.username || updatedUser?.email || userId} was marked as ${nextStatus.toUpperCase()}`,
+      performed_by: this.currentUser?.email || 'Administrator'
+    });
+
     this.notifySubscribers();
+  }
+
+  public async deleteStudent(userId: string): Promise<{ success: boolean; error?: string }> {
+    const student = this.users.find(u => u.id === userId);
+    const studentName = student?.full_name || 'Student';
+    const studentUsername = student?.username || student?.email?.split('@')[0] || '';
+
+    this.users = this.users.filter(u => u.id !== userId);
+    this.saveToStorage('users', this.users);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const studentUid = ensureUuid(userId);
+        // Call secure server-side delete-student edge function to delete auth user and all dependencies
+        const { error: fnErr } = await supabase.functions.invoke('delete-student', {
+          body: { student_user_id: studentUid }
+        });
+        if (fnErr) {
+          console.warn('[SkillNova Supabase] Edge function delete-student warning, performing direct cleanup:', fnErr);
+          await supabase.from('course_enrollments').delete().eq('student_id', studentUid);
+          await supabase.from('quiz_attempts').delete().eq('student_id', studentUid);
+          await supabase.from('student_progress').delete().eq('student_id', studentUid);
+          await supabase.from('students').delete().eq('user_id', studentUid);
+          await supabase.from('user_roles').delete().eq('user_id', studentUid);
+          await supabase.from('profiles').delete().eq('id', studentUid);
+        }
+      } catch (err: any) {
+        console.warn('Supabase deleteStudent error:', err);
+      }
+    }
+
+    void this.recordAuditEvent({
+      action: 'delete_student',
+      entity_type: 'student',
+      entity_id: userId,
+      details: `Permanently deleted student account @${studentUsername} (${studentName})`,
+      performed_by: this.currentUser?.email || 'Administrator'
+    });
+
+    this.notifySubscribers();
+    return { success: true };
+  }
+
+  public async updateStudent(userId: string, data: {
+    full_name?: string;
+    phone_number?: string;
+    college?: string;
+    branch?: string;
+    year_of_study?: string;
+    assigned_courses?: string[];
+  }): Promise<{ success: boolean; error?: string }> {
+    let updatedUser: any = this.users.find(u => u.id === userId) || null;
+    this.users = this.users.map(u => {
+      if (u.id === userId) {
+        updatedUser = {
+          ...u,
+          full_name: data.full_name !== undefined ? data.full_name : u.full_name,
+          phone_number: data.phone_number !== undefined ? data.phone_number : u.phone_number,
+          phone: data.phone_number !== undefined ? data.phone_number : u.phone,
+          college: data.college !== undefined ? data.college : u.college,
+          branch: data.branch !== undefined ? data.branch : u.branch,
+          year_of_study: data.year_of_study !== undefined ? data.year_of_study : u.year_of_study,
+          assigned_courses: data.assigned_courses !== undefined ? data.assigned_courses : u.assigned_courses
+        };
+        return updatedUser;
+      }
+      return u;
+    });
+
+    this.saveToStorage('users', this.users);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const studentUid = ensureUuid(userId);
+        if (data.full_name || data.phone_number) {
+          await supabase.from('profiles').update({
+            full_name: data.full_name,
+            phone_number: data.phone_number
+          }).eq('id', studentUid);
+        }
+
+        if (data.college || data.branch || data.year_of_study) {
+          await supabase.from('students').update({
+            college: data.college,
+            branch: data.branch,
+            year_of_study: data.year_of_study
+          }).eq('user_id', studentUid);
+        }
+
+        if (data.assigned_courses) {
+          await this.assignStudentCourses(userId, data.assigned_courses);
+        }
+      } catch (err: any) {
+        console.warn('Supabase updateStudent error:', err);
+      }
+    }
+
+    void this.recordAuditEvent({
+      action: 'edit',
+      entity_type: 'student',
+      entity_id: userId,
+      details: `Updated student profile details for ${updatedUser?.full_name || userId}`,
+      performed_by: this.currentUser?.email || 'Administrator'
+    });
+
+    this.notifySubscribers();
+    return { success: true };
   }
 
   public async assignStudentCourses(
@@ -4328,6 +4475,63 @@ class DataService {
     );
   }
 
+  public async recordAuditEvent(entry: Partial<AuditLogEntry>): Promise<AuditLogEntry> {
+    const id = entry.id || `audit-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+    const fullEntry: AuditLogEntry = {
+      id,
+      action: entry.action || 'system_event',
+      entity_type: entry.entity_type || 'system',
+      entity_id: entry.entity_id || entry.resource_id,
+      resource_id: entry.resource_id || entry.entity_id,
+      resource_title: entry.resource_title || entry.details,
+      course_id: entry.course_id,
+      performed_by: entry.performed_by || entry.actor_email || this.currentUser?.email || 'System',
+      actor_email: entry.actor_email || this.currentUser?.email,
+      username: entry.username || this.currentUser?.username || this.currentUser?.email?.split('@')[0],
+      user_role: entry.user_role || this.currentUser?.role || 'student',
+      timestamp: entry.timestamp || new Date().toISOString(),
+      login_time: entry.login_time || (entry.action === 'LOGIN_SUCCESS' ? new Date().toISOString() : undefined),
+      logout_time: entry.logout_time,
+      session_duration: entry.session_duration,
+      status: entry.status || (entry.action === 'LOGIN_SUCCESS' ? 'active' : entry.action === 'LOGOUT' ? 'logged_out' : undefined),
+      details: entry.details || '',
+      metadata: entry.metadata || {}
+    };
+
+    this.auditLogs.unshift(fullEntry);
+    this.saveToStorage('auditLogs', this.auditLogs);
+    this.notifySubscribers();
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const { error } = await supabase.from('audit_logs').insert({
+          action: fullEntry.action,
+          entity_type: fullEntry.entity_type || 'system',
+          entity_id: fullEntry.entity_id ? String(fullEntry.entity_id) : null,
+          course_id: fullEntry.course_id ? ensureUuid(fullEntry.course_id) : null,
+          details: fullEntry.details || fullEntry.action,
+          actor_email: fullEntry.actor_email || fullEntry.performed_by,
+          metadata: {
+            ...fullEntry.metadata,
+            username: fullEntry.username,
+            role: fullEntry.user_role,
+            status: fullEntry.status,
+            login_time: fullEntry.login_time,
+            logout_time: fullEntry.logout_time,
+            session_duration: fullEntry.session_duration
+          }
+        });
+        if (error) {
+          console.warn('[SkillNova Supabase] recordAuditEvent note:', error.message);
+        }
+      } catch (err) {
+        console.warn('Error persisting audit event:', err);
+      }
+    }
+
+    return fullEntry;
+  }
+
   private notifyEnrolledStudents(topic: Topic) {
     this.getStudents().forEach((student) => {
       const assigned =
@@ -4531,6 +4735,36 @@ class DataService {
     Object.assign(topic, updates);
 
     this.saveToStorage("topics", this.topics);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const targetId = ensureUuid(topicId);
+        const dbPayload: any = {};
+        if (updates.title !== undefined) dbPayload.title = updates.title;
+        if (updates.description !== undefined) dbPayload.description = updates.description;
+        if (updates.recording_url !== undefined) dbPayload.recording_url = updates.recording_url;
+        if (updates.recording_link !== undefined) dbPayload.recording_link = updates.recording_link;
+        if (updates.ppt_url !== undefined) dbPayload.ppt_url = updates.ppt_url;
+        if (updates.ppt_file_url !== undefined) dbPayload.ppt_file_url = updates.ppt_file_url;
+        if (updates.doc_url !== undefined) dbPayload.doc_url = updates.doc_url;
+        if (updates.drive_notes_link !== undefined) dbPayload.drive_notes_link = updates.drive_notes_link;
+        if (updates.pdf_url !== undefined) dbPayload.pdf_url = updates.pdf_url;
+        if (updates.release_status !== undefined) dbPayload.release_status = updates.release_status;
+        if (updates.is_published !== undefined) dbPayload.is_published = updates.is_published;
+        if (updates.scheduled_release_at !== undefined) dbPayload.scheduled_release_at = updates.scheduled_release_at;
+        if (updates.released_at !== undefined) dbPayload.released_at = updates.released_at;
+        if (updates.slide_start !== undefined) dbPayload.slide_start = updates.slide_start;
+        if (updates.slide_end !== undefined) dbPayload.slide_end = updates.slide_end;
+        if (updates.total_slides !== undefined) dbPayload.total_slides = updates.total_slides;
+        if (updates.doc_page_range !== undefined) dbPayload.doc_page_range = updates.doc_page_range;
+
+        void supabase.from("topics").update(dbPayload).eq("id", targetId);
+      } catch (e) {
+        console.warn("[SkillNova Supabase] updateTopic error:", e);
+      }
+    }
+
+    this.notifySubscribers();
 
     this.addAuditLogEntry({
       action: "edit",
@@ -5783,6 +6017,8 @@ class DataService {
       answer: string;
       difficulty?: string;
       is_published?: boolean;
+      release_status?: 'released' | 'held' | 'hold' | 'scheduled';
+      scheduled_release_at?: string;
     },
     questionArg?: string,
     answerArg?: string,
@@ -5879,17 +6115,58 @@ class DataService {
     return true;
   }
 
+  public async updateFlashcard(id: string, updates: Partial<Flashcard>): Promise<boolean> {
+    this.flashcards = this.flashcards.map(fc => {
+      if (fc.id === id) {
+        return { ...fc, ...updates };
+      }
+      return fc;
+    });
+    this.saveToStorage("flashcards", this.flashcards);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const targetId = ensureUuid(id);
+        const dbPayload: any = {};
+        if (updates.question !== undefined) dbPayload.question = updates.question;
+        if (updates.answer !== undefined) dbPayload.answer = updates.answer;
+        if (updates.difficulty !== undefined) dbPayload.difficulty = updates.difficulty;
+        if (updates.is_published !== undefined) dbPayload.is_published = updates.is_published;
+        if (updates.order_index !== undefined) dbPayload.order_index = updates.order_index;
+
+        await supabase.from("flashcards").update(dbPayload).eq("id", targetId);
+      } catch (e) {
+        console.warn("updateFlashcard supabase error:", e);
+      }
+    }
+    this.notifySubscribers();
+    return true;
+  }
+
   public async addInterviewQuestion(
     topicId: string,
     question: string,
     modelAnswer: string,
     roleCategory = "Full Stack Engineer",
     keyPoints: string[] = [],
+    options?: {
+      course_id?: string;
+      is_published?: boolean;
+      release_status?: 'released' | 'held' | 'hold' | 'scheduled';
+      scheduled_release_at?: string;
+    }
   ): Promise<InterviewQuestion> {
+    const isPublished = options?.is_published !== false;
+    const releaseStatus = options?.release_status || (isPublished ? 'released' : 'scheduled');
+    const scheduledReleaseAt = options?.scheduled_release_at;
+    const courseId = options?.course_id;
+
     const newIq: InterviewQuestion = {
-      id: `iq-${Date.now()}`,
+      id: `iq-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
 
       topic_id: topicId,
+
+      course_id: courseId,
 
       role_category: roleCategory,
 
@@ -5899,26 +6176,41 @@ class DataService {
 
       key_talking_points: keyPoints,
 
+      is_published: isPublished,
+
+      release_status: releaseStatus,
+
+      scheduled_release_at: scheduledReleaseAt,
+
       created_at: new Date().toISOString(),
     };
 
     if (isLiveSupabaseConfigured) {
       try {
+        const insertPayload: any = {
+          role_category: roleCategory,
+
+          question,
+
+          model_answer: modelAnswer,
+
+          key_talking_points: keyPoints,
+
+          is_published: isPublished,
+        };
+        if (topicId) {
+          insertPayload.topic_id = ensureUuid(topicId);
+        }
+        if (courseId) {
+          insertPayload.course_id = ensureUuid(courseId);
+        }
+        if (scheduledReleaseAt) {
+          insertPayload.scheduled_release_at = scheduledReleaseAt;
+        }
+
         const { data, error } = await supabase
           .from("interview_questions")
-          .insert({
-            topic_id: ensureUuid(topicId),
-
-            role_category: roleCategory,
-
-            question,
-
-            model_answer: modelAnswer,
-
-            key_talking_points: keyPoints,
-
-            is_published: true,
-          })
+          .insert(insertPayload)
           .select()
           .single();
 
@@ -5975,8 +6267,39 @@ class DataService {
 
     this.interviews = this.interviews.filter((iq) => iq.id !== id);
 
+    this.saveToStorage("interviews", this.interviews);
+
     this.notifySubscribers();
 
+    return true;
+  }
+
+  public async updateInterviewQuestion(id: string, updates: Partial<InterviewQuestion>): Promise<boolean> {
+    this.interviews = this.interviews.map(iq => {
+      if (iq.id === id) {
+        return { ...iq, ...updates };
+      }
+      return iq;
+    });
+    this.saveToStorage("interviews", this.interviews);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const targetId = ensureUuid(id);
+        const dbPayload: any = {};
+        if (updates.question !== undefined) dbPayload.question = updates.question;
+        if (updates.model_answer !== undefined || updates.answer !== undefined) {
+          dbPayload.model_answer = updates.model_answer || updates.answer;
+        }
+        if (updates.is_published !== undefined) dbPayload.is_published = updates.is_published;
+        if (updates.role_category !== undefined) dbPayload.role_category = updates.role_category;
+
+        await supabase.from("interview_questions").update(dbPayload).eq("id", targetId);
+      } catch (e) {
+        console.warn("updateInterviewQuestion supabase error:", e);
+      }
+    }
+    this.notifySubscribers();
     return true;
   }
 
@@ -6174,6 +6497,42 @@ class DataService {
     return newSession;
   }
 
+  public async updateSaturdaySpecial(id: string, updates: Partial<SaturdaySpecial>): Promise<boolean> {
+    this.saturdaySpecial = this.saturdaySpecial.map(s => {
+      if (s.id === id) {
+        return { ...s, ...updates };
+      }
+      return s;
+    });
+    this.saveToStorage("saturdaySpecial", this.saturdaySpecial);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const targetId = ensureUuid(id);
+        const dbPayload: any = {};
+        if (updates.title !== undefined) dbPayload.title = updates.title;
+        if (updates.category !== undefined) dbPayload.category = updates.category;
+        if (updates.description !== undefined) dbPayload.description = updates.description;
+        if (updates.session_date !== undefined) dbPayload.session_date = updates.session_date;
+        if (updates.recording_url !== undefined) dbPayload.recording_url = updates.recording_url;
+        if (updates.slides_url !== undefined || updates.ppt_url !== undefined) {
+          dbPayload.slides_url = updates.ppt_url || updates.slides_url;
+        }
+        if (updates.resources_url !== undefined || updates.notes_url !== undefined || updates.doc_url !== undefined) {
+          dbPayload.resources_url = updates.doc_url || updates.notes_url || updates.resources_url;
+        }
+        if (updates.cover_image !== undefined) dbPayload.cover_image = updates.cover_image;
+        if (updates.is_upcoming !== undefined) dbPayload.is_upcoming = updates.is_upcoming;
+
+        await supabase.from("saturday_special").update(dbPayload).eq("id", targetId);
+      } catch (err: any) {
+        console.warn("updateSaturdaySpecial supabase error:", err);
+      }
+    }
+    this.notifySubscribers();
+    return true;
+  }
+
   // --- Opportunities & Career ---
 
   public getOpportunities(): Opportunity[] {
@@ -6366,6 +6725,48 @@ class DataService {
 
     this.notifySubscribers();
 
+    return true;
+  }
+
+  public async updateOpportunity(id: string, updates: Partial<Opportunity>): Promise<boolean> {
+    this.opportunities = this.opportunities.map(o => {
+      if (o.id === id) {
+        return { ...o, ...updates };
+      }
+      return o;
+    });
+    this.saveToStorage("opportunities", this.opportunities);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const targetId = ensureUuid(id);
+        const dbPayload: any = {};
+        if (updates.title !== undefined) dbPayload.title = updates.title;
+        if (updates.organization !== undefined || updates.company !== undefined) {
+          dbPayload.organization = updates.organization || updates.company;
+        }
+        if (updates.category !== undefined || updates.type !== undefined) {
+          dbPayload.category = updates.category || updates.type;
+        }
+        if (updates.description !== undefined) dbPayload.description = updates.description;
+        if (updates.location !== undefined) dbPayload.location = updates.location;
+        if (updates.stipend !== undefined || updates.stipendOrPrize !== undefined) {
+          dbPayload.stipend = updates.stipend || updates.stipendOrPrize;
+        }
+        if (updates.deadline !== undefined) dbPayload.deadline = updates.deadline;
+        if (updates.apply_url !== undefined || updates.applyUrl !== undefined) {
+          dbPayload.apply_url = updates.apply_url || updates.applyUrl;
+        }
+        if (updates.required_skills !== undefined || updates.requiredSkills !== undefined) {
+          dbPayload.required_skills = updates.required_skills || updates.requiredSkills;
+        }
+
+        await supabase.from("opportunities").update(dbPayload).eq("id", targetId);
+      } catch (e) {
+        console.warn("updateOpportunity supabase error:", e);
+      }
+    }
+    this.notifySubscribers();
     return true;
   }
 
@@ -8421,52 +8822,37 @@ Module 3: Production Deployment & System Leadership
   public async addQuiz(quizData: Partial<Quiz>): Promise<Quiz> {
     const questionsList = (quizData.questions || []).map((q, i) => ({
       ...q,
-
       id: q.id || `qq-${Date.now()}-${i + 1}`,
-
       order_index: i + 1,
-
       marks: q.marks || 5,
     }));
 
+    const matchedCourse = this.courses.find(c => c.id === quizData.course_id);
+    const validCourseId = matchedCourse ? matchedCourse.id : (this.courses[0]?.id || "e7c5127a-9b4c-4e49-a886-40e631e7b9c8");
+
     const newQuiz: Quiz = {
       id: `quiz-${Date.now()}`,
-
       title: quizData.title || "Untitled Assessment",
-
       description: quizData.description || "",
-
-      course_id: quizData.course_id || this.courses[0]?.id || "course-fs-101",
-
+      course_id: validCourseId,
+      course_title: matchedCourse?.title || this.courses[0]?.title || "Full Stack Engineering",
       module_id: quizData.module_id,
-
       sub_module_id: quizData.sub_module_id,
-
       total_marks: quizData.total_marks || questionsList.length * 5 || 20,
-
       duration_minutes: Number(quizData.duration_minutes) || 30,
-
       start_time: quizData.start_time || new Date().toISOString(),
-
       end_time:
         quizData.end_time || new Date(Date.now() + 7 * 86400000).toISOString(),
-
       status: quizData.status || "upcoming",
-
       questions: questionsList,
-
       created_by:
         quizData.created_by || this.currentUser?.full_name || "Administrator",
-
       created_at: new Date().toISOString(),
     };
 
     // Calculate initial status
-
     const now = new Date().getTime();
-
     const st = new Date(newQuiz.start_time).getTime();
-
     const et = new Date(newQuiz.end_time).getTime();
 
     if (now < st) newQuiz.status = "upcoming";
@@ -8474,7 +8860,6 @@ Module 3: Production Deployment & System Leadership
     else newQuiz.status = "closed";
 
     this.quizzesList.unshift(newQuiz);
-
     this.saveToStorage("quizzesList", this.quizzesList);
 
     if (isLiveSupabaseConfigured) {
@@ -8483,27 +8868,17 @@ Module 3: Production Deployment & System Leadership
           .from("quizzes")
           .insert({
             title: newQuiz.title,
-
             description: newQuiz.description,
-
-            course_id: ensureUuid(newQuiz.course_id),
-
+            course_id: validCourseId,
             module_id: newQuiz.module_id ? ensureUuid(newQuiz.module_id) : null,
-
             sub_module_id: newQuiz.sub_module_id
               ? ensureUuid(newQuiz.sub_module_id)
               : null,
-
             total_marks: newQuiz.total_marks,
-
             duration_minutes: newQuiz.duration_minutes,
-
             start_time: newQuiz.start_time,
-
             end_time: newQuiz.end_time,
-
             status: newQuiz.status,
-
             created_by: newQuiz.created_by,
           })
           .select()
@@ -8737,62 +9112,105 @@ Module 3: Production Deployment & System Leadership
 
   public async submitQuizAttemptRecord(data: {
     quiz_id: string;
-
     answers: Record<string, string>;
-
     time_spent_seconds?: number;
-
     is_practice?: boolean;
   }): Promise<{
     attempt: QuizAttempt;
-
     leaderboardPosition: number;
-
     totalParticipants: number;
-
     accuracy: number;
-
     correctCount: number;
-
     totalQuestions: number;
+    breakdown?: any[];
   }> {
     const quiz = this.getQuizById(data.quiz_id);
-
     const student = this.currentUser || {
       id: "usr-student-1",
-
       full_name: "Student Learner",
     };
 
+    // 1. High-concurrency atomic server-side evaluation via Supabase RPC
+    if (isLiveSupabaseConfigured) {
+      try {
+        const { data: rpcData, error: rpcErr } = await supabase.rpc("submit_quiz_attempt", {
+          p_quiz_id: ensureUuid(data.quiz_id),
+          p_student_id: ensureUuid(student.id),
+          p_student_name: student.full_name || "Student Learner",
+          p_answers: data.answers,
+          p_time_spent_seconds: data.time_spent_seconds || 60,
+          p_is_practice: Boolean(data.is_practice)
+        });
+
+        if (!rpcErr && rpcData && rpcData.attempt_id) {
+          const attempt: QuizAttempt = {
+            id: rpcData.attempt_id,
+            quiz_id: rpcData.quiz_id,
+            student_id: rpcData.student_id,
+            student_name: rpcData.student_name,
+            score: Number(rpcData.score) || 0,
+            total_marks: Number(rpcData.total_marks) || 100,
+            total_questions: Number(rpcData.total_questions) || 0,
+            correct_count: Number(rpcData.correct_count) || 0,
+            incorrect_count: Number(rpcData.incorrect_count) || 0,
+            unanswered_count: Number(rpcData.unanswered_count) || 0,
+            accuracy: Number(rpcData.accuracy) || 0,
+            answers: data.answers,
+            is_first_attempt: Boolean(rpcData.is_first_attempt),
+            is_practice: Boolean(rpcData.is_practice),
+            status: "completed",
+            time_spent_seconds: Number(rpcData.time_spent_seconds) || 0,
+            completed_at: rpcData.completed_at || new Date().toISOString()
+          };
+
+          this.quizAttemptsList = [attempt, ...this.quizAttemptsList.filter(a => a.id !== attempt.id)];
+          this.saveToStorage("quizAttemptsList", this.quizAttemptsList);
+          void this.syncQuizAttemptsFromSupabase();
+          this.notifySubscribers();
+
+          return {
+            attempt,
+            leaderboardPosition: rpcData.rank || 1,
+            totalParticipants: rpcData.total_participants || 1,
+            accuracy: attempt.accuracy ?? 0,
+            correctCount: attempt.correct_count || 0,
+            totalQuestions: attempt.total_questions || 1,
+            breakdown: rpcData.breakdown || []
+          };
+        } else if (rpcErr) {
+          console.warn("[SkillNova Supabase] submit_quiz_attempt RPC note:", rpcErr.message);
+        }
+      } catch (err) {
+        console.warn("Supabase submit_quiz_attempt error, fallback to local:", err);
+      }
+    }
+
+    // 2. Offline / local fallback evaluation
     const questions = quiz?.questions || [];
-
     const totalQuestions = questions.length || 1;
-
     let correctCount = 0;
-
+    let incorrectCount = 0;
+    let unansweredCount = 0;
     let earnedMarks = 0;
 
     questions.forEach((q) => {
       const studentAns = (data.answers[q.id] || "").trim().toUpperCase();
-
       const expectedAns = (q.correct_answer || "").trim().toUpperCase();
 
-      if (studentAns && studentAns === expectedAns) {
+      if (!studentAns) {
+        unansweredCount++;
+      } else if (studentAns && studentAns === expectedAns) {
         correctCount++;
-
         earnedMarks += q.marks || 5;
+      } else {
+        incorrectCount++;
       }
     });
 
-    // Accuracy = (Correct Answers / Total Questions) * 100
-
     const accuracy = Math.round((correctCount / totalQuestions) * 100);
-
     const score = Math.round(
       (correctCount / totalQuestions) * (quiz?.total_marks || 100),
     );
-
-    // Check if this student already completed an official first attempt
 
     const studentPreviousOfficialAttempts = this.quizAttemptsList.filter(
       (a) =>
@@ -8803,109 +9221,43 @@ Module 3: Production Deployment & System Leadership
 
     const isFirstAttempt =
       !data.is_practice && studentPreviousOfficialAttempts.length === 0;
-
     const isPractice = Boolean(data.is_practice) || !isFirstAttempt;
 
     const newAttempt: QuizAttempt = {
       id: `attempt-${Date.now()}`,
-
       quiz_id: data.quiz_id,
-
       student_id: student.id,
-
       student_name: student.full_name || "Student Learner",
-
       score: score,
-
       total_marks: quiz?.total_marks || 100,
-
       total_questions: totalQuestions,
-
       correct_count: correctCount,
-
+      incorrect_count: incorrectCount,
+      unanswered_count: unansweredCount,
       accuracy: accuracy,
-
       answers: data.answers,
-
       is_first_attempt: isFirstAttempt,
-
       is_practice: isPractice,
-
       status: "completed",
-
       time_spent_seconds: data.time_spent_seconds || 120,
-
       completed_at: new Date().toISOString(),
     };
 
     this.quizAttemptsList.unshift(newAttempt);
-
     this.saveToStorage("quizAttemptsList", this.quizAttemptsList);
 
-    if (isLiveSupabaseConfigured) {
-      try {
-        const { error: insErr } = await supabase.from("quiz_attempts").insert({
-          quiz_id: ensureUuid(newAttempt.quiz_id),
-
-          student_id: ensureUuid(newAttempt.student_id),
-
-          student_name: newAttempt.student_name,
-
-          score: newAttempt.score,
-
-          total_marks: newAttempt.total_marks,
-
-          total_questions: newAttempt.total_questions,
-
-          correct_count: newAttempt.correct_count,
-
-          accuracy: newAttempt.accuracy,
-
-          answers: newAttempt.answers,
-
-          is_first_attempt: newAttempt.is_first_attempt,
-
-          is_practice: newAttempt.is_practice,
-
-          status: newAttempt.status,
-
-          time_spent_seconds: newAttempt.time_spent_seconds,
-
-          completed_at: newAttempt.completed_at,
-        });
-
-        if (insErr) {
-          console.warn(
-            "[SkillNova Supabase] submitQuizAttemptRecord note:",
-            insErr.message,
-          );
-        }
-      } catch (err) {
-        console.warn("Supabase submitQuizAttemptRecord error:", err);
-      }
-    }
-
-    // Calculate leaderboard position from first attempts
-
     const leaderboard = this.getQuizLeaderboard(data.quiz_id);
-
     const myRankIdx = leaderboard.findIndex((e) => e.student_id === student.id);
-
     const rank = myRankIdx !== -1 ? myRankIdx + 1 : leaderboard.length + 1;
 
     this.notifySubscribers();
 
     return {
       attempt: newAttempt,
-
       leaderboardPosition: rank,
-
       totalParticipants: leaderboard.length,
-
       accuracy,
-
       correctCount,
-
       totalQuestions,
     };
   }
@@ -9016,6 +9368,43 @@ Module 3: Production Deployment & System Leadership
         is_first_attempt: true,
       };
     });
+  }
+
+  public getQuizParticipantStats(quizId: string): {
+    assignedCount: number;
+    startedCount: number;
+    submittedCount: number;
+    notSubmittedCount: number;
+  } {
+    const quiz = this.getQuizById(quizId);
+    const students = this.users.filter((u) => u.role === "student");
+    const assignedStudents = quiz?.course_id
+      ? students.filter(
+          (s) =>
+            s.assigned_courses?.includes(quiz.course_id!) ||
+            s.status === "active",
+        )
+      : students;
+    const assignedCount = Math.max(assignedStudents.length, 1);
+
+    const attempts = this.quizAttemptsList.filter((a) => a.quiz_id === quizId);
+    const uniqueStartedStudentIds = new Set(attempts.map((a) => a.student_id));
+    const startedCount = uniqueStartedStudentIds.size;
+
+    const uniqueSubmittedStudentIds = new Set(
+      attempts
+        .filter((a) => a.status === "completed" || a.completed_at)
+        .map((a) => a.student_id),
+    );
+    const submittedCount = uniqueSubmittedStudentIds.size;
+    const notSubmittedCount = Math.max(0, assignedCount - submittedCount);
+
+    return {
+      assignedCount,
+      startedCount,
+      submittedCount,
+      notSubmittedCount,
+    };
   }
 
   // --- PDF Page Allocations ---

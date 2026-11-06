@@ -1,4 +1,3 @@
-
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -29,8 +28,13 @@ Deno.serve(async (req: Request) => {
         );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
+    const supabaseUrl =
+        Deno.env.get("SUPABASE_URL") ??
+        Deno.env.get("SUPABASE_PROJECT_URL");
+
+    const serviceRoleKey =
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ??
+        Deno.env.get("SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !serviceRoleKey) {
         return jsonResponse(
@@ -82,16 +86,19 @@ Deno.serve(async (req: Request) => {
 
         const callerId = authData.user.id;
 
-        // 2. Verify Admin role
-        const { data: callerRole, error: roleError } = await supabase
+        // 2. Verify Admin role (support multiple role rows safely without maybeSingle error)
+        const { data: callerRoles, error: roleError } = await supabase
             .from("user_roles")
             .select("role")
-            .eq("user_id", callerId)
-            .maybeSingle();
+            .eq("user_id", callerId);
 
-        if (roleError) throw roleError;
+        if (roleError) {
+            console.error("Role lookup error:", roleError);
+            throw roleError;
+        }
 
-        if (callerRole?.role !== "admin") {
+        const isAdmin = callerRoles?.some((r) => r.role === "admin");
+        if (!isAdmin) {
             return jsonResponse(
                 {
                     success: false,
@@ -104,10 +111,8 @@ Deno.serve(async (req: Request) => {
         // 3. Read and validate input
         const body = await req.json();
 
-        const username = String(body.username ?? "")
-            .trim()
-            .toLowerCase();
-
+        // Preserve exact username casing (case-sensitive)
+        const username = String(body.username ?? "").trim();
         const password = String(body.password ?? "");
         const fullName = String(body.full_name ?? "").trim();
         const phoneNumber = String(body.phone_number ?? "").trim();
@@ -149,12 +154,13 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        if (!/^[a-z0-9._-]{3,30}$/.test(username)) {
+        // Case-sensitive validation: 3-50 letters, numbers, dots, underscores or hyphens
+        if (!/^[a-zA-Z0-9._-]{3,50}$/.test(username)) {
             return jsonResponse(
                 {
                     success: false,
                     message:
-                        "Username must be 3-30 characters and contain only letters, numbers, dots, underscores or hyphens",
+                        "Username must be 3-50 characters and contain only letters (case-sensitive), numbers, dots, underscores or hyphens",
                 },
                 400,
             );
@@ -170,11 +176,27 @@ Deno.serve(async (req: Request) => {
             );
         }
 
-        // 4. Generate internal email for username login
-        const email = `${username}@student.skillnova.edu`;
+        // Check if exact username is already registered in profiles
+        const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("id, username")
+            .eq("username", username)
+            .maybeSingle();
+
+        if (existingProfile) {
+            return jsonResponse(
+                {
+                    success: false,
+                    message: `Username "${username}" is already taken.`,
+                },
+                400,
+            );
+        }
+
+        // 4. Generate internal auth email (lowercased for Supabase Auth identity)
+        const email = `${username.toLowerCase()}@student.skillnova.edu`;
 
         // 5. Create Supabase Auth account
-        // The on_auth_user_created trigger creates the profile automatically.
         const { data: newAuth, error: createAuthError } =
             await supabase.auth.admin.createUser({
                 email,
@@ -182,7 +204,7 @@ Deno.serve(async (req: Request) => {
                 email_confirm: true,
                 user_metadata: {
                     full_name: fullName,
-                    username,
+                    username: username, // EXACT CASE PRESERVED
                     phone_number: phoneNumber || null,
                 },
             });
@@ -203,61 +225,62 @@ Deno.serve(async (req: Request) => {
 
         createdUserId = newAuth.user.id;
 
-        // 6. Update the profile created by the database trigger.
-        // Do NOT insert another profile with the same ID.
-        const { data: updatedProfile, error: profileError } =
-            await supabase
-                .from("profiles")
-                .update({
+        // 6. Upsert profile with exact case username
+        const { error: profileError } = await supabase
+            .from("profiles")
+            .upsert(
+                {
+                    id: createdUserId,
                     email,
                     full_name: fullName,
-                    username,
+                    username: username, // EXACT CASE PRESERVED
                     phone_number: phoneNumber || null,
-                })
-                .eq("id", createdUserId)
-                .select("id")
-                .maybeSingle();
-
-        if (profileError) throw profileError;
-
-        if (!updatedProfile) {
-            throw new Error(
-                "Profile was not created by the on_auth_user_created trigger",
+                },
+                { onConflict: "id" }
             );
+
+        if (profileError) {
+            console.error("Profile upsert error:", profileError);
+            throw profileError;
         }
 
         // 7. Assign Student role
-        // 7. Update the role already created by the database trigger
-        const { data: updatedRole, error: userRoleError } = await supabase
+        await supabase
             .from("user_roles")
-            .update({
-                role: "student",
-                assigned_by: callerId,
-            })
-            .eq("user_id", createdUserId)
-            .select("user_id")
-            .maybeSingle();
+            .delete()
+            .eq("user_id", createdUserId);
 
-        if (userRoleError) throw userRoleError;
-
-        if (!updatedRole) {
-            throw new Error(
-                "Student role was not created by the database trigger"
-            );
-        }
-
-        // 8. Create student record
-        const { error: studentError } = await supabase
-            .from("students")
+        const { error: userRoleError } = await supabase
+            .from("user_roles")
             .insert({
                 user_id: createdUserId,
-                college,
-                branch,
-                year_of_study: yearOfStudy,
-                status: "active",
+                role: "student",
+                assigned_by: callerId,
             });
 
-        if (studentError) throw studentError;
+        if (userRoleError) {
+            console.error("User role assignment error:", userRoleError);
+            throw userRoleError;
+        }
+
+        // 8. Create or update student record
+        const { error: studentError } = await supabase
+            .from("students")
+            .upsert(
+                {
+                    user_id: createdUserId,
+                    college: college || "SkillNova Institute",
+                    branch: branch || "Computer Science",
+                    year_of_study: yearOfStudy || "Year 1",
+                    status: "active",
+                },
+                { onConflict: "user_id" }
+            );
+
+        if (studentError) {
+            console.error("Student record error:", studentError);
+            throw studentError;
+        }
 
         // 9. Enroll in selected courses
         if (courseIds.length > 0) {
@@ -271,7 +294,9 @@ Deno.serve(async (req: Request) => {
                 .from("course_enrollments")
                 .insert(enrollments);
 
-            if (enrollmentError) throw enrollmentError;
+            if (enrollmentError) {
+                console.warn("Enrollment warning:", enrollmentError);
+            }
         }
 
         // 10. Success
@@ -297,40 +322,25 @@ Deno.serve(async (req: Request) => {
 
         // 11. Rollback partially created records
         if (createdUserId) {
-            const cleanupResults = await Promise.all([
+            await Promise.allSettled([
                 supabase
                     .from("course_enrollments")
                     .delete()
                     .eq("student_id", createdUserId),
-
                 supabase
                     .from("students")
                     .delete()
                     .eq("user_id", createdUserId),
-
                 supabase
                     .from("user_roles")
                     .delete()
                     .eq("user_id", createdUserId),
-
                 supabase
                     .from("profiles")
                     .delete()
                     .eq("id", createdUserId),
+                supabase.auth.admin.deleteUser(createdUserId),
             ]);
-
-            cleanupResults.forEach((result) => {
-                if (result.error) {
-                    console.error("Cleanup error:", result.error);
-                }
-            });
-
-            const { error: deleteAuthError } =
-                await supabase.auth.admin.deleteUser(createdUserId);
-
-            if (deleteAuthError) {
-                console.error("Auth cleanup error:", deleteAuthError);
-            }
         }
 
         return jsonResponse(

@@ -92,7 +92,7 @@ export const LiveMeetingManagementCard: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
+    <div className="dark-section dark-card bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1F2E47]">
         <div className="flex items-center gap-3">

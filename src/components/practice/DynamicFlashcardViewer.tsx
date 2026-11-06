@@ -90,7 +90,7 @@ export const DynamicFlashcardViewer: React.FC<DynamicFlashcardViewerProps> = ({
       {/* 3D Flip Card Container */}
       <div
         onClick={() => setIsFlipped(prev => !prev)}
-        className={`w-full min-h-[300px] sm:min-h-[340px] rounded-3xl p-6 sm:p-8 cursor-pointer transition-all duration-300 border-2 select-none flex flex-col justify-between shadow-2xl relative overflow-hidden bg-gradient-to-br ${accent.gradient} ${accent.border} ${accent.glow} hover:scale-[1.01]`}
+        className={`dark-card w-full min-h-[300px] sm:min-h-[340px] rounded-3xl p-6 sm:p-8 cursor-pointer transition-all duration-300 border-2 select-none flex flex-col justify-between shadow-2xl relative overflow-hidden bg-gradient-to-br ${accent.gradient} ${accent.border} ${accent.glow} hover:scale-[1.01]`}
       >
         {/* Subtle Ambient Background Light */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#00A8FF]/10 rounded-full blur-3xl pointer-events-none" />

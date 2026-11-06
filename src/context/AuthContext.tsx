@@ -121,6 +121,12 @@ export const AuthProvider: React.FC<{
       throw profileError;
     }
 
+    if (!profile) {
+      const err = new Error('ACCOUNT_DELETED');
+      (err as any).code = 'ACCOUNT_DELETED';
+      throw err;
+    }
+
     // Fetch actual role from user_roles.
     const {
       data: roleRow,
@@ -148,8 +154,45 @@ export const AuthProvider: React.FC<{
       authEmail || profile?.email || '';
 
     let assignedCourses: string[] = [];
+    let studentStatus: 'active' | 'inactive' | 'suspended' = 'active';
+    let studentPhone = (profile as any)?.phone_number || (profile as any)?.phone || '';
+    let studentCollege = '';
+    let studentBranch = '';
+    let studentYear = '';
 
     if (resolvedRole === 'student') {
+      const { data: studentRow, error: studentError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('user_id', authUserId)
+        .maybeSingle();
+
+      if (studentError) {
+        console.warn(
+          '[SkillNova Auth] Student table check warning:',
+          studentError.message
+        );
+      }
+
+      // If student account record does not exist or has been deleted
+      if (!studentRow) {
+        const err = new Error('ACCOUNT_DELETED');
+        (err as any).code = 'ACCOUNT_DELETED';
+        throw err;
+      }
+
+      studentStatus = (studentRow.status as 'active' | 'inactive' | 'suspended') || 'active';
+      studentPhone = studentRow.phone || studentPhone;
+      studentCollege = studentRow.college || '';
+      studentBranch = studentRow.branch || '';
+      studentYear = studentRow.year_of_study || '';
+
+      if (studentStatus !== 'active') {
+        const err = new Error('ACCOUNT_DEACTIVATED');
+        (err as any).code = 'ACCOUNT_DEACTIVATED';
+        throw err;
+      }
+
       const {
         data: enrollments,
         error: enrollmentError,
@@ -203,7 +246,12 @@ export const AuthProvider: React.FC<{
         profile?.full_name ||
         cleanEmail.split('@')[0],
       role: resolvedRole,
-      status: 'active',
+      status: studentStatus,
+      phone_number: studentPhone,
+      phone: studentPhone,
+      college: studentCollege,
+      branch: studentBranch,
+      year_of_study: studentYear,
       theme_preference:
         (profile?.theme_preference as 'light' | 'dark') ||
         'light',
@@ -252,11 +300,15 @@ export const AuthProvider: React.FC<{
           void dataService.syncAllFromSupabase();
         }
 
-      } catch (error) {
+      } catch (error: any) {
         console.error(
           '[SkillNova Auth] User initialization failed:',
           error
         );
+
+        if (error?.message === 'ACCOUNT_DEACTIVATED' || error?.message === 'ACCOUNT_DELETED') {
+          await supabase.auth.signOut().catch(() => { });
+        }
 
         if (isMounted) {
           setPersistedUser(null);
@@ -355,40 +407,43 @@ export const AuthProvider: React.FC<{
     setIsLoading(true);
 
     try {
-      const cleanInput = identifier.trim().toLowerCase();
-
-      if (!cleanInput || !password) {
+      // Exact matching without auto-trimming, lowercasing, or altering credentials
+      if (!identifier || !password) {
         return {
           success: false,
-          error: 'Please enter your username or email and password.',
+          error: 'Please enter your exact username or email and password.',
         };
       }
 
-      // Build candidate emails to resolve username to Supabase Auth email
+      // Build candidate emails to resolve username to Supabase Auth email.
+      // Preserve exact case of identifier.
       let candidateEmails: string[] = [];
 
-      if (cleanInput.includes('@')) {
-        // User entered a full email address (e.g. admin@skillnova.edu, student@skillnova.edu)
-        candidateEmails = [cleanInput];
+      if (identifier.includes('@')) {
+        candidateEmails = [identifier];
       } else {
-        // User entered a username (e.g. mohan, mentor, student)
-        // 1. Check existing local registry
-        const localMatch = dataService.getUserByEmail(cleanInput);
-        if (localMatch?.email) {
-          candidateEmails.push(localMatch.email.toLowerCase());
-        }
-
-        // 2. Synthesize standard platform domains
+        // Try exact casing domain synthesis first
         if (expectedRole === 'student') {
-          candidateEmails.push(`${cleanInput}@student.skillnova.edu`);
-          candidateEmails.push(`${cleanInput}@skillnova.edu`);
+          candidateEmails.push(`${identifier}@student.skillnova.edu`);
+          candidateEmails.push(`${identifier}@skillnova.edu`);
+          // Also try lowercase email for auth lookup if Supabase lowercased the auth email,
+          // but we will verify the exact case-sensitive username against the profile record below!
+          if (identifier.toLowerCase() !== identifier) {
+            candidateEmails.push(`${identifier.toLowerCase()}@student.skillnova.edu`);
+          }
         } else {
-          // Admin or sub-admin portal
-          candidateEmails.push(`${cleanInput}@skillnova.edu`);
-          candidateEmails.push(`${cleanInput}@student.skillnova.edu`);
+          candidateEmails.push(`${identifier}@skillnova.edu`);
+          candidateEmails.push(`${identifier}@student.skillnova.edu`);
+          if (identifier.toLowerCase() !== identifier) {
+            candidateEmails.push(`${identifier.toLowerCase()}@skillnova.edu`);
+          }
         }
 
-        // Deduplicate while preserving priority
+        const localMatch = dataService.getUserByEmail(identifier);
+        if (localMatch?.email) {
+          candidateEmails.unshift(localMatch.email);
+        }
+
         candidateEmails = Array.from(new Set(candidateEmails));
       }
 
@@ -416,7 +471,6 @@ export const AuthProvider: React.FC<{
 
           lastAuthError = error;
           const msg = (error?.message || '').toLowerCase();
-          // Stop trying candidate domains if the error is not a bad credential
           if (
             !msg.includes('invalid login credentials') &&
             !msg.includes('invalid credentials') &&
@@ -429,19 +483,117 @@ export const AuthProvider: React.FC<{
 
         if (authSuccessData?.user && authSuccessData?.session) {
           // Fetch role from the database.
-          const user = await fetchSupabaseUserProfile(
-            authSuccessData.user.id,
-            authSuccessData.user.email || authenticatedEmail
-          );
+          let user: User;
+          try {
+            user = await fetchSupabaseUserProfile(
+              authSuccessData.user.id,
+              authSuccessData.user.email || authenticatedEmail
+            );
+          } catch (profileErr: any) {
+            await supabase.auth.signOut().catch(() => { });
+            if (profileErr?.message === 'ACCOUNT_DEACTIVATED') {
+              void dataService.recordAuditEvent({
+                action: 'LOGIN_FAILED',
+                entity_type: 'auth',
+                details: `Deactivated student account attempted login: "${identifier}"`,
+                actor_email: authenticatedEmail || candidateEmails[0],
+                user_role: 'student',
+                status: 'failed'
+              });
+              return {
+                success: false,
+                error: 'Your account has been deactivated. Please contact the administrator.'
+              };
+            }
+            // For deleted or missing profile rows, return standard Invalid credentials
+            void dataService.recordAuditEvent({
+              action: 'LOGIN_FAILED',
+              entity_type: 'auth',
+              details: `Non-existent or deleted student account attempted login: "${identifier}"`,
+              actor_email: authenticatedEmail || candidateEmails[0],
+              user_role: 'student',
+              status: 'failed'
+            });
+            return {
+              success: false,
+              error: 'Invalid username or password.'
+            };
+          }
 
-          // Verify admin portal permissions (both Super Admin and Sub-Admin are authorized).
+          // EXACT case-sensitive username check for students
+          if (expectedRole === 'student' && !identifier.includes('@')) {
+            const registeredUser = user.username || '';
+            if (registeredUser !== identifier) {
+              await supabase.auth.signOut();
+              void dataService.recordAuditEvent({
+                action: 'LOGIN_FAILED',
+                entity_type: 'auth',
+                details: `Case sensitivity mismatch: Entered "${identifier}" vs Registered "${registeredUser}"`,
+                actor_email: user.email,
+                username: identifier,
+                user_role: 'student',
+                status: 'failed'
+              });
+              return {
+                success: false,
+                error: 'Invalid username or password.'
+              };
+            }
+          }
+
+          // Check if student is deactivated
+          if (user.status && user.status !== 'active') {
+            await supabase.auth.signOut();
+            void dataService.recordAuditEvent({
+              action: 'LOGIN_FAILED',
+              entity_type: 'auth',
+              details: `Deactivated account attempted login: @${user.username || user.email}`,
+              actor_email: user.email,
+              username: user.username,
+              user_role: user.role,
+              status: 'failed'
+            });
+            return {
+              success: false,
+              error: 'Your account has been deactivated. Please contact the administrator.'
+            };
+          }
+
+          // Role enforcement: Admin credentials CANNOT access student portal
+          if (
+            expectedRole === 'student' &&
+            (user.role === 'admin' || user.role === 'sub_admin')
+          ) {
+            await supabase.auth.signOut();
+            void dataService.recordAuditEvent({
+              action: 'LOGIN_FAILED',
+              entity_type: 'auth',
+              details: `Admin ${user.email} attempted to log into Student Portal`,
+              actor_email: user.email,
+              user_role: user.role,
+              status: 'failed'
+            });
+            return {
+              success: false,
+              error: 'Unauthorized: Admin accounts cannot access the student portal. Please sign in via the Admin Portal.',
+            };
+          }
+
+          // Student credentials CANNOT access admin portal
           if (
             expectedRole === 'admin' &&
             user.role !== 'admin' &&
             user.role !== 'sub_admin'
           ) {
             await supabase.auth.signOut();
-
+            void dataService.recordAuditEvent({
+              action: 'LOGIN_FAILED',
+              entity_type: 'auth',
+              details: `Student @${user.username || user.email} attempted to log into Admin Portal`,
+              actor_email: user.email,
+              user_role: user.role,
+              status: 'failed'
+            });
             return {
               success: false,
               error:
@@ -455,7 +607,14 @@ export const AuthProvider: React.FC<{
             user.role !== 'admin'
           ) {
             await supabase.auth.signOut();
-
+            void dataService.recordAuditEvent({
+              action: 'LOGIN_FAILED',
+              entity_type: 'auth',
+              details: `Unauthorized sub-admin access attempt: ${user.email}`,
+              actor_email: user.email,
+              user_role: user.role,
+              status: 'failed'
+            });
             return {
               success: false,
               error:
@@ -466,60 +625,48 @@ export const AuthProvider: React.FC<{
           setPersistedUser(user);
           void dataService.syncAllFromSupabase();
 
-          console.log(
-            '[SkillNova Auth] Login successful:',
-            {
-              id: authSuccessData.user.id,
-              email: authSuccessData.user.email,
+          // Record successful login in audit logs
+          void dataService.recordAuditEvent({
+            action: 'LOGIN_SUCCESS',
+            entity_type: 'auth',
+            entity_id: user.id,
+            details: `User @${user.username || user.email.split('@')[0]} logged in successfully as ${user.role}`,
+            actor_email: user.email,
+            username: user.username || user.email.split('@')[0],
+            user_role: user.role,
+            status: 'active',
+            login_time: new Date().toISOString(),
+            metadata: {
               role: user.role,
+              username: user.username,
+              session_id: authSuccessData.session?.access_token?.slice(-16)
             }
-          );
+          });
 
           return { success: true };
         }
 
-        if (lastAuthError) {
-          console.warn(
-            '[SkillNova Auth] Supabase direct auth attempt note:',
-            lastAuthError.message
-          );
-        }
-      }
+        // Supabase Auth failed (invalid username or password)
+        void dataService.recordAuditEvent({
+          action: 'LOGIN_FAILED',
+          entity_type: 'auth',
+          details: `Failed login attempt for identifier "${identifier}"`,
+          actor_email: candidateEmails[0] || identifier,
+          username: identifier,
+          user_role: expectedRole || 'student',
+          status: 'failed'
+        });
 
-      // LOCAL FALLBACK FOR DEMO / EVALUATOR ACCOUNTS
-      const resolvedIdentifier = candidateEmails[0] || cleanInput;
-      const existingUser =
-        dataService.getUserByEmail(cleanInput) ||
-        dataService.getUserByEmail(resolvedIdentifier);
-
-      if (
-        existingUser &&
-        existingUser.status === 'inactive'
-      ) {
         return {
           success: false,
-          error:
-            'Your account has been deactivated by an Administrator.',
+          error: 'Invalid username or password.'
         };
       }
 
-      const localRes = dataService.login(
-        cleanInput,
-        expectedRole
-      );
-
-      if (localRes.success && localRes.user) {
-        setPersistedUser(localRes.user);
-
-        return { success: true };
-      }
-
+      // If Supabase is not configured at all (fallback only for empty env configs)
       return {
         success: false,
-        error:
-          lastAuthError?.message ||
-          localRes.error ||
-          'Authentication failed. Please verify your credentials.',
+        error: 'Authentication service unavailable. Please check your Supabase connection.',
       };
 
     } catch (error: any) {
@@ -548,6 +695,20 @@ export const AuthProvider: React.FC<{
     setShowLogoutModal(false);
 
     localStorage.setItem(LOGOUT_FLAG_KEY, 'true');
+
+    if (currentUser) {
+      void dataService.recordAuditEvent({
+        action: 'LOGOUT',
+        entity_type: 'auth',
+        entity_id: currentUser.id,
+        details: `User @${currentUser.username || currentUser.email} signed out`,
+        actor_email: currentUser.email,
+        username: currentUser.username || currentUser.email.split('@')[0],
+        user_role: currentUser.role,
+        status: 'logged_out',
+        logout_time: new Date().toISOString()
+      });
+    }
 
     try {
       if (isLiveSupabaseConfigured) {

@@ -25,7 +25,7 @@ export const StudentPythonLabPage: React.FC = () => {
   return (
     <div className="space-y-6 animate-fadeIn pb-12">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#11192A] via-[#15233A] to-[#0A101D] border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl relative overflow-hidden">
+      <div className="dark-section dark-card bg-gradient-to-r from-[#11192A] via-[#15233A] to-[#0A101D] border border-white/10 rounded-2xl p-5 md:p-6 shadow-2xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#00D4B8]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-[#397BFF]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -80,7 +80,7 @@ export const StudentPythonLabPage: React.FC = () => {
       </div>
 
       {/* Main Coding Lab Workspace */}
-      <div className="bg-[#0A101D] border border-white/10 rounded-2xl p-3 sm:p-5 shadow-2xl">
+      <div className="dark-card bg-[#0A101D] border border-white/10 rounded-2xl p-3 sm:p-5 shadow-2xl">
         <PythonCodingLab
           courseId={selectedCourseId}
           courseTitle={courseTitle}

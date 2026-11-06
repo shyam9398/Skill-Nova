@@ -6,6 +6,8 @@ import {
   VolumeX, 
   Maximize, 
   Minimize, 
+  Maximize2,
+  Minimize2,
   RotateCcw, 
   Tv,
   Film,
@@ -39,6 +41,7 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
 
@@ -60,7 +63,7 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
     }
   };
 
-  // Format YouTube embed URL
+  // Format YouTube embed URL with mobile playsinline and clean params
   const getYouTubeEmbedUrl = (rawUrl: string): string => {
     try {
       let videoId = '';
@@ -69,9 +72,11 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
       } else if (rawUrl.includes('watch?v=')) {
         videoId = new URL(rawUrl).searchParams.get('v') || '';
       } else if (rawUrl.includes('/embed/')) {
-        return rawUrl;
+        const u = new URL(rawUrl);
+        u.searchParams.set('playsinline', '1');
+        return u.toString();
       }
-      return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1` : rawUrl;
+      return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1` : rawUrl;
     } catch {
       return rawUrl;
     }
@@ -128,11 +133,9 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   const toggleFullscreen = () => {
     if (!containerRef.current) return;
     if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().catch(err => console.warn(err));
-      setIsFullscreen(true);
+      containerRef.current.requestFullscreen().then(() => setIsFullscreen(true)).catch(err => console.warn(err));
     } else {
-      document.exitFullscreen().catch(err => console.warn(err));
-      setIsFullscreen(false);
+      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(err => console.warn(err));
     }
   };
 
@@ -170,8 +173,10 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
     <div 
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 group ${className}`}
-      style={{ aspectRatio: '16/9' }}
+      className={`relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 group transition-all duration-300 ${
+        isExpanded ? 'w-full max-w-none min-h-[420px] sm:min-h-[540px] md:min-h-[620px] ring-2 ring-[#00A3FF]/50' : 'aspect-video'
+      } ${className}`}
+      style={isExpanded ? { minHeight: '480px' } : { aspectRatio: '16/9' }}
     >
       {/* DIRECT MP4 / HTML5 VIDEO PLAYER */}
       {isDirectVideo ? (
@@ -343,6 +348,32 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
           </div>
         </div>
       )}
+
+      {/* Universal Floating Expand / Theatre Mode & Fullscreen Controls (Requirement 18) */}
+      <div className="absolute bottom-3 right-3 z-30 flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity pointer-events-auto">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(prev => !prev);
+          }}
+          className="w-8 h-8 rounded-lg bg-black/80 hover:bg-black text-white/90 hover:text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          title={isExpanded ? 'Normal Video Size' : 'Expand Video (Theatre Mode)'}
+        >
+          {isExpanded ? <Minimize2 className="w-4 h-4 text-[#00E5FF]" /> : <Maximize2 className="w-4 h-4 text-white" />}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFullscreen();
+          }}
+          className="w-8 h-8 rounded-lg bg-black/80 hover:bg-black text-white/90 hover:text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+        >
+          {isFullscreen ? <Minimize className="w-4 h-4 text-[#00E5FF]" /> : <Maximize className="w-4 h-4 text-white" />}
+        </button>
+      </div>
     </div>
   );
 };

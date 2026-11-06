@@ -21,8 +21,8 @@ export const AdminLoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Username-only or email login authenticated with Supabase Auth
-      const res = await login(identifier.trim(), password, loginMode);
+      // Username or email login authenticated with Supabase Auth
+      const res = await login(identifier, password, loginMode);
       if (res.success) {
         navigate('/admin/dashboard');
       } else {
@@ -82,8 +82,8 @@ export const AdminLoginPage: React.FC = () => {
 
       {/* Main Glassmorphic Container */}
       <div className="relative z-20 flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
-        <div className="w-full max-w-md rounded-3xl p-8 backdrop-blur-2xl bg-slate-900/65 dark:bg-[#070D1E]/75 border border-white/20 shadow-2xl shadow-black/50 space-y-6 text-white">
-          
+        <div className="dark-card w-full max-w-md rounded-3xl p-8 backdrop-blur-2xl bg-slate-900/65 dark:bg-[#070D1E]/75 border border-white/20 shadow-2xl shadow-black/50 space-y-6 text-white">
+
           {/* Segmented Mode Selector: Admin Login vs Sub-admin Login */}
           <div className="grid grid-cols-2 p-1 rounded-2xl bg-white/10 border border-white/15 backdrop-blur-md">
             <button
@@ -92,11 +92,10 @@ export const AdminLoginPage: React.FC = () => {
                 setLoginMode('admin');
                 setError(null);
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                loginMode === 'admin'
-                  ? 'bg-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/25'
-                  : 'text-slate-300 hover:text-white'
-              }`}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${loginMode === 'admin'
+                ? 'bg-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/25'
+                : 'text-slate-300 hover:text-white'
+                }`}
             >
               <Shield className="w-3.5 h-3.5" />
               <span>Admin Login</span>
@@ -107,11 +106,10 @@ export const AdminLoginPage: React.FC = () => {
                 setLoginMode('sub_admin');
                 setError(null);
               }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                loginMode === 'sub_admin'
-                  ? 'bg-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/25'
-                  : 'text-slate-300 hover:text-white'
-              }`}
+              className={`py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${loginMode === 'sub_admin'
+                ? 'bg-[#00A3FF] text-white shadow-md shadow-[#00A3FF]/25'
+                : 'text-slate-300 hover:text-white'
+                }`}
             >
               <UserCheck className="w-3.5 h-3.5" />
               <span>Sub-admin Login</span>

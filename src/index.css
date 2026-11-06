@@ -9,9 +9,15 @@
     --bg-card: #FFFFFF;
     --bg-card-hover: #F0F8FF;
     --bg-soft: #E0F2FE;
-    --border-color: #BAE6FD;
+    --border-color: #CBD5E1;
     --text-primary: #000000;
-    --text-muted: #1E293B;
+    --text-secondary: #1E293B;
+    --text-muted: #475569;
+    --text-headings: #000000;
+    --input-bg: #FFFFFF;
+    --input-text: #000000;
+    --input-border: #CBD5E1;
+    --input-placeholder: #64748B;
     --electric-blue: #176BFF;
     --fluorescent-blue: #00A8FF;
     --neon-cyan: #00E5FF;
@@ -25,7 +31,13 @@
     --bg-soft: rgba(0, 168, 255, 0.12);
     --border-color: rgba(255, 255, 255, 0.12);
     --text-primary: #F4F7FF;
+    --text-secondary: #CBD5E1;
     --text-muted: #9BAAC5;
+    --text-headings: #FFFFFF;
+    --input-bg: #15233A;
+    --input-text: #F0F5FF;
+    --input-border: #1F2E47;
+    --input-placeholder: #64748B;
     --electric-blue: #00A8FF;
     --fluorescent-blue: #00A8FF;
     --neon-cyan: #00E5FF;
@@ -101,92 +113,56 @@ img[alt*="qr"] {
 
 /* ==========================================================================
    THEME-WIDE TEXT CONTRAST ENGINE
-   LIGHT THEME: TEXT IS SOLID BLACK (#000000)
-   DARK THEME:  TEXT IS CRISP WHITE (#FFFFFF)
+   Light mode: Crisp dark text on light backgrounds; crisp white text on intentional dark cards
+   Dark mode:  Crisp white/light text on dark backgrounds; crisp dark text on intentional light cards
+   ========================================================================== */
+
+/* ==========================================================================
+   THEME-WIDE TEXT CONTRAST ENGINE
+   Light mode: Solid, crisp dark black text on light backgrounds; crisp white on intentional dark cards
+   Dark mode:  Crisp white/light text on dark backgrounds; crisp dark text on intentional light cards
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   1. LIGHT THEME (html:not(.dark)) -> ALL TEXT IS SOLID BLACK (#000000)
+   1. GLOBAL LIGHT THEME (html:not(.dark))
+   Strict dark black typography for all elements on light backgrounds
    -------------------------------------------------------------------------- */
+
 html:not(.dark) {
-  color: #000000;
+  color: #111111;
+  background-color: #EAF4FE;
 }
 
 html:not(.dark) body {
-  color: #000000;
+  color: #111111;
 }
 
-html:not(.dark) h1:not(.dark-section *):not(.dark-section),
-html:not(.dark) h2:not(.dark-section *):not(.dark-section),
-html:not(.dark) h3:not(.dark-section *):not(.dark-section),
-html:not(.dark) h4:not(.dark-section *):not(.dark-section),
-html:not(.dark) h5:not(.dark-section *):not(.dark-section),
-html:not(.dark) h6:not(.dark-section *):not(.dark-section) {
+/* Headings outside dark containers: Solid dark black and bold (#000000) */
+html:not(.dark) :is(h1, h2, h3, h4, h5, h6) {
   color: #000000 !important;
+  font-weight: 700 !important;
 }
 
-html:not(.dark) p:not(.dark-section *):not(.dark-section):not(.btn-primary *):not(button *) {
-  color: #000000 !important;
+/* Paragraphs outside dark containers: Solid dark slate-black (#222222) */
+html:not(.dark) p {
+  color: #222222 !important;
 }
 
-html:not(.dark) label,
-html:not(.dark) dt,
-html:not(.dark) dd,
-html:not(.dark) li:not(.dark-section *),
-html:not(.dark) th,
-html:not(.dark) td {
-  color: #000000 !important;
+/* Form labels, Navigation labels, Definitions: Deep dark (#111111) */
+html:not(.dark) :is(label, dt, dd, nav a, nav span, .nav-item) {
+  color: #111111 !important;
+  font-weight: 600;
 }
 
-/* Light mode text color overrides for Tailwind muted & dark classes -> SOLID BLACK */
-html:not(.dark) .text-slate-900:not(.dark-section *),
-html:not(.dark) .text-slate-800:not(.dark-section *),
-html:not(.dark) .text-slate-700:not(.dark-section *),
-html:not(.dark) .text-slate-600:not(.dark-section *),
-html:not(.dark) .text-slate-500:not(.dark-section *),
-html:not(.dark) .text-slate-400:not(.dark-section *),
-html:not(.dark) .text-gray-900:not(.dark-section *),
-html:not(.dark) .text-gray-800:not(.dark-section *),
-html:not(.dark) .text-gray-700:not(.dark-section *),
-html:not(.dark) .text-gray-600:not(.dark-section *),
-html:not(.dark) .text-gray-500:not(.dark-section *),
-html:not(.dark) .text-zinc-900:not(.dark-section *),
-html:not(.dark) .text-zinc-800:not(.dark-section *),
-html:not(.dark) .text-zinc-700:not(.dark-section *),
-html:not(.dark) .text-\[\#15243B\]:not(.dark-section *),
-html:not(.dark) .text-\[\#0B1220\]:not(.dark-section *),
-html:not(.dark) .text-\[\#15233A\]:not(.dark-section *),
-html:not(.dark) .text-\[\#64748B\]:not(.dark-section *),
-html:not(.dark) .text-\[\#475569\]:not(.dark-section *),
-html:not(.dark) .text-\[\#73839B\]:not(.dark-section *),
-html:not(.dark) .text-\[\#9BAAC2\]:not(.dark-section *),
-html:not(.dark) .text-\[\#9BAAC5\]:not(.dark-section *) {
-  color: #000000 !important;
+/* List items outside dark containers: Deep dark (#222222) */
+html:not(.dark) li {
+  color: #222222 !important;
 }
 
-/* Form Controls in Light Mode */
-html:not(.dark) input:not([type="checkbox"]):not([type="radio"]),
-html:not(.dark) select,
-html:not(.dark) textarea {
-  color: #000000 !important;
-  background-color: #FFFFFF !important;
-  border-color: #CBD5E1 !important;
-}
-
-html:not(.dark) input::placeholder,
-html:not(.dark) textarea::placeholder {
-  color: #475569 !important;
-}
-
-html:not(.dark) select option {
-  background-color: #FFFFFF !important;
-  color: #000000 !important;
-}
-
-/* Tables in Light Theme */
+/* Tables outside dark containers */
 html:not(.dark) table thead {
   background-color: #F1F5F9 !important;
-  color: #000000 !important;
+  color: #111111 !important;
 }
 
 html:not(.dark) table thead th {
@@ -195,7 +171,7 @@ html:not(.dark) table thead th {
 }
 
 html:not(.dark) table tbody td {
-  color: #000000 !important;
+  color: #111111 !important;
 }
 
 html:not(.dark) table tbody tr {
@@ -206,61 +182,246 @@ html:not(.dark) table tbody tr:hover {
   background-color: #F8FAFC !important;
 }
 
+/* Form controls outside dark containers */
+html:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  color: #111111 !important;
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+}
+
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder {
+  color: #64748B !important;
+}
+
+html:not(.dark) select option {
+  background-color: #FFFFFF !important;
+  color: #111111 !important;
+}
+
+/* Primary dark text overrides on light surfaces (#000000) */
+html:not(.dark) :is(
+  .text-slate-900, .text-slate-800,
+  .text-zinc-900, .text-zinc-800,
+  .text-gray-900, .text-gray-800,
+  .text-black,
+  .text-\[\#0B1220\], .text-\[\#0A111E\], .text-\[\#15243B\], .text-\[\#15233A\]
+) {
+  color: #000000 !important;
+}
+
+/* Secondary & Description text overrides on light surfaces (#333333) */
+html:not(.dark) :is(
+  .text-slate-700, .text-slate-600,
+  .text-zinc-700, .text-zinc-600,
+  .text-gray-700, .text-gray-600,
+  .text-\[\#475569\], .text-\[\#64748B\], .text-\[\#73839B\]
+) {
+  color: #333333 !important;
+}
+
+/* Muted & Secondary info overrides on light surfaces (#444444 - never washed out) */
+html:not(.dark) :is(
+  .text-slate-500, .text-slate-400,
+  .text-zinc-500, .text-zinc-400,
+  .text-gray-500, .text-gray-400,
+  .text-\[\#9BAAC2\], .text-\[\#9BAAC5\]
+) {
+  color: #444444 !important;
+}
 
 /* --------------------------------------------------------------------------
-   2. EXCEPTION: EXPLICIT DARK SECTIONS IN LIGHT THEME (.dark-section)
-   Only applied to intentionally dark hero sections & banners
+   2. INTENTIONAL DARK CARDS, SECTIONS & MODALS IN LIGHT THEME
+   Scoped strictly to elements marked with intentional dark classes or
+   standalone dark background classes (never Tailwind dark: variant prefixes)
    -------------------------------------------------------------------------- */
-html:not(.dark) .dark-section,
-html:not(.dark) .dark-section h1,
-html:not(.dark) .dark-section h2,
-html:not(.dark) .dark-section h3,
-html:not(.dark) .dark-section h4,
-html:not(.dark) .dark-section strong,
-html:not(.dark) .dark-section b,
-html:not(.dark) .dark-section .text-white {
+html:not(.dark) :is(
+  .dark-section,
+  .dark-card,
+  .intentional-dark,
+  [data-theme="dark"],
+  [class^="bg-[#0A101D]"], [class*=" bg-[#0A101D]"],
+  [class^="bg-[#0B1220]"], [class*=" bg-[#0B1220]"],
+  [class^="bg-[#0A0E17]"], [class*=" bg-[#0A0E17]"],
+  [class^="bg-[#060B18]"], [class*=" bg-[#060B18]"],
+  [class^="bg-[#080E1C]"], [class*=" bg-[#080E1C]"],
+  [class^="bg-[#101A2D]"], [class*=" bg-[#101A2D]"],
+  [class^="bg-[#15233A]"], [class*=" bg-[#15233A]"],
+  [class^="bg-[#0B132B]"], [class*=" bg-[#0B132B]"],
+  [class^="bg-[#0B1530]"], [class*=" bg-[#0B1530]"],
+  [class^="from-[#0D1833]"], [class*=" from-[#0D1833]"],
+  [class^="from-[#0E1729]"], [class*=" from-[#0E1729]"],
+  [class^="from-[#0A101D]"], [class*=" from-[#0A101D]"],
+  [class^="from-[#101F3B]"], [class*=" from-[#101F3B]"]
+) {
+  color: #F4F7FF;
+}
+
+/* Headings inside intentional dark surfaces: Crisp Pure White */
+html:not(.dark) :is(
+  .dark-section,
+  .dark-card,
+  .intentional-dark,
+  [data-theme="dark"],
+  [class^="bg-[#0A101D]"], [class*=" bg-[#0A101D]"],
+  [class^="bg-[#0B1220]"], [class*=" bg-[#0B1220]"],
+  [class^="bg-[#0A0E17]"], [class*=" bg-[#0A0E17]"],
+  [class^="bg-[#060B18]"], [class*=" bg-[#060B18]"],
+  [class^="bg-[#080E1C]"], [class*=" bg-[#080E1C]"],
+  [class^="bg-[#101A2D]"], [class*=" bg-[#101A2D]"],
+  [class^="bg-[#15233A]"], [class*=" bg-[#15233A]"],
+  [class^="bg-[#0B132B]"], [class*=" bg-[#0B132B]"],
+  [class^="bg-[#0B1530]"], [class*=" bg-[#0B1530]"],
+  [class^="from-[#0D1833]"], [class*=" from-[#0D1833]"],
+  [class^="from-[#0E1729]"], [class*=" from-[#0E1729]"],
+  [class^="from-[#0A101D]"], [class*=" from-[#0A101D]"],
+  [class^="from-[#101F3B]"], [class*=" from-[#101F3B]"]
+) :is(h1, h2, h3, h4, h5, h6, h1 *, h2 *, h3 *, h4 *, h5 *, h6 *, strong, b, .text-white, .dark-text-white, .text-\[\#F0F5FF\], .text-\[\#F4F7FF\]) {
   color: #FFFFFF !important;
 }
 
-html:not(.dark) .dark-section p,
-html:not(.dark) .dark-section .text-slate-300,
-html:not(.dark) .dark-section .text-slate-200 {
-  color: #E2E8F0 !important;
-}
-
-html:not(.dark) .dark-section .text-slate-400,
-html:not(.dark) .dark-section .text-\[\#9BAAC2\],
-html:not(.dark) .dark-section .text-\[\#9BAAC5\],
-html:not(.dark) .dark-section .text-\[\#73839B\] {
-  color: #94A3B8 !important;
-}
-
-html:not(.dark) .dark-section a:not([class*="bg-"]):not([class*="btn"]) {
+/* Paragraphs inside intentional dark surfaces: Crisp light slate (#CBD5E1) */
+html:not(.dark) :is(
+  .dark-section,
+  .dark-card,
+  .intentional-dark,
+  [data-theme="dark"],
+  [class^="bg-[#0A101D]"], [class*=" bg-[#0A101D]"],
+  [class^="bg-[#0B1220]"], [class*=" bg-[#0B1220]"],
+  [class^="bg-[#0A0E17]"], [class*=" bg-[#0A0E17]"],
+  [class^="bg-[#060B18]"], [class*=" bg-[#060B18]"],
+  [class^="bg-[#080E1C]"], [class*=" bg-[#080E1C]"],
+  [class^="bg-[#101A2D]"], [class*=" bg-[#101A2D]"],
+  [class^="bg-[#15233A]"], [class*=" bg-[#15233A]"],
+  [class^="bg-[#0B132B]"], [class*=" bg-[#0B132B]"],
+  [class^="bg-[#0B1530]"], [class*=" bg-[#0B1530]"],
+  [class^="from-[#0D1833]"], [class*=" from-[#0D1833]"],
+  [class^="from-[#0E1729]"], [class*=" from-[#0E1729]"],
+  [class^="from-[#0A101D]"], [class*=" from-[#0A101D]"],
+  [class^="from-[#101F3B]"], [class*=" from-[#101F3B]"]
+) :is(p, p *, .text-slate-200, .text-slate-300, .text-\[\#CBD5E1\], .text-\[\#F0F5FF\], .text-\[\#F4F7FF\]) {
   color: #CBD5E1 !important;
 }
 
-/* White text preserved on action buttons, chips & colored badges in light mode */
-html:not(.dark) button.text-white,
-html:not(.dark) a.text-white,
-html:not(.dark) .btn-primary,
-html:not(.dark) .btn-primary *,
-html:not(.dark) [class*="bg-blue-"] .text-white,
-html:not(.dark) [class*="bg-emerald-"] .text-white,
-html:not(.dark) [class*="bg-indigo-"] .text-white,
-html:not(.dark) [class*="bg-purple-"] .text-white,
-html:not(.dark) [class*="bg-red-"] .text-white,
-html:not(.dark) [class*="bg-rose-"] .text-white,
-html:not(.dark) [class*="bg-[#176BFF]"] .text-white,
-html:not(.dark) [class*="bg-[#00A8FF]"] .text-white,
-html:not(.dark) [class*="bg-[#00A3FF]"] .text-white,
-html:not(.dark) [class*="bg-[#397BFF]"] .text-white,
-html:not(.dark) [class*="bg-gradient"] .text-white {
+/* Labels and muted details inside intentional dark surfaces */
+html:not(.dark) :is(
+  .dark-section,
+  .dark-card,
+  .intentional-dark,
+  [data-theme="dark"],
+  [class^="bg-[#0A101D]"], [class*=" bg-[#0A101D]"],
+  [class^="bg-[#0B1220]"], [class*=" bg-[#0B1220]"],
+  [class^="bg-[#0A0E17]"], [class*=" bg-[#0A0E17]"],
+  [class^="bg-[#060B18]"], [class*=" bg-[#060B18]"],
+  [class^="bg-[#080E1C]"], [class*=" bg-[#080E1C]"],
+  [class^="bg-[#101A2D]"], [class*=" bg-[#101A2D]"],
+  [class^="bg-[#15233A]"], [class*=" bg-[#15233A]"],
+  [class^="bg-[#0B132B]"], [class*=" bg-[#0B132B]"],
+  [class^="bg-[#0B1530]"], [class*=" bg-[#0B1530]"],
+  [class^="from-[#0D1833]"], [class*=" from-[#0D1833]"],
+  [class^="from-[#0E1729]"], [class*=" from-[#0E1729]"],
+  [class^="from-[#0A101D]"], [class*=" from-[#0A101D]"],
+  [class^="from-[#101F3B]"], [class*=" from-[#101F3B]"]
+) :is(label, dt, dd, li, .text-slate-400, .text-\[\#9BAAC2\], .text-\[\#9BAAC5\], .text-\[\#73839B\]) {
+  color: #9BAAC5 !important;
+}
+
+/* Form controls inside intentional dark surfaces */
+html:not(.dark) :is(
+  .dark-section,
+  .dark-card,
+  .intentional-dark,
+  [data-theme="dark"],
+  [class^="bg-[#0A101D]"], [class*=" bg-[#0A101D]"],
+  [class^="bg-[#0B1220]"], [class*=" bg-[#0B1220]"],
+  [class^="bg-[#0A0E17]"], [class*=" bg-[#0A0E17]"],
+  [class^="bg-[#060B18]"], [class*=" bg-[#060B18]"],
+  [class^="bg-[#080E1C]"], [class*=" bg-[#080E1C]"],
+  [class^="bg-[#101A2D]"], [class*=" bg-[#101A2D]"],
+  [class^="bg-[#15233A]"], [class*=" bg-[#15233A]"],
+  [class^="bg-[#0B132B]"], [class*=" bg-[#0B132B]"],
+  [class^="bg-[#0B1530]"], [class*=" bg-[#0B1530]"]
+) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  color: #F0F5FF !important;
+  background-color: #15233A !important;
+  border-color: #1F2E47 !important;
+}
+
+html:not(.dark) :is(
+  .dark-section,
+  .dark-card,
+  .intentional-dark,
+  [data-theme="dark"],
+  [class^="bg-[#0A101D]"], [class*=" bg-[#0A101D]"],
+  [class^="bg-[#0B1220]"], [class*=" bg-[#0B1220]"],
+  [class^="bg-[#0A0E17]"], [class*=" bg-[#0A0E17]"],
+  [class^="bg-[#060B18]"], [class*=" bg-[#060B18]"],
+  [class^="bg-[#080E1C]"], [class*=" bg-[#080E1C]"],
+  [class^="bg-[#101A2D]"], [class*=" bg-[#101A2D]"],
+  [class^="bg-[#15233A]"], [class*=" bg-[#15233A]"],
+  [class^="bg-[#0B132B]"], [class*=" bg-[#0B132B]"],
+  [class^="bg-[#0B1530]"], [class*=" bg-[#0B1530]"]
+) :is(input::placeholder, textarea::placeholder) {
+  color: #64748B !important;
+}
+
+/* Explicit Table Support for Tables inside Dark Containers in Light Mode */
+html:not(.dark) table:where(.dark-card, .dark-section, [class*="bg-[#101A2D]"], [class*="bg-[#0A101D]"], [class*="bg-[#0B1530]"], [class*="bg-[#091226]"], [class*="bg-[#060B18]"]) * thead {
+  background-color: #0A101D !important;
+  color: #77B4FF !important;
+}
+html:not(.dark) table:where(.dark-card, .dark-section, [class*="bg-[#101A2D]"], [class*="bg-[#0A101D]"], [class*="bg-[#0B1530]"], [class*="bg-[#091226]"], [class*="bg-[#060B18]"]) * thead th {
+  color: #77B4FF !important;
+}
+html:not(.dark) table:where(.dark-card, .dark-section, [class*="bg-[#101A2D]"], [class*="bg-[#0A101D]"], [class*="bg-[#0B1530]"], [class*="bg-[#091226]"], [class*="bg-[#060B18]"]) * tbody td {
+  color: #F0F5FF !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. ACTION BUTTONS & BADGES WITH DARK/VIBRANT BACKGROUNDS (Light Mode)
+   Restricted to actual solid buttons/badges; does NOT match pastel (50/100) backgrounds
+   -------------------------------------------------------------------------- */
+html:not(.dark) :is(
+  .btn-primary,
+  button.btn-primary,
+  button.text-white,
+  a.text-white,
+  [class^="bg-[#176BFF]"], [class*=" bg-[#176BFF]"],
+  [class^="bg-[#00A8FF]"], [class*=" bg-[#00A8FF]"],
+  [class^="bg-[#00A3FF]"], [class*=" bg-[#00A3FF]"],
+  [class^="bg-[#397BFF]"], [class*=" bg-[#397BFF]"],
+  [class*="bg-blue-600"], [class*="bg-blue-700"], [class*="bg-blue-800"],
+  [class*="bg-emerald-600"], [class*="bg-emerald-700"], [class*="bg-emerald-800"],
+  [class*="bg-rose-600"], [class*="bg-rose-700"],
+  [class*="bg-red-600"], [class*="bg-red-700"],
+  [class*="bg-purple-600"], [class*="bg-purple-700"],
+  [class*="bg-indigo-600"], [class*="bg-indigo-700"]
+) {
   color: #FFFFFF !important;
 }
 
+html:not(.dark) :is(
+  .btn-primary,
+  button.btn-primary,
+  button.text-white,
+  a.text-white,
+  [class^="bg-[#176BFF]"], [class*=" bg-[#176BFF]"],
+  [class^="bg-[#00A8FF]"], [class*=" bg-[#00A8FF]"],
+  [class^="bg-[#00A3FF]"], [class*=" bg-[#00A3FF]"],
+  [class^="bg-[#397BFF]"], [class*=" bg-[#397BFF]"],
+  [class*="bg-blue-600"], [class*="bg-blue-700"], [class*="bg-blue-800"],
+  [class*="bg-emerald-600"], [class*="bg-emerald-700"], [class*="bg-emerald-800"],
+  [class*="bg-rose-600"], [class*="bg-rose-700"],
+  [class*="bg-red-600"], [class*="bg-red-700"],
+  [class*="bg-purple-600"], [class*="bg-purple-700"],
+  [class*="bg-indigo-600"], [class*="bg-indigo-700"]
+) :is(span, svg, strong, b, p, div) {
+  color: #FFFFFF !important;
+}
 
 /* --------------------------------------------------------------------------
-   3. DARK THEME (.dark) -> ALL TEXT IS CRISP WHITE (#FFFFFF / #F4F7FF)
+   4. DARK THEME (.dark / html.dark)
+   All text is crisp white / luminous silver, surfaces are deep cosmic navy
    -------------------------------------------------------------------------- */
 .dark {
   color: #F4F7FF;
@@ -270,113 +431,85 @@ html:not(.dark) [class*="bg-gradient"] .text-white {
   color: #F4F7FF;
 }
 
-.dark h1,
-.dark h2,
-.dark h3,
-.dark h4,
-.dark h5,
-.dark h6 {
+.dark :is(h1, h2, h3, h4, h5, h6) {
   color: #FFFFFF !important;
+  font-weight: 700;
 }
 
 .dark p {
   color: #CBD5E1 !important;
 }
 
-.dark label,
-.dark dt,
-.dark dd,
+.dark :is(label, dt, dd) {
+  color: #E2E8F0 !important;
+  font-weight: 600;
+}
+
 .dark li {
   color: #E2E8F0 !important;
 }
 
 /* Headings and primary dark text -> crisp luminous white in dark mode */
-.dark .text-\[\#0B1220\],
-.dark .text-\[\#0A111E\],
-.dark .text-\[\#15243B\],
-.dark .text-\[\#15233A\],
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-zinc-900,
-.dark .text-zinc-800 {
+.dark :is(.text-\[\#0B1220\], .text-\[\#0A111E\], .text-\[\#15243B\], .text-\[\#15233A\], .text-slate-900, .text-slate-800, .text-gray-900, .text-gray-800, .text-zinc-900, .text-zinc-800, .text-black) {
   color: #FFFFFF !important;
 }
 
-/* Secondary & muted text -> legible silver in dark mode */
-.dark .text-\[\#475569\],
-.dark .text-\[\#64748B\],
-.dark .text-\[\#73839B\],
-.dark .text-slate-700,
-.dark .text-slate-600,
-.dark .text-slate-500,
-.dark .text-slate-400,
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-gray-500,
-.dark .text-gray-400,
-.dark .text-zinc-600,
-.dark .text-zinc-500,
-.dark .text-\[\#9BAAC2\],
-.dark .text-\[\#9BAAC5\] {
-  color: #94A3B8 !important;
+/* Secondary & muted dark text -> legible silver/slate in dark mode */
+.dark :is(.text-\[\#475569\], .text-\[\#64748B\], .text-\[\#73839B\], .text-slate-700, .text-slate-600, .text-slate-500, .text-slate-400, .text-gray-700, .text-gray-600, .text-gray-500, .text-gray-400, .text-zinc-600, .text-zinc-500, .text-\[\#9BAAC2\], .text-\[\#9BAAC5\]) {
+  color: #9BAAC5 !important;
 }
 
 /* Dark mode surfaces */
-.dark .bg-white:not(.qr-code):not(.qr-container):not([alt*="QR"]):not([alt*="qr"]) {
+.dark .bg-white:not(.qr-code):not(.qr-container):not(.light-card):not([alt*="QR"]):not([alt*="qr"]) {
   background-color: #0D1833 !important;
 }
 
-.dark .bg-\[\#F5F9FF\],
-.dark .bg-\[\#F8FAFC\],
-.dark .bg-\[\#FAFCFF\],
-.dark .bg-\[\#F1F5F9\],
-.dark .bg-\[\#F0F6FF\],
-.dark .bg-\[\#F0F7FF\],
-.dark .bg-\[\#d8e9ff\],
-.dark .bg-slate-50,
-.dark .bg-slate-100,
-.dark .bg-gray-50,
-.dark .bg-gray-100 {
+.dark :is(.bg-\[\#F5F9FF\], .bg-\[\#F8FAFC\], .bg-\[\#FAFCFF\], .bg-\[\#F1F5F9\], .bg-\[\#F0F6FF\], .bg-\[\#F0F7FF\], .bg-\[\#d8e9ff\], .bg-slate-50, .bg-slate-100, .bg-gray-50, .bg-gray-100):not(.qr-code):not(.qr-container):not(.light-card) {
   background-color: #070D1E !important;
 }
 
-.dark .bg-\[\#EAF3FF\],
-.dark .bg-\[\#EAF4FF\],
-.dark .bg-\[\#E1EEFD\],
-.dark .bg-\[\#E2EDFF\] {
+.dark :is(.bg-\[\#EAF3FF\], .bg-\[\#EAF4FF\], .bg-\[\#E1EEFD\], .bg-\[\#E2EDFF\]) {
   background-color: rgba(0, 168, 255, 0.12) !important;
 }
 
 /* Light borders -> subtle translucent borders in dark mode */
-.dark .border-\[\#DFE9F6\],
-.dark .border-\[\#E2E8F0\],
-.dark .border-\[\#BFDBFE\],
-.dark .border-slate-200,
-.dark .border-slate-300,
-.dark .border-gray-200,
-.dark .border-gray-300 {
+.dark :is(.border-\[\#DFE9F6\], .border-\[\#E2E8F0\], .border-\[\#BFDBFE\], .border-slate-200, .border-slate-300, .border-gray-200, .border-gray-300) {
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* Form controls in dark mode */
-.dark input:not([type="checkbox"]):not([type="radio"]),
-.dark select,
-.dark textarea {
+.dark :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
   background-color: #0B1530 !important;
   border-color: rgba(255, 255, 255, 0.18) !important;
   color: #F4F7FF !important;
 }
 
-.dark input::placeholder,
-.dark textarea::placeholder {
+.dark :is(input::placeholder, textarea::placeholder) {
   color: #6C7D9C !important;
 }
 
 .dark select option {
   background-color: #0B1530 !important;
   color: #F4F7FF !important;
+}
+
+/* Status Badges & Pills in Dark Mode */
+.dark .bg-emerald-50 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+  color: #34D399 !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+}
+
+.dark .bg-amber-50 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  color: #FBBF24 !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.dark :is(.bg-rose-50, .bg-red-50) {
+  background-color: rgba(244, 63, 94, 0.15) !important;
+  color: #FB7185 !important;
+  border-color: rgba(244, 63, 94, 0.3) !important;
 }
 
 /* Tables in dark mode */
@@ -400,136 +533,17 @@ html:not(.dark) [class*="bg-gradient"] .text-white {
 .dark table tbody tr:hover {
   background-color: rgba(0, 168, 255, 0.06) !important;
 }
-[class*="bg-[#00A3FF]"] .text-white,
-[class*="bg-[#397BFF]"] .text-white,
-[class*="bg-blue-"] .text-white,
-[class*="bg-emerald-"] .text-white,
-[class*="bg-rose-"] .text-white,
-[class*="bg-red-"] .text-white,
-[class*="bg-purple-"] .text-white,
-[class*="bg-indigo-"] .text-white {
-  color: #FFFFFF !important;
+
+/* --------------------------------------------------------------------------
+   5. INTENTIONAL LIGHT CARDS IN DARK THEME
+   -------------------------------------------------------------------------- */
+.dark :is(.light-card, .light-section, .qr-container, .qr-code, img[alt*="QR"], img[alt*="qr"]) {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
 }
 
-
-/* ==========================================================================
-   DARK THEME: LUMINOUS ACCENTS & LEGIBILITY OVERRIDES
-   ========================================================================== */
-.dark .bg-white:not(.qr-code):not(.qr-container):not([alt*="QR"]):not([alt*="qr"]) {
-  background-color: #0D1833 !important;
-}
-
-.dark .bg-\[\#F5F9FF\],
-.dark .bg-\[\#F8FAFC\],
-.dark .bg-\[\#FAFCFF\],
-.dark .bg-\[\#F1F5F9\],
-.dark .bg-\[\#F0F6FF\],
-.dark .bg-\[\#F0F7FF\],
-.dark .bg-\[\#d8e9ff\],
-.dark .bg-slate-50,
-.dark .bg-slate-100,
-.dark .bg-gray-50,
-.dark .bg-gray-100 {
-  background-color: #070D1E !important;
-}
-
-.dark .bg-\[\#EAF3FF\],
-.dark .bg-\[\#EAF4FF\],
-.dark .bg-\[\#E1EEFD\],
-.dark .bg-\[\#E2EDFF\] {
-  background-color: rgba(0, 168, 255, 0.12) !important;
-}
-
-/* Headings and primary dark text -> crisp luminous white in dark mode */
-.dark .text-\[\#0B1220\],
-.dark .text-\[\#0A111E\],
-.dark .text-\[\#15243B\],
-.dark .text-slate-900,
-.dark .text-slate-800,
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-zinc-900,
-.dark .text-zinc-800 {
-  color: #F4F7FF !important;
-}
-
-/* Secondary & muted dark text -> legible silver/slate in dark mode */
-.dark .text-\[\#475569\],
-.dark .text-\[\#64748B\],
-.dark .text-\[\#73839B\],
-.dark .text-slate-700,
-.dark .text-slate-600,
-.dark .text-slate-500,
-.dark .text-gray-700,
-.dark .text-gray-600,
-.dark .text-gray-500,
-.dark .text-zinc-600,
-.dark .text-zinc-500 {
-  color: #9BAAC5 !important;
-}
-
-/* Light borders -> subtle translucent borders in dark mode */
-.dark .border-\[\#DFE9F6\],
-.dark .border-\[\#E2E8F0\],
-.dark .border-\[\#BFDBFE\],
-.dark .border-slate-200,
-.dark .border-slate-300,
-.dark .border-gray-200,
-.dark .border-gray-300 {
-  border-color: rgba(255, 255, 255, 0.12) !important;
-}
-
-/* Form controls in dark mode */
-.dark input:not([type="checkbox"]):not([type="radio"]),
-.dark select,
-.dark textarea {
-  background-color: #0B1530 !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
-  color: #F4F7FF !important;
-}
-
-.dark input::placeholder,
-.dark textarea::placeholder {
-  color: #6C7D9C !important;
-}
-
-.dark select option {
-  background-color: #0B1530 !important;
-  color: #F4F7FF !important;
-}
-
-/* Status Badges & Pills in Dark Mode */
-.dark .bg-emerald-50 {
-  background-color: rgba(16, 185, 129, 0.15) !important;
-  color: #34D399 !important;
-  border-color: rgba(16, 185, 129, 0.3) !important;
-}
-
-.dark .bg-amber-50 {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-  color: #FBBF24 !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
-}
-
-.dark .bg-rose-50,
-.dark .bg-red-50 {
-  background-color: rgba(244, 63, 94, 0.15) !important;
-  color: #FB7185 !important;
-  border-color: rgba(244, 63, 94, 0.3) !important;
-}
-
-/* Tables in dark mode */
-.dark table thead {
-  background-color: #0B1530 !important;
-  color: #9BAAC5 !important;
-}
-
-.dark table tbody tr {
-  border-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.dark table tbody tr:hover {
-  background-color: rgba(0, 168, 255, 0.06) !important;
+.dark :is(.light-card, .light-section, .qr-container, .qr-code) :is(h1, h2, h3, h4, h5, h6, p, span, strong, b, label, div) {
+  color: #000000 !important;
 }
 
 /* Custom Sleek Scrollbar */

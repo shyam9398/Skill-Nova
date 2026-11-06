@@ -49,10 +49,33 @@ export const ResourcePublishingPage: React.FC = () => {
   const [interviewPageStart, setInterviewPageStart] = useState(1);
   const [interviewPageEnd, setInterviewPageEnd] = useState(10);
 
-  // 5. Flashcards Form
-  const [fcQuestion, setFcQuestion] = useState('');
-  const [fcAnswer, setFcAnswer] = useState('');
-  const [fcDifficulty, setFcDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+  // Multi-card Flashcards State (Requirement 5)
+  const [flashcardItems, setFlashcardItems] = useState<Array<{ id: string; question: string; answer: string; difficulty: 'easy' | 'medium' | 'hard' }>>([
+    { id: '1', question: '', answer: '', difficulty: 'medium' }
+  ]);
+
+  // Structured Interview Q&A State (Requirement 6)
+  const [interviewMode, setInterviewMode] = useState<'qa' | 'doc'>('qa');
+  const [interviewQAList, setInterviewQAList] = useState<Array<{ id: string; question: string; answer: string; roleCategory: string }>>([
+    { id: '1', question: '', answer: '', roleCategory: 'Full Stack Engineer' }
+  ]);
+  const [existingInterviews, setExistingInterviews] = useState<any[]>([]);
+
+  // Edit Modals State
+  const [editingTopic, setEditingTopic] = useState<Topic | null>(null);
+  const [editTopicTitle, setEditTopicTitle] = useState('');
+  const [editTopicDesc, setEditTopicDesc] = useState('');
+  const [editTopicUrl, setEditTopicUrl] = useState('');
+
+  const [editingFlashcard, setEditingFlashcard] = useState<Flashcard | null>(null);
+  const [editFcQuestion, setEditFcQuestion] = useState('');
+  const [editFcAnswer, setEditFcAnswer] = useState('');
+  const [editFcDifficulty, setEditFcDifficulty] = useState<'easy' | 'medium' | 'hard'>('medium');
+
+  const [editingInterview, setEditingInterview] = useState<any | null>(null);
+  const [editIqQuestion, setEditIqQuestion] = useState('');
+  const [editIqAnswer, setEditIqAnswer] = useState('');
+  const [editIqRole, setEditIqRole] = useState('');
 
   // Release / Hold Scheduling management in Asia/Kolkata (IST)
   const [releaseAction, setReleaseAction] = useState<'release' | 'hold'>('release');
@@ -80,10 +103,34 @@ export const ResourcePublishingPage: React.FC = () => {
     void dataService.syncTopicsFromSupabase();
     void dataService.syncPresentationsFromSupabase();
     void dataService.syncFlashcardsFromSupabase();
+    void dataService.syncInterviewQuestionsFromSupabase();
     loadData();
     const unsubscribe = dataService.subscribe(loadData);
     return () => unsubscribe();
   }, []);
+
+  // Modal background scroll lock & escape listener (Requirement 1)
+  useEffect(() => {
+    const isAnyModalOpen = Boolean(editingTopic || editingFlashcard || editingInterview || showQuickAddModule);
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setEditingTopic(null);
+          setEditingFlashcard(null);
+          setEditingInterview(null);
+          setShowQuickAddModule(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [editingTopic, editingFlashcard, editingInterview, showQuickAddModule]);
 
   const loadData = () => {
     const list = dataService.getCoursesForCurrentUser();
@@ -109,6 +156,7 @@ export const ResourcePublishingPage: React.FC = () => {
     }
     setExistingResources(dataService.getAllAdminTopics());
     setExistingFlashcards(dataService.getFlashcards());
+    setExistingInterviews(dataService.getInterviewQuestions());
   };
 
   const handleCourseChange = (courseId: string) => {
@@ -159,30 +207,102 @@ export const ResourcePublishingPage: React.FC = () => {
       return;
     }
 
-    // Special case for flashcard creation
+    // Special case for flashcard creation (Multi-Card Deck)
     if (selectedType === 'flashcards') {
-      if (!fcQuestion.trim() || !fcAnswer.trim()) {
-        setFeedback({ type: 'error', message: 'Flashcard Question and Model Answer are both required.' });
+      const validCards = flashcardItems.filter(f => f.question.trim() && f.answer.trim());
+      if (validCards.length === 0) {
+        setFeedback({ type: 'error', message: 'At least one Flashcard with Question and Answer is required.' });
         return;
       }
 
       setIsSubmitting(true);
       try {
-        await dataService.addFlashcard({
-          course_id: selectedCourseId,
-          topic_id: selectedSubModuleId || selectedModuleId,
-          question: fcQuestion.trim(),
-          answer: fcAnswer.trim(),
-          difficulty: fcDifficulty,
-          is_published: true
-        });
+        const isReleased = releaseAction === 'release';
+        let hour24 = parseInt(scheduleHour, 10) || 10;
+        if (schedulePeriod === 'PM' && hour24 < 12) hour24 += 12;
+        if (schedulePeriod === 'AM' && hour24 === 12) hour24 = 0;
+        const hourStr = String(hour24).padStart(2, '0');
+        const minStr = String(parseInt(scheduleMinute, 10) || 0).padStart(2, '0');
+        const scheduledIso = !isReleased
+          ? new Date(`${scheduleDate}T${hourStr}:${minStr}:00+05:30`).toISOString()
+          : undefined;
 
-        setFcQuestion('');
-        setFcAnswer('');
-        setFeedback({ type: 'success', message: 'Flashcard created and saved directly to Supabase!' });
+        for (let i = 0; i < validCards.length; i++) {
+          const card = validCards[i];
+          await dataService.addFlashcard({
+            course_id: selectedCourseId,
+            topic_id: selectedSubModuleId || selectedModuleId,
+            question: card.question.trim(),
+            answer: card.answer.trim(),
+            difficulty: card.difficulty,
+            is_published: isReleased,
+            release_status: isReleased ? 'released' : 'scheduled',
+            scheduled_release_at: scheduledIso
+          });
+        }
+
+        setFlashcardItems([{ id: '1', question: '', answer: '', difficulty: 'medium' }]);
+        setExistingFlashcards(dataService.getFlashcards());
+        setFeedback({
+          type: 'success',
+          message: `${validCards.length} Flashcard(s) saved directly to Supabase!`
+        });
         setTimeout(() => setFeedback(null), 4000);
       } catch (err: any) {
-        setFeedback({ type: 'error', message: err?.message || 'Failed to save flashcard to Supabase.' });
+        setFeedback({ type: 'error', message: err?.message || 'Failed to save flashcards to Supabase.' });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Special case for Structured Interview Q&A (Requirement 6)
+    if (selectedType === 'interview' && interviewMode === 'qa') {
+      const validQAs = interviewQAList.filter(q => q.question.trim() && q.answer.trim());
+      if (validQAs.length === 0) {
+        setFeedback({ type: 'error', message: 'At least one Interview Question with Question and Answer is required.' });
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const isReleased = releaseAction === 'release';
+        let hour24 = parseInt(scheduleHour, 10) || 10;
+        if (schedulePeriod === 'PM' && hour24 < 12) hour24 += 12;
+        if (schedulePeriod === 'AM' && hour24 === 12) hour24 = 0;
+        const hourStr = String(hour24).padStart(2, '0');
+        const minStr = String(parseInt(scheduleMinute, 10) || 0).padStart(2, '0');
+        const scheduledIso = !isReleased
+          ? new Date(`${scheduleDate}T${hourStr}:${minStr}:00+05:30`).toISOString()
+          : undefined;
+
+        for (const item of validQAs) {
+          await dataService.addInterviewQuestion(
+            selectedSubModuleId || selectedModuleId,
+            item.question.trim(),
+            item.answer.trim(),
+            item.roleCategory || 'Full Stack Engineer',
+            [],
+            {
+              course_id: selectedCourseId,
+              is_published: isReleased,
+              release_status: isReleased ? 'released' : 'scheduled',
+              scheduled_release_at: scheduledIso
+            }
+          );
+        }
+
+        setInterviewQAList([{ id: '1', question: '', answer: '', roleCategory: 'Full Stack Engineer' }]);
+        setExistingInterviews(dataService.getInterviewQuestions());
+        setFeedback({
+          type: 'success',
+          message: `${validQAs.length} Interview Question(s) saved to Supabase! Status: ${
+            isReleased ? 'RELEASED Immediately' : `SCHEDULED for ${scheduleDate} at ${scheduleHour}:${scheduleMinute} ${schedulePeriod} (IST)`
+          }`
+        });
+        setTimeout(() => setFeedback(null), 5000);
+      } catch (err: any) {
+        setFeedback({ type: 'error', message: err?.message || 'Failed to save interview questions.' });
       } finally {
         setIsSubmitting(false);
       }
@@ -208,7 +328,7 @@ export const ResourcePublishingPage: React.FC = () => {
         setFeedback({ type: 'error', message: err });
         return;
       }
-    } else if (selectedType === 'interview') {
+    } else if (selectedType === 'interview' && interviewMode === 'doc') {
       const err = validateRange(interviewTotalPages, interviewPageStart, interviewPageEnd, 'Interview document restriction');
       if (err) {
         setFeedback({ type: 'error', message: err });
@@ -517,69 +637,159 @@ export const ResourcePublishingPage: React.FC = () => {
 
         <form onSubmit={handleSaveResource} className="space-y-5">
           
-          {/* CATEGORY 5: FLASHCARDS FORM */}
+          {/* CATEGORY 5: FLASHCARDS MULTI-CARD FORM (Requirement 5) */}
           {selectedType === 'flashcards' ? (
             <div className="space-y-4">
-              <div className="p-4 bg-[#15233A] rounded-2xl border border-purple-500/20 space-y-4">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-purple-300 uppercase font-mono block">
-                  New Flashcard Q&A Item
+                  Flashcard Set / Deck Builder ({flashcardItems.length} {flashcardItems.length === 1 ? 'Card' : 'Cards'})
                 </span>
-
-                <div>
-                  <label className="text-xs font-bold text-white block mb-1">
-                    Question / Front Prompt *
-                  </label>
-                  <textarea
-                    rows={2}
-                    required
-                    placeholder="e.g. What is the time complexity of B-Tree database index lookups?"
-                    value={fcQuestion}
-                    onChange={(e) => setFcQuestion(e.target.value)}
-                    className="w-full bg-[#0A101D] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-purple-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-white block mb-1">
-                    Model Answer / Reverse Explanation *
-                  </label>
-                  <textarea
-                    rows={3}
-                    required
-                    placeholder="e.g. O(log N) logarithmic depth. B-Trees maintain balanced node branching factors, minimizing physical disk seeks."
-                    value={fcAnswer}
-                    onChange={(e) => setFcAnswer(e.target.value)}
-                    className="w-full bg-[#0A101D] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-purple-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-bold text-[#9BAAC2]">Difficulty:</span>
-                  {(['easy', 'medium', 'hard'] as const).map(diff => (
-                    <button
-                      key={diff}
-                      type="button"
-                      onClick={() => setFcDifficulty(diff)}
-                      className={`px-3 py-1 rounded-lg text-xs font-bold uppercase transition ${
-                        fcDifficulty === diff
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'bg-[#0A101D] border border-white/10 text-slate-400'
-                      }`}
-                    >
-                      {diff}
-                    </button>
-                  ))}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setFlashcardItems(prev => [
+                    ...prev,
+                    { id: String(Date.now()), question: '', answer: '', difficulty: 'medium' }
+                  ])}
+                  className="px-3 py-1.5 rounded-xl bg-purple-600/20 text-purple-300 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-600/30 transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Flashcard</span>
+                </button>
               </div>
 
-              <div className="pt-2 flex justify-end">
+              {flashcardItems.map((item, idx) => (
+                <div key={item.id} className="p-4 bg-[#15233A] rounded-2xl border border-purple-500/20 space-y-3 relative group">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-6 h-6 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center text-xs font-bold font-mono">
+                        {idx + 1}
+                      </span>
+                      <span className="text-xs font-bold text-white">Flashcard {idx + 1}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {idx > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...flashcardItems];
+                            const temp = updated[idx];
+                            updated[idx] = updated[idx - 1];
+                            updated[idx - 1] = temp;
+                            setFlashcardItems(updated);
+                          }}
+                          className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded bg-white/5 font-bold"
+                          title="Move Up"
+                        >
+                          ↑ Up
+                        </button>
+                      )}
+                      {idx < flashcardItems.length - 1 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = [...flashcardItems];
+                            const temp = updated[idx];
+                            updated[idx] = updated[idx + 1];
+                            updated[idx + 1] = temp;
+                            setFlashcardItems(updated);
+                          }}
+                          className="text-slate-400 hover:text-white text-xs px-2 py-0.5 rounded bg-white/5 font-bold"
+                          title="Move Down"
+                        >
+                          ↓ Down
+                        </button>
+                      )}
+                      {flashcardItems.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setFlashcardItems(prev => prev.filter(fc => fc.id !== item.id))}
+                          className="text-rose-400 hover:text-rose-300 p-1 opacity-70 hover:opacity-100 transition flex items-center gap-1 text-xs"
+                          title="Remove Card"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Remove</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-white block mb-1">
+                      Front Side / Question *
+                    </label>
+                    <textarea
+                      rows={2}
+                      required
+                      placeholder="e.g. What is the difference between TCP and UDP?"
+                      value={item.question}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFlashcardItems(prev => prev.map(fc => fc.id === item.id ? { ...fc, question: val } : fc));
+                      }}
+                      className="w-full bg-[#0A101D] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-white block mb-1">
+                      Back Side / Answer *
+                    </label>
+                    <textarea
+                      rows={3}
+                      required
+                      placeholder="e.g. TCP is connection-oriented with guaranteed delivery; UDP is connectionless and lightweight for real-time streams."
+                      value={item.answer}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFlashcardItems(prev => prev.map(fc => fc.id === item.id ? { ...fc, answer: val } : fc));
+                      }}
+                      className="w-full bg-[#0A101D] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs font-bold text-[#9BAAC2]">Difficulty:</span>
+                    {(['easy', 'medium', 'hard'] as const).map(diff => (
+                      <button
+                        key={diff}
+                        type="button"
+                        onClick={() => {
+                          setFlashcardItems(prev => prev.map(fc => fc.id === item.id ? { ...fc, difficulty: diff } : fc));
+                        }}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold uppercase transition ${
+                          item.difficulty === diff
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'bg-[#0A101D] border border-white/10 text-slate-400'
+                        }`}
+                      >
+                        {diff}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex items-center justify-between pt-2">
+                <button
+                  type="button"
+                  onClick={() => setFlashcardItems(prev => [
+                    ...prev,
+                    { id: String(Date.now()), question: '', answer: '', difficulty: 'medium' }
+                  ])}
+                  className="px-4 py-2 rounded-xl bg-purple-600/20 text-purple-300 border border-purple-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-purple-600/30 transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Another Flashcard</span>
+                </button>
+
                 <button
                   type="submit"
                   disabled={isSubmitting}
                   className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-[#00A8FF] text-white text-xs font-black shadow-lg shadow-purple-600/25 hover:opacity-95 transition disabled:opacity-50 flex items-center gap-2"
                 >
-                  <Plus className="w-4 h-4" />
-                  <span>{isSubmitting ? 'Saving to Supabase...' : 'Save Flashcard to Supabase'}</span>
+                  <Save className="w-4 h-4" />
+                  <span>{isSubmitting ? 'Saving to Supabase...' : `Save ${flashcardItems.length} Flashcard(s) to Supabase`}</span>
                 </button>
               </div>
             </div>
@@ -779,69 +989,209 @@ export const ResourcePublishingPage: React.FC = () => {
                 </div>
               )}
 
-              {/* 4. INTERVIEW QUESTIONS & RESTRICTIONS (Requirement 9) */}
+              {/* 4. INTERVIEW QUESTIONS & WORKFLOW (Requirement 6 & 9) */}
               {selectedType === 'interview' && (
                 <div className="p-4 bg-[#15233A] rounded-2xl border border-emerald-500/20 space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-emerald-300 block flex items-center gap-1.5 mb-1">
-                      <HelpCircle className="w-4 h-4 text-emerald-400" />
-                      Interview Question Document URL (Google Docs, Drive PDF, Cheat Sheet) *
-                    </label>
-                    <input
-                      type="url"
-                      required
-                      placeholder="https://docs.google.com/document/d/... or Drive PDF link"
-                      value={interviewDocUrl}
-                      onChange={(e) => setInterviewDocUrl(e.target.value)}
-                      className="w-full bg-[#0A101D] border border-[#1F2E47] rounded-xl px-4 py-2.5 text-xs text-[#F0F5FF] outline-none focus:border-emerald-500 font-mono"
-                    />
+                  {/* Mode Selector */}
+                  <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-[#1F2E47]">
+                    <button
+                      type="button"
+                      onClick={() => setInterviewMode('qa')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                        interviewMode === 'qa'
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                          : 'bg-[#0A101D] text-[#9BAAC2] hover:text-white border border-white/5'
+                      }`}
+                    >
+                      <HelpCircle className="w-3.5 h-3.5" />
+                      <span>Text-Based Q&A Editor (5s Countdown)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInterviewMode('doc')}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                        interviewMode === 'doc'
+                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                          : 'bg-[#0A101D] text-[#9BAAC2] hover:text-white border border-white/5'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Document / PDF Resource</span>
+                    </button>
                   </div>
 
-                  {/* Interview Page Range Controls */}
-                  <div className="p-4 rounded-xl bg-[#0A101D] border border-emerald-500/30 space-y-3">
-                    <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
-                      <Lock className="w-3.5 h-3.5" />
-                      Interview Sheet Page Restrictions
-                    </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="text-[11px] text-[#9BAAC2] block mb-1">Total Document Pages *</label>
-                        <input
-                          type="number"
-                          min={1}
-                          required
-                          value={interviewTotalPages}
-                          onChange={(e) => setInterviewTotalPages(parseInt(e.target.value, 10) || 1)}
-                          className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white"
-                        />
+                  {interviewMode === 'qa' ? (
+                    /* Structured Q&A Editor */
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-300 uppercase font-mono block">
+                          Text-Based Interview Questions ({interviewQAList.length} {interviewQAList.length === 1 ? 'Question' : 'Questions'})
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setInterviewQAList(prev => [
+                            ...prev,
+                            { id: String(Date.now()), question: '', answer: '', roleCategory: 'Full Stack Engineer' }
+                          ])}
+                          className="px-3 py-1.5 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-600/30 transition"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Question</span>
+                        </button>
                       </div>
-                      <div>
-                        <label className="text-[11px] text-[#9BAAC2] block mb-1">Starting Page *</label>
-                        <input
-                          type="number"
-                          min={1}
-                          required
-                          value={interviewPageStart}
-                          onChange={(e) => setInterviewPageStart(parseInt(e.target.value, 10) || 1)}
-                          className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[11px] text-[#9BAAC2] block mb-1">Ending Page *</label>
-                        <input
-                          type="number"
-                          min={1}
-                          required
-                          value={interviewPageEnd}
-                          onChange={(e) => setInterviewPageEnd(parseInt(e.target.value, 10) || 1)}
-                          className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white"
-                        />
+
+                      {interviewQAList.map((item, idx) => (
+                        <div key={item.id} className="p-4 bg-[#0A101D] rounded-2xl border border-emerald-500/30 space-y-3 relative group">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-lg bg-emerald-500/20 text-emerald-300 flex items-center justify-center text-xs font-bold font-mono">
+                                {idx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-white">Interview Question {idx + 1}</span>
+                            </div>
+
+                            {interviewQAList.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setInterviewQAList(prev => prev.filter(q => q.id !== item.id))}
+                                className="text-rose-400 hover:text-rose-300 p-1 opacity-70 hover:opacity-100 transition flex items-center gap-1 text-xs"
+                                title="Remove Question"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Remove Question</span>
+                              </button>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-bold text-white block mb-1">
+                              1. Question Field *
+                            </label>
+                            <textarea
+                              rows={2}
+                              required={interviewMode === 'qa'}
+                              placeholder="e.g. How does the event loop prioritize microtasks over macrotasks?"
+                              value={item.question}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setInterviewQAList(prev => prev.map(q => q.id === item.id ? { ...q, question: val } : q));
+                              }}
+                              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-xs font-bold text-white block mb-1">
+                              2. Answer Field *
+                            </label>
+                            <textarea
+                              rows={3}
+                              required={interviewMode === 'qa'}
+                              placeholder="e.g. Microtask queue (Promises, mutation observer) is drained completely between each macrotask tick before repaint..."
+                              value={item.answer}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setInterviewQAList(prev => prev.map(q => q.id === item.id ? { ...q, answer: val } : q));
+                              }}
+                              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-emerald-500"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-[11px] text-[#9BAAC2] block mb-1">Role / Tech Domain Category</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Full Stack Engineer, Frontend, System Design"
+                              value={item.roleCategory}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setInterviewQAList(prev => prev.map(q => q.id === item.id ? { ...q, roleCategory: val } : q));
+                              }}
+                              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex items-center justify-start pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setInterviewQAList(prev => [
+                            ...prev,
+                            { id: String(Date.now()), question: '', answer: '', roleCategory: 'Full Stack Engineer' }
+                          ])}
+                          className="px-4 py-2 rounded-xl bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-600/30 transition"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Add Another Question</span>
+                        </button>
                       </div>
                     </div>
-                    <div className="text-[11px] text-[#9BAAC2] font-mono">
-                      Allocated Scope: Pages <strong className="text-emerald-400">{interviewPageStart}</strong> to <strong className="text-emerald-400">{interviewPageEnd}</strong> of {interviewTotalPages}.
+                  ) : (
+                    /* Document / PDF Cheat Sheet Form */
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-bold text-emerald-300 block flex items-center gap-1.5 mb-1">
+                          <HelpCircle className="w-4 h-4 text-emerald-400" />
+                          Interview Question Document URL (Google Docs, Drive PDF, Cheat Sheet) *
+                        </label>
+                        <input
+                          type="url"
+                          required={interviewMode === 'doc'}
+                          placeholder="https://docs.google.com/document/d/... or Drive PDF link"
+                          value={interviewDocUrl}
+                          onChange={(e) => setInterviewDocUrl(e.target.value)}
+                          className="w-full bg-[#0A101D] border border-[#1F2E47] rounded-xl px-4 py-2.5 text-xs text-[#F0F5FF] outline-none focus:border-emerald-500 font-mono"
+                        />
+                      </div>
+
+                      {/* Interview Page Range Controls */}
+                      <div className="p-4 rounded-xl bg-[#0A101D] border border-emerald-500/30 space-y-3">
+                        <span className="text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5" />
+                          Interview Sheet Page Restrictions
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div>
+                            <label className="text-[11px] text-[#9BAAC2] block mb-1">Total Document Pages *</label>
+                            <input
+                              type="number"
+                              min={1}
+                              required={interviewMode === 'doc'}
+                              value={interviewTotalPages}
+                              onChange={(e) => setInterviewTotalPages(parseInt(e.target.value, 10) || 1)}
+                              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-[#9BAAC2] block mb-1">Starting Page *</label>
+                            <input
+                              type="number"
+                              min={1}
+                              required={interviewMode === 'doc'}
+                              value={interviewPageStart}
+                              onChange={(e) => setInterviewPageStart(parseInt(e.target.value, 10) || 1)}
+                              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-[11px] text-[#9BAAC2] block mb-1">Ending Page *</label>
+                            <input
+                              type="number"
+                              min={1}
+                              required={interviewMode === 'doc'}
+                              value={interviewPageEnd}
+                              onChange={(e) => setInterviewPageEnd(parseInt(e.target.value, 10) || 1)}
+                              className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3 py-2 text-xs text-white"
+                            />
+                          </div>
+                        </div>
+                        <div className="text-[11px] text-[#9BAAC2] font-mono">
+                          Allocated Scope: Pages <strong className="text-emerald-400">{interviewPageStart}</strong> to <strong className="text-emerald-400">{interviewPageEnd}</strong> of {interviewTotalPages}.
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
 
@@ -1012,21 +1362,39 @@ export const ResourcePublishingPage: React.FC = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {existingFlashcards.map(fc => (
-                  <div key={fc.id} className="p-4 rounded-2xl bg-[#15233A] border border-white/5 space-y-2 relative group">
+                  <div key={fc.id} className="p-4 rounded-2xl bg-[#15233A] border border-white/5 space-y-2 relative group hover:border-purple-500/30 transition">
                     <div className="flex items-center justify-between">
                       <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-purple-500/20 text-purple-300">
                         {fc.difficulty || 'Medium'}
                       </span>
-                      <button
-                        onClick={async () => {
-                          await dataService.deleteFlashcard(fc.id);
-                          setExistingFlashcards(dataService.getFlashcards());
-                        }}
-                        className="text-rose-400 hover:text-rose-300 p-1 opacity-70 hover:opacity-100 transition"
-                        title="Delete Card"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingFlashcard(fc);
+                            setEditFcQuestion(fc.question);
+                            setEditFcAnswer(fc.answer);
+                            setEditFcDifficulty(fc.difficulty || 'medium');
+                          }}
+                          className="text-blue-400 hover:text-blue-300 p-1 opacity-70 hover:opacity-100 transition"
+                          title="Edit Card"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            if (window.confirm("Delete this flashcard?")) {
+                              await dataService.deleteFlashcard(fc.id);
+                              setExistingFlashcards(dataService.getFlashcards());
+                            }
+                          }}
+                          className="text-rose-400 hover:text-rose-300 p-1 opacity-70 hover:opacity-100 transition"
+                          title="Delete Card"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <h5 className="text-xs font-bold text-white">Q: {fc.question}</h5>
                     <p className="text-[11px] text-slate-300">A: {fc.answer}</p>
@@ -1036,9 +1404,83 @@ export const ResourcePublishingPage: React.FC = () => {
             )}
           </div>
         ) : (
-          /* Standard Resource List */
-          <div className="space-y-3">
-            {currentFilteredResources.length === 0 ? (
+          /* Standard Resource List (and Structured Interviews if Interview is selected) */
+          <div className="space-y-4">
+            {/* If Interview questions selected, also show structured Q&A cards */}
+            {selectedType === 'interview' && existingInterviews.length > 0 && (
+              <div className="space-y-3 pb-4 border-b border-white/5">
+                <span className="text-xs font-bold text-emerald-300 uppercase font-mono block">
+                  Interactive Q&A Items ({existingInterviews.length})
+                </span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {existingInterviews.map((iq) => {
+                    const isLive = iq.release_status === 'released' || iq.is_published !== false;
+                    return (
+                      <div key={iq.id} className="p-4 rounded-2xl bg-[#15233A] border border-white/5 space-y-2 relative group hover:border-emerald-500/30 transition">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300">
+                              {iq.role_category || 'Full Stack'}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                              isLive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-300'
+                            }`}>
+                              {isLive ? 'Released' : 'Held / Scheduled'}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const next = isLive ? 'held' : 'released';
+                                await dataService.updateInterviewQuestion(iq.id, {
+                                  release_status: next,
+                                  is_published: next === 'released'
+                                });
+                                setExistingInterviews(dataService.getInterviewQuestions());
+                              }}
+                              className="text-xs font-bold px-2 py-0.5 rounded bg-white/5 hover:bg-white/10 text-white transition"
+                            >
+                              {isLive ? 'Hold' : 'Release'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingInterview(iq);
+                                setEditIqQuestion(iq.question);
+                                setEditIqAnswer(iq.model_answer || iq.answer || '');
+                                setEditIqRole(iq.role_category || 'Full Stack Engineer');
+                              }}
+                              className="text-blue-400 hover:text-blue-300 p-1 opacity-70 hover:opacity-100 transition"
+                              title="Edit Question"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (window.confirm("Delete this interview question?")) {
+                                  await dataService.deleteInterviewQuestion(iq.id);
+                                  setExistingInterviews(dataService.getInterviewQuestions());
+                                }
+                              }}
+                              className="text-rose-400 hover:text-rose-300 p-1 opacity-70 hover:opacity-100 transition"
+                              title="Delete Question"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <h5 className="text-xs font-bold text-white">Q: {iq.question}</h5>
+                        <p className="text-[11px] text-slate-300 line-clamp-2">A: {iq.model_answer || iq.answer}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {currentFilteredResources.length === 0 && (selectedType !== 'interview' || existingInterviews.length === 0) ? (
               <div className="p-8 text-center text-[#9BAAC2] text-xs">
                 No {selectedType.toUpperCase()} resources added yet for this module.
               </div>
@@ -1098,6 +1540,19 @@ export const ResourcePublishingPage: React.FC = () => {
                       </button>
 
                       <button
+                        onClick={() => {
+                          setEditingTopic(topic);
+                          setEditTopicTitle(topic.title);
+                          setEditTopicDesc(topic.description || '');
+                          setEditTopicUrl(topic.recording_link || topic.recording_url || topic.ppt_url || topic.drive_notes_link || topic.doc_url || '');
+                        }}
+                        className="p-2 rounded-xl bg-white/5 hover:bg-blue-500/20 text-blue-400 border border-white/5 hover:border-blue-500/30 transition"
+                        title="Edit Resource"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
                         onClick={async () => {
                           if (window.confirm(`Delete resource "${topic.title}"?`)) {
                             await dataService.deleteTopic(topic.id);
@@ -1118,10 +1573,269 @@ export const ResourcePublishingPage: React.FC = () => {
         )}
       </div>
 
+      {/* Edit Topic Modal */}
+      {editingTopic && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingTopic(null);
+          }}
+        >
+          <div className="bg-[#101A2D] rounded-3xl border border-[#1F2E47] max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-[#1F2E47] pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-[#397BFF]" />
+                Edit Resource Details
+              </h3>
+              <button onClick={() => setEditingTopic(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Title *</label>
+                <input
+                  type="text"
+                  value={editTopicTitle}
+                  onChange={(e) => setEditTopicTitle(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-[#397BFF]"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Description</label>
+                <textarea
+                  rows={2}
+                  value={editTopicDesc}
+                  onChange={(e) => setEditTopicDesc(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-white outline-none focus:border-[#397BFF]"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Resource Link / URL</label>
+                <input
+                  type="url"
+                  value={editTopicUrl}
+                  onChange={(e) => setEditTopicUrl(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-[#397BFF] font-mono"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#1F2E47]">
+              <button
+                type="button"
+                onClick={() => setEditingTopic(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!editTopicTitle.trim()) return;
+                  const resType = editingTopic.resource_type;
+                  const updates: Partial<Topic> = {
+                    title: editTopicTitle.trim(),
+                    description: editTopicDesc.trim()
+                  };
+                  if (resType === 'video') {
+                    updates.recording_link = editTopicUrl.trim();
+                    updates.recording_url = editTopicUrl.trim();
+                  } else if (resType === 'ppt') {
+                    updates.ppt_url = editTopicUrl.trim();
+                    updates.ppt_file_url = editTopicUrl.trim();
+                  } else {
+                    updates.drive_notes_link = editTopicUrl.trim();
+                    updates.doc_url = editTopicUrl.trim();
+                  }
+                  await dataService.updateTopic(editingTopic.id, updates);
+                  setEditingTopic(null);
+                  loadData();
+                  setFeedback({ type: 'success', message: 'Resource updated and synced!' });
+                  setTimeout(() => setFeedback(null), 3000);
+                }}
+                className="px-5 py-2 rounded-xl bg-[#00A8FF] text-white text-xs font-bold hover:bg-[#176BFF]"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Flashcard Modal */}
+      {editingFlashcard && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingFlashcard(null);
+          }}
+        >
+          <div className="bg-[#101A2D] rounded-3xl border border-[#1F2E47] max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-[#1F2E47] pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-purple-400" />
+                Edit Flashcard
+              </h3>
+              <button onClick={() => setEditingFlashcard(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-white block mb-1">Question / Front *</label>
+                <textarea
+                  rows={2}
+                  value={editFcQuestion}
+                  onChange={(e) => setEditFcQuestion(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-white outline-none focus:border-purple-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-white block mb-1">Answer / Back *</label>
+                <textarea
+                  rows={3}
+                  value={editFcAnswer}
+                  onChange={(e) => setEditFcAnswer(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-white outline-none focus:border-purple-500"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-bold text-[#9BAAC2]">Difficulty:</span>
+                {(['easy', 'medium', 'hard'] as const).map(diff => (
+                  <button
+                    key={diff}
+                    type="button"
+                    onClick={() => setEditFcDifficulty(diff)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold uppercase transition ${
+                      editFcDifficulty === diff
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'bg-[#0A101D] border border-white/10 text-slate-400'
+                    }`}
+                  >
+                    {diff}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#1F2E47]">
+              <button
+                type="button"
+                onClick={() => setEditingFlashcard(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!editFcQuestion.trim() || !editFcAnswer.trim()) return;
+                  await dataService.updateFlashcard(editingFlashcard.id, {
+                    question: editFcQuestion.trim(),
+                    answer: editFcAnswer.trim(),
+                    difficulty: editFcDifficulty
+                  });
+                  setEditingFlashcard(null);
+                  setExistingFlashcards(dataService.getFlashcards());
+                  setFeedback({ type: 'success', message: 'Flashcard updated successfully!' });
+                  setTimeout(() => setFeedback(null), 3000);
+                }}
+                className="px-5 py-2 rounded-xl bg-purple-600 text-white text-xs font-bold hover:bg-purple-500"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Interview Question Modal */}
+      {editingInterview && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setEditingInterview(null);
+          }}
+        >
+          <div className="bg-[#101A2D] rounded-3xl border border-[#1F2E47] max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-[#1F2E47] pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-emerald-400" />
+                Edit Interview Question
+              </h3>
+              <button onClick={() => setEditingInterview(null)} className="text-slate-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-bold text-white block mb-1">Question Field *</label>
+                <textarea
+                  rows={2}
+                  value={editIqQuestion}
+                  onChange={(e) => setEditIqQuestion(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-white outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-white block mb-1">Model Answer Field *</label>
+                <textarea
+                  rows={3}
+                  value={editIqAnswer}
+                  onChange={(e) => setEditIqAnswer(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-white outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-white block mb-1">Role / Tech Domain</label>
+                <input
+                  type="text"
+                  value={editIqRole}
+                  onChange={(e) => setEditIqRole(e.target.value)}
+                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-white outline-none focus:border-emerald-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#1F2E47]">
+              <button
+                type="button"
+                onClick={() => setEditingInterview(null)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!editIqQuestion.trim() || !editIqAnswer.trim()) return;
+                  await dataService.updateInterviewQuestion(editingInterview.id, {
+                    question: editIqQuestion.trim(),
+                    model_answer: editIqAnswer.trim(),
+                    answer: editIqAnswer.trim(),
+                    role_category: editIqRole.trim()
+                  });
+                  setEditingInterview(null);
+                  setExistingInterviews(dataService.getInterviewQuestions());
+                  setFeedback({ type: 'success', message: 'Interview question updated successfully!' });
+                  setTimeout(() => setFeedback(null), 3000);
+                }}
+                className="px-5 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-500"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Quick Add Module Modal */}
       {showQuickAddModule && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-4 flex items-center justify-center">
-          <div className="bg-[#101A2D] rounded-3xl border border-[#1F2E47] max-w-md w-full p-6 space-y-4 shadow-2xl">
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowQuickAddModule(false);
+          }}
+        >
+          <div className="bg-[#101A2D] rounded-3xl border border-[#1F2E47] max-w-md w-full max-h-[90vh] overflow-y-auto p-6 space-y-4 shadow-2xl relative animate-scaleUp">
             <div className="flex items-center justify-between border-b border-[#1F2E47] pb-3">
               <h3 className="text-sm font-bold text-white">Create Curriculum Module</h3>
               <button onClick={() => setShowQuickAddModule(false)} className="text-slate-400 hover:text-white">

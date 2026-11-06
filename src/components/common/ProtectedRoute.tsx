@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { currentUser, role, isLoading } = useAuth();
+  const { currentUser, role, isLoading, confirmLogout } = useAuth();
   const location = useLocation();
 
   // 1. DO NOT redirect while initial auth/session check is in flight!
@@ -36,13 +36,27 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowe
     return <Navigate to={redirectPath} state={{ from: location }} replace />;
   }
 
-  // 3. Check role restrictions
+  // 3. Deactivated or suspended account check
+  if (currentUser.status && currentUser.status !== 'active') {
+    void confirmLogout();
+    return <Navigate to="/student/login?error=deactivated" replace />;
+  }
+
+  // 4. Strict Role-Based Access Isolation (Requirement 15)
+  // Admin credentials must only access the admin dashboard
+  if ((role === 'admin' || role === 'sub_admin') && location.pathname.startsWith('/student')) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Student credentials must only access the student dashboard
+  if (role === 'student' && location.pathname.startsWith('/admin')) {
+    return <Navigate to="/student/dashboard" replace />;
+  }
+
+  // Generic allowedRoles check
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // If student tries to access admin
-    if (role === 'student' && location.pathname.startsWith('/admin')) {
-      return <Navigate to="/student/dashboard" replace />;
-    }
-    // If admin tries to access student, allow admin inspection or redirect
+    const fallbackPath = role === 'student' ? '/student/dashboard' : '/admin/dashboard';
+    return <Navigate to={fallbackPath} replace />;
   }
 
   return <>{children}</>;

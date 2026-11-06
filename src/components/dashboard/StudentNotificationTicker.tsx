@@ -86,13 +86,13 @@ export const StudentNotificationTicker: React.FC<StudentNotificationTickerProps>
       aria-label="Student Course Updates Ticker"
     >
       {/* Left fixed badge (Fluorescent Blue/Cyan Accent) */}
-      <div className="shrink-0 z-20 flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-[#176BFF] to-[#00A8FF] text-white font-mono font-black text-xs uppercase tracking-wider shadow-md shadow-[#00A8FF]/30">
+      <div className="dark-section dark-card shrink-0 z-20 flex items-center gap-2 px-3 sm:px-4 py-2.5 bg-gradient-to-r from-[#176BFF] to-[#00A8FF] text-white font-mono font-black text-xs uppercase tracking-wider shadow-md shadow-[#00A8FF]/30">
         <span className="relative flex h-2 w-2">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
         </span>
-        <Megaphone className="w-3.5 h-3.5 hidden sm:inline-block" />
-        <span className="whitespace-nowrap text-[11px]">COHORT UPDATES</span>
+        <Megaphone className="w-3.5 h-3.5 hidden sm:inline-block text-white" />
+        <span className="whitespace-nowrap text-[11px] text-white">COHORT UPDATES</span>
       </div>
 
       {/* Subtle left gradient feather */}

@@ -30,6 +30,7 @@ import { AdminBlueprintsPage } from './pages/admin/AdminBlueprintsPage';
 import { AdminAnalyticsPage } from './pages/admin/AdminAnalyticsPage';
 import { HomepageManagementPage } from './pages/admin/HomepageManagementPage';
 import { AdminAccessRequestsPage } from './pages/admin/AdminAccessRequestsPage';
+import { AdminAuditLogsPage } from './pages/admin/AdminAuditLogsPage';
 
 // Student Pages
 import { StudentDashboardPage } from './pages/student/StudentDashboardPage';
@@ -42,6 +43,8 @@ import { StudentPythonLabPage } from './pages/student/StudentPythonLabPage';
 import { StudentQuizzesPage } from './pages/student/StudentQuizzesPage';
 import { StudentOpportunitiesPage } from './pages/student/StudentOpportunitiesPage';
 import { StudentSaturdaySpecialPage } from './pages/student/StudentSaturdaySpecialPage';
+import { StudentInterviewPrepPage } from './pages/student/StudentInterviewPrepPage';
+import { StudentPracticePage } from './pages/student/StudentPracticePage';
 
 export function App() {
   return (
@@ -77,38 +80,41 @@ export function App() {
               <Route path="pathfinders" element={<PathfindersPage />} />
               <Route path="blueprints" element={<AdminBlueprintsPage />} />
               <Route path="analytics" element={<AdminAnalyticsPage />} />
-            <Route path="homepage" element={<HomepageManagementPage />} />
-            <Route path="access-requests" element={<AdminAccessRequestsPage />} />
-          </Route>
+              <Route path="homepage" element={<HomepageManagementPage />} />
+              <Route path="access-requests" element={<AdminAccessRequestsPage />} />
+              <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+            </Route>
 
-          {/* Student Portal Routes (Guarded by ProtectedRoute) */}
-          <Route
-            path="/student"
-            element={
-              <ProtectedRoute allowedRoles={['student', 'admin', 'sub_admin']}>
-                <StudentLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<Navigate to="/student/dashboard" replace />} />
-            <Route path="dashboard" element={<StudentDashboardPage />} />
-            <Route path="courses" element={<StudentCoursesPage />} />
-            <Route path="courses/:courseId" element={<StudentCourseDetailPage />} />
-            <Route path="python-lab" element={<StudentPythonLabPage />} />
-            <Route path="coding-lab" element={<StudentPythonLabPage />} />
-            <Route path="discussion" element={<StudentDiscussionPage />} />
-            <Route path="quizzes" element={<StudentQuizzesPage />} />
-            <Route path="quizzes/*" element={<StudentQuizzesPage />} />
-            <Route path="practice" element={<StudentQuizzesPage />} />
-            <Route path="practice/*" element={<StudentQuizzesPage />} />
-            <Route path="opportunities" element={<StudentOpportunitiesPage />} />
-            <Route path="saturday-special" element={<StudentSaturdaySpecialPage />} />
-            <Route path="pathfinders" element={<PathfindersPage />} />
-            <Route path="notifications" element={<StudentNotificationsPage />} />
-            <Route path="profile" element={<StudentProfilePage />} />
-            {/* Redirect legacy separate learning resources to courses workspace per Section 6 */}
-            <Route path="resources" element={<Navigate to="/student/courses" replace />} />
-          </Route>
+            {/* Student Portal Routes (Guarded strictly for students - Requirement 15) */}
+            <Route
+              path="/student"
+              element={
+                <ProtectedRoute allowedRoles={['student']}>
+                  <StudentLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Navigate to="/student/dashboard" replace />} />
+              <Route path="dashboard" element={<StudentDashboardPage />} />
+              <Route path="courses" element={<StudentCoursesPage />} />
+              <Route path="courses/:courseId" element={<StudentCourseDetailPage />} />
+              <Route path="python-lab" element={<StudentPythonLabPage />} />
+              <Route path="coding-lab" element={<StudentPythonLabPage />} />
+              <Route path="discussion" element={<StudentDiscussionPage />} />
+              <Route path="quizzes" element={<StudentQuizzesPage />} />
+              <Route path="quizzes/*" element={<StudentQuizzesPage />} />
+              <Route path="practice" element={<StudentQuizzesPage />} />
+              <Route path="practice/*" element={<StudentQuizzesPage />} />
+              <Route path="flashcards" element={<StudentPracticePage />} />
+              <Route path="interview-prep" element={<StudentInterviewPrepPage />} />
+              <Route path="opportunities" element={<StudentOpportunitiesPage />} />
+              <Route path="saturday-special" element={<StudentSaturdaySpecialPage />} />
+              <Route path="pathfinders" element={<PathfindersPage />} />
+              <Route path="notifications" element={<StudentNotificationsPage />} />
+              <Route path="profile" element={<StudentProfilePage />} />
+              {/* Redirect legacy separate learning resources to courses workspace per Section 6 */}
+              <Route path="resources" element={<Navigate to="/student/courses" replace />} />
+            </Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

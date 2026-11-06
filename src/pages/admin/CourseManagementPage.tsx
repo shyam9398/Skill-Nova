@@ -88,6 +88,30 @@ Module 3: Distributed Systems & Backend
     return () => unsubscribe();
   }, []);
 
+  // Modal background scroll lock & escape listener (Requirement 1)
+  useEffect(() => {
+    const isAnyModalOpen = showAddCourse || showEditCourse || showDeleteModal || showAddModuleModal || showEditModuleModal;
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          setShowAddCourse(false);
+          setShowEditCourse(false);
+          setShowDeleteModal(false);
+          setShowAddModuleModal(false);
+          setShowEditModuleModal(false);
+        }
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = 'unset';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+  }, [showAddCourse, showEditCourse, showDeleteModal, showAddModuleModal, showEditModuleModal]);
+
   const loadCourses = () => {
     const list = dataService.getCoursesForCurrentUser();
     setCourses(list);
@@ -407,19 +431,19 @@ Module 3: Distributed Systems & Backend
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#397BFF]/20 text-[#77B4FF] border border-[#397BFF]/40">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-sky-100 dark:bg-[#397BFF]/20 text-[#0284C7] dark:text-[#77B4FF] border border-sky-200 dark:border-[#397BFF]/40">
               PROGRAM PORTFOLIO
             </span>
-            <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1 font-mono">
+            <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1 font-mono">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               Live Supabase Synchronized
             </span>
           </div>
-          <h1 className="text-2xl font-black text-[#F0F5FF] flex items-center gap-2">
-            <BookOpen className="w-6 h-6 text-[#397BFF]" />
+          <h1 className="text-2xl font-black text-slate-900 dark:text-[#F0F5FF] flex items-center gap-2">
+            <BookOpen className="w-6 h-6 text-[#176BFF] dark:text-[#397BFF]" />
             Course Management
           </h1>
-          <p className="text-xs text-[#9BAAC2] mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-[#9BAAC2] mt-0.5">
             Create, edit, save, and delete course blueprints, fees, and curriculum modules. Real-time reflection to students and public homepage.
           </p>
         </div>
@@ -436,11 +460,11 @@ Module 3: Distributed Systems & Backend
       {/* Section 1: Course Cards with Edit, Delete, Save actions */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-[#F0F5FF] flex items-center gap-2">
-            <Layers className="w-4 h-4 text-[#77B4FF]" />
+          <h2 className="text-base font-bold text-slate-900 dark:text-[#F0F5FF] flex items-center gap-2">
+            <Layers className="w-4 h-4 text-[#176BFF] dark:text-[#77B4FF]" />
             All Active Courses ({courses.length})
           </h2>
-          <span className="text-xs text-[#9BAAC2]">
+          <span className="text-xs text-slate-600 dark:text-[#9BAAC2]">
             Click any course card to inspect its modules & roadmap blueprint below
           </span>
         </div>
@@ -453,15 +477,15 @@ Module 3: Distributed Systems & Backend
               <div
                 key={course.id}
                 onClick={() => handleSelectCourse(course)}
-                className={`bg-[#101A2D] rounded-3xl border p-5 space-y-4 transition cursor-pointer shadow-xl relative group flex flex-col justify-between ${
+                className={`bg-white dark:bg-[#101A2D] rounded-3xl border p-5 space-y-4 transition cursor-pointer shadow-md dark:shadow-xl relative group flex flex-col justify-between ${
                   isSelected
-                    ? 'border-[#397BFF] ring-2 ring-[#397BFF]/30 bg-[#15233A]/80'
-                    : 'border-[#1F2E47] hover:border-white/20'
+                    ? 'border-[#176BFF] ring-2 ring-[#176BFF]/30 bg-sky-50/50 dark:bg-[#15233A]/80'
+                    : 'border-slate-200 dark:border-[#1F2E47] hover:border-slate-300 dark:hover:border-white/20'
                 }`}
               >
                 <div className="space-y-3">
                   {/* Thumbnail & Badges */}
-                  <div className="relative h-40 rounded-2xl overflow-hidden border border-white/10">
+                  <div className="relative h-40 rounded-2xl overflow-hidden border border-slate-200 dark:border-white/10">
                     <img
                       src={course.thumbnail || course.thumbnail_url || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=600'}
                       alt={course.title}
@@ -496,30 +520,30 @@ Module 3: Distributed Systems & Backend
 
                   {/* Title & Desc */}
                   <div>
-                    <h3 className="text-base font-extrabold text-[#F0F5FF] group-hover:text-[#397BFF] transition line-clamp-1">
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-[#F0F5FF] group-hover:text-[#176BFF] dark:group-hover:text-[#397BFF] transition line-clamp-1">
                       {course.title}
                     </h3>
-                    <p className="text-xs text-[#9BAAC2] line-clamp-2 mt-1 leading-relaxed">
+                    <p className="text-xs text-slate-600 dark:text-[#9BAAC2] line-clamp-2 mt-1 leading-relaxed">
                       {course.description}
                     </p>
                   </div>
 
                   {/* Mentor & Timeline info */}
-                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-[11px] text-[#9BAAC2]">
+                  <div className="pt-2 border-t border-slate-100 dark:border-white/5 flex items-center justify-between text-[11px] text-slate-600 dark:text-[#9BAAC2]">
                     <span>Mentor: {course.mentor_name}</span>
-                    <span className="font-mono text-[#77B4FF]">{course.timeline || `${course.duration_weeks} Weeks`}</span>
+                    <span className="font-mono font-semibold text-[#0284C7] dark:text-[#77B4FF]">{course.timeline || `${course.duration_weeks} Weeks`}</span>
                   </div>
                 </div>
 
                 {/* The 3 Clearly Visible Actions: Edit, Delete, Save */}
                 <div
-                  className="pt-3 border-t border-[#1F2E47] grid grid-cols-3 gap-2"
+                  className="pt-3 border-t border-slate-200 dark:border-[#1F2E47] grid grid-cols-3 gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Action 1: Edit */}
                   <button
                     onClick={() => handleOpenEdit(course)}
-                    className="py-2 px-2.5 rounded-xl bg-[#15233A] hover:bg-[#1F2E47] border border-[#397BFF]/30 text-[#77B4FF] text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                    className="py-2 px-2.5 rounded-xl bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:bg-[#1F2E47] border border-sky-300 dark:border-[#397BFF]/30 text-sky-700 dark:text-[#77B4FF] text-xs font-bold flex items-center justify-center gap-1.5 transition"
                     title="Edit course details, fee, timeline, and curriculum"
                   >
                     <Edit className="w-3.5 h-3.5" />
@@ -529,7 +553,7 @@ Module 3: Distributed Systems & Backend
                   {/* Action 2: Save */}
                   <button
                     onClick={() => handleDirectSave(course)}
-                    className="py-2 px-2.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                    className="py-2 px-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-500/15 hover:bg-emerald-100 dark:hover:bg-emerald-500/25 border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition"
                     title="Save & sync course to Supabase"
                   >
                     <Save className="w-3.5 h-3.5" />
@@ -539,7 +563,7 @@ Module 3: Distributed Systems & Backend
                   {/* Action 3: Delete */}
                   <button
                     onClick={() => handleOpenDelete(course)}
-                    className="py-2 px-2.5 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                    className="py-2 px-2.5 rounded-xl bg-rose-50 dark:bg-rose-500/15 hover:bg-rose-100 dark:hover:bg-rose-500/25 border border-rose-300 dark:border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 transition"
                     title="Safely archive and delete course from student view"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -554,13 +578,13 @@ Module 3: Distributed Systems & Backend
 
       {/* Section 2: Selected Course Curriculum Text Blueprint & Roadmap */}
       {selectedCourse && (
-        <div className="bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-6 space-y-6 shadow-xl">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#1F2E47]">
+        <div className="bg-white dark:bg-[#101A2D] rounded-3xl border border-slate-200 dark:border-[#1F2E47] p-6 space-y-6 shadow-md dark:shadow-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#1F2E47]">
             <div>
-              <span className="text-[11px] font-mono text-[#00D4B8] font-bold uppercase tracking-wider">
+              <span className="text-[11px] font-mono text-cyan-600 dark:text-[#00D4B8] font-bold uppercase tracking-wider">
                 SELECTED PROGRAM BLUEPRINT
               </span>
-              <h2 className="text-xl font-extrabold text-[#F0F5FF]">
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-[#F0F5FF]">
                 {selectedCourse.title}
               </h2>
             </div>
@@ -576,7 +600,7 @@ Module 3: Distributed Systems & Backend
               </button>
               <button
                 onClick={handleSaveCurriculumText}
-                className="px-4 py-2 rounded-xl bg-[#397BFF] hover:bg-[#2868ea] text-white text-xs font-bold flex items-center gap-2 transition"
+                className="px-4 py-2 rounded-xl bg-[#176BFF] hover:bg-[#1258d4] text-white text-xs font-bold flex items-center gap-2 transition"
               >
                 <Save className="w-4 h-4" />
                 <span>Save Curriculum Text to Supabase</span>
@@ -588,32 +612,32 @@ Module 3: Distributed Systems & Backend
             {/* Curriculum Text Editor */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-[#F0F5FF] flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#00D4B8]" />
+                <label className="text-xs font-bold text-slate-900 dark:text-[#F0F5FF] flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-cyan-600 dark:text-[#00D4B8]" />
                   Curriculum Modules (Text Format for 16:9 Showcase & Homepage)
                 </label>
-                <span className="text-[10px] text-[#9BAAC2]">Markdown / Text supported</span>
+                <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2]">Markdown / Text supported</span>
               </div>
               <textarea
                 rows={10}
                 value={curriculumText}
                 onChange={(e) => setCurriculumText(e.target.value)}
-                className="w-full bg-[#15233A] border border-[#1F2E47] rounded-2xl p-4 text-xs font-mono text-[#F0F5FF] outline-none focus:border-[#00D4B8] transition leading-relaxed"
+                className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-2xl p-4 text-xs font-mono text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF] transition leading-relaxed placeholder-slate-400 dark:placeholder-slate-500"
                 placeholder="Enter curriculum modules, topics, and week-by-week timeline..."
               />
-              <p className="text-[11px] text-[#9BAAC2]">
+              <p className="text-[11px] text-slate-500 dark:text-[#9BAAC2]">
                 This curriculum text feeds both the animated student dashboard curriculum showcase and the public SkillNova homepage course catalog.
               </p>
 
               {/* Action Button & Modules Management List */}
-              <div className="pt-4 border-t border-[#1F2E47] space-y-3">
+              <div className="pt-4 border-t border-slate-200 dark:border-[#1F2E47] space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xs font-bold text-[#F0F5FF] flex items-center gap-1.5">
-                      <Layers className="w-3.5 h-3.5 text-[#00D4B8]" />
+                    <h3 className="text-xs font-bold text-slate-900 dark:text-[#F0F5FF] flex items-center gap-1.5">
+                      <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-[#00D4B8]" />
                       Structured Course Modules ({courseModules.length})
                     </h3>
-                    <p className="text-[10px] text-[#9BAAC2]">
+                    <p className="text-[10px] text-slate-500 dark:text-[#9BAAC2]">
                       Organizes Learning Resources uploader & syncs to Supabase.
                     </p>
                   </div>
@@ -631,27 +655,27 @@ Module 3: Distributed Systems & Backend
                 {/* Module cards list */}
                 <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
                   {courseModules.length === 0 ? (
-                    <div className="p-3.5 rounded-xl bg-[#15233A] border border-dashed border-[#1F2E47] text-center">
-                      <p className="text-xs text-[#9BAAC2]">
-                        No structured modules created yet for this course. Click <strong className="text-[#00D4B8]">"Add Modules"</strong> above to create Module 1.
+                    <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#15233A] border border-dashed border-slate-300 dark:border-[#1F2E47] text-center">
+                      <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">
+                        No structured modules created yet for this course. Click <strong className="text-cyan-700 dark:text-[#00D4B8]">"Add Modules"</strong> above to create Module 1.
                       </p>
                     </div>
                   ) : (
                     courseModules.map((mod, idx) => (
                       <div
                         key={mod.id}
-                        className="p-3 rounded-xl bg-[#15233A] border border-[#1F2E47] hover:border-[#397BFF]/50 transition flex items-center justify-between gap-3"
+                        className="p-3 rounded-xl bg-slate-50 dark:bg-[#15233A] border border-slate-200 dark:border-[#1F2E47] hover:border-sky-400 dark:hover:border-[#397BFF]/50 transition flex items-center justify-between gap-3"
                       >
                         <div className="flex items-center gap-2.5 min-w-0">
-                          <span className="shrink-0 px-2 py-0.5 rounded-lg bg-[#00D4B8]/10 text-[#00D4B8] text-[10px] font-mono font-bold border border-[#00D4B8]/20">
+                          <span className="shrink-0 px-2 py-0.5 rounded-lg bg-cyan-100 dark:bg-[#00D4B8]/10 text-cyan-800 dark:text-[#00D4B8] text-[10px] font-mono font-bold border border-cyan-200 dark:border-[#00D4B8]/20">
                             Mod {mod.order_index || idx + 1}
                           </span>
                           <div className="min-w-0">
-                            <h4 className="text-xs font-bold text-[#F0F5FF] truncate">
+                            <h4 className="text-xs font-bold text-slate-900 dark:text-[#F0F5FF] truncate">
                               {mod.title}
                             </h4>
                             {mod.description && (
-                              <p className="text-[10px] text-[#9BAAC2] truncate">
+                              <p className="text-[10px] text-slate-600 dark:text-[#9BAAC2] truncate">
                                 {mod.description}
                               </p>
                             )}
@@ -663,7 +687,7 @@ Module 3: Distributed Systems & Backend
                             type="button"
                             onClick={() => handleOpenEditModule(mod)}
                             title="Edit Module"
-                            className="p-1.5 rounded-lg text-[#9BAAC2] hover:text-[#397BFF] hover:bg-[#101A2D] transition"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-sky-600 dark:text-[#9BAAC2] dark:hover:text-[#397BFF] hover:bg-slate-200 dark:hover:bg-[#101A2D] transition"
                           >
                             <Edit className="w-3.5 h-3.5" />
                           </button>
@@ -671,7 +695,7 @@ Module 3: Distributed Systems & Backend
                             type="button"
                             onClick={() => handleDeleteModule(mod)}
                             title="Delete Module"
-                            className="p-1.5 rounded-lg text-[#9BAAC2] hover:text-rose-400 hover:bg-[#101A2D] transition"
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 dark:text-[#9BAAC2] dark:hover:text-rose-400 hover:bg-slate-200 dark:hover:bg-[#101A2D] transition"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -686,12 +710,12 @@ Module 3: Distributed Systems & Backend
             {/* Interactive Roadmap Viewer for this course */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-[#F0F5FF] flex items-center gap-2">
-                  <Compass className="w-4 h-4 text-[#397BFF]" />
+                <label className="text-xs font-bold text-slate-900 dark:text-[#F0F5FF] flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-[#176BFF] dark:text-[#397BFF]" />
                   Visual Interactive Learning Roadmap
                 </label>
               </div>
-              <div className="bg-[#15233A] rounded-2xl border border-white/5 p-4 min-h-[220px]">
+              <div className="bg-slate-50 dark:bg-[#15233A] rounded-2xl border border-slate-200 dark:border-white/5 p-4 min-h-[220px]">
                 <InteractiveRoadmapViewer
                   roadmapUrl={selectedCourse.roadmap_image_url || 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&q=80'}
                   courseTitle={selectedCourse.title}
@@ -710,271 +734,292 @@ Module 3: Distributed Systems & Backend
 
       {/* Modal 1: Edit Course with Full Fields */}
       {showEditCourse && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowEditCourse(false)}
-              className="absolute top-5 right-5 text-[#9BAAC2] hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#397BFF]/20 text-[#397BFF] flex items-center justify-center border border-[#397BFF]/30">
-                <Edit className="w-5 h-5" />
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowEditCourse(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+            {/* Pinned Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1F2E47] px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#0E1626]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 dark:bg-[#397BFF]/20 dark:text-[#397BFF] flex items-center justify-center border border-sky-200 dark:border-[#397BFF]/30">
+                  <Edit className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-[#F0F5FF]">Edit Course</h3>
+                  <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">Update title, fee, timeline, description, and status</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-black text-[#F0F5FF]">Edit Course</h3>
-                <p className="text-xs text-[#9BAAC2]">Update title, fee, timeline, description, and status</p>
-              </div>
+              <button
+                onClick={() => setShowEditCourse(false)}
+                className="text-slate-400 hover:text-slate-800 dark:text-[#9BAAC2] dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleSaveEditCourse} className="space-y-4">
+            {/* Scrollable Form Body */}
+            <form id="edit-course-form" onSubmit={handleSaveEditCourse} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Course Title *</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Course Title *</label>
                   <input
                     type="text"
                     required
                     value={editCourseData.title}
                     onChange={(e) => setEditCourseData({ ...editCourseData, title: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Category / Domain *</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Category / Domain *</label>
                   <input
                     type="text"
                     required
                     value={editCourseData.category}
                     onChange={(e) => setEditCourseData({ ...editCourseData, category: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Course Fee</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Course Fee</label>
                   <input
                     type="text"
                     value={editCourseData.fee}
                     onChange={(e) => setEditCourseData({ ...editCourseData, fee: e.target.value })}
                     placeholder="₹14,999"
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs font-mono text-[#00D4B8] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs font-mono text-emerald-700 dark:text-[#00D4B8] font-bold outline-none focus:border-[#176BFF]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Duration (Weeks)</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Duration (Weeks)</label>
                   <input
                     type="number"
                     value={editCourseData.duration_weeks}
                     onChange={(e) => setEditCourseData({ ...editCourseData, duration_weeks: Number(e.target.value) })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Timeline / Cohort</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Timeline / Cohort</label>
                   <input
                     type="text"
                     value={editCourseData.timeline}
                     onChange={(e) => setEditCourseData({ ...editCourseData, timeline: e.target.value })}
                     placeholder="14 Weeks • Fast-Track"
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Course Thumbnail Image URL</label>
+                <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Course Thumbnail Image URL</label>
                 <input
                   type="text"
                   value={editCourseData.thumbnail}
                   onChange={(e) => setEditCourseData({ ...editCourseData, thumbnail: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Description</label>
+                <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={editCourseData.description}
                   onChange={(e) => setEditCourseData({ ...editCourseData, description: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl p-3 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Curriculum Text Format</label>
+                <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Curriculum Text Format</label>
                 <textarea
                   rows={5}
                   value={editCourseData.curriculum_text}
                   onChange={(e) => setEditCourseData({ ...editCourseData, curriculum_text: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs font-mono text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                 />
               </div>
 
               <div className="flex items-center gap-3 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-[#F0F5FF]">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800 dark:text-[#F0F5FF]">
                   <input
                     type="checkbox"
                     checked={editCourseData.is_published}
                     onChange={(e) => setEditCourseData({ ...editCourseData, is_published: e.target.checked })}
-                    className="w-4 h-4 rounded text-[#397BFF]"
+                    className="w-4 h-4 rounded text-[#176BFF]"
                   />
                   <span>Published & Visible to Students</span>
                 </label>
               </div>
-
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#1F2E47]">
-                <button
-                  type="button"
-                  onClick={() => setShowEditCourse(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
-                >
-                  Save Changes to Supabase
-                </button>
-              </div>
             </form>
+
+            {/* Pinned Footer */}
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-[#1F2E47] bg-slate-50 dark:bg-[#0E1626] flex items-center justify-end gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowEditCourse(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-[#9BAAC2] bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                form="edit-course-form"
+                type="submit"
+                className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
+              >
+                Save Changes to Supabase
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Modal 2: Add New Course */}
       {showAddCourse && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-2xl w-full shadow-2xl relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setShowAddCourse(false)}
-              className="absolute top-5 right-5 text-[#9BAAC2] hover:text-white"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-[#397BFF]/20 text-[#397BFF] flex items-center justify-center border border-[#397BFF]/30">
-                <PlusCircle className="w-5 h-5" />
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddCourse(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+            {/* Pinned Header */}
+            <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1F2E47] px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#0E1626]">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-600 dark:bg-[#397BFF]/20 dark:text-[#397BFF] flex items-center justify-center border border-sky-200 dark:border-[#397BFF]/30">
+                  <PlusCircle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-[#F0F5FF]">Add New Course</h3>
+                  <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">Provision a comprehensive engineering curriculum</p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-black text-[#F0F5FF]">Add New Course</h3>
-                <p className="text-xs text-[#9BAAC2]">Provision a comprehensive engineering curriculum</p>
-              </div>
+              <button
+                onClick={() => setShowAddCourse(false)}
+                className="text-slate-400 hover:text-slate-800 dark:text-[#9BAAC2] dark:hover:text-white p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/5 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <form onSubmit={handleCreateCourse} className="space-y-4">
+            {/* Scrollable Form Body */}
+            <form id="add-course-form" onSubmit={handleCreateCourse} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Course Title *</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Course Title *</label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. AI & Machine Learning Systems"
                     value={newCourse.title}
                     onChange={(e) => setNewCourse({ ...newCourse, title: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:border-[#176BFF]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Category *</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Category *</label>
                   <input
                     type="text"
                     required
                     value={newCourse.category}
                     onChange={(e) => setNewCourse({ ...newCourse, category: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Fee</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Fee</label>
                   <input
                     type="text"
                     value={newCourse.fee}
                     onChange={(e) => setNewCourse({ ...newCourse, fee: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs font-mono text-[#00D4B8] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs font-mono text-emerald-700 dark:text-[#00D4B8] font-bold outline-none focus:border-[#176BFF]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Duration (Weeks)</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Duration (Weeks)</label>
                   <input
                     type="number"
                     value={newCourse.duration_weeks}
                     onChange={(e) => setNewCourse({ ...newCourse, duration_weeks: Number(e.target.value) })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Timeline</label>
+                  <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Timeline</label>
                   <input
                     type="text"
                     value={newCourse.timeline}
                     onChange={(e) => setNewCourse({ ...newCourse, timeline: e.target.value })}
-                    className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                    className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Thumbnail Image URL</label>
+                <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Thumbnail Image URL</label>
                 <input
                   type="text"
                   value={newCourse.thumbnail}
                   onChange={(e) => setNewCourse({ ...newCourse, thumbnail: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Description</label>
+                <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Description</label>
                 <textarea
                   rows={3}
                   value={newCourse.description}
                   onChange={(e) => setNewCourse({ ...newCourse, description: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl p-3 text-xs text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#F0F5FF] block mb-1">Curriculum Text</label>
+                <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Curriculum Text</label>
                 <textarea
                   rows={4}
                   value={newCourse.curriculum_text}
                   onChange={(e) => setNewCourse({ ...newCourse, curriculum_text: e.target.value })}
-                  className="w-full bg-[#15233A] border border-[#1F2E47] rounded-xl p-3 text-xs font-mono text-[#F0F5FF] outline-none focus:border-[#397BFF]"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] border border-slate-300 dark:border-[#1F2E47] rounded-xl p-3 text-xs font-mono text-slate-900 dark:text-[#F0F5FF] outline-none focus:border-[#176BFF]"
                 />
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-[#1F2E47]">
-                <button
-                  type="button"
-                  onClick={() => setShowAddCourse(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A]"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
-                >
-                  Create Course
-                </button>
-              </div>
             </form>
+
+            {/* Pinned Footer */}
+            <div className="px-6 py-4 border-t border-slate-200 dark:border-[#1F2E47] bg-slate-50 dark:bg-[#0E1626] flex items-center justify-end gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowAddCourse(false)}
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-[#9BAAC2] bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                form="add-course-form"
+                type="submit"
+                className="px-6 py-2.5 rounded-xl text-xs font-black bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white shadow-lg shadow-[#00A3FF]/25 hover:opacity-95 transition"
+              >
+                Create Course
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -982,31 +1027,31 @@ Module 3: Distributed Systems & Backend
       {/* Modal 3: Safe Transactional Delete Course Confirmation */}
       {showDeleteModal && courseToDelete && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-rose-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
-            <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center mx-auto border border-rose-500/30">
+          <div className="bg-white dark:bg-[#101A2D] border border-rose-300 dark:border-rose-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-500/30">
               <ShieldAlert className="w-6 h-6" />
             </div>
 
             <div className="text-center space-y-1">
-              <h3 className="text-lg font-black text-[#F0F5FF]">
+              <h3 className="text-lg font-black text-slate-900 dark:text-[#F0F5FF]">
                 Delete Course: {courseToDelete.title}?
               </h3>
-              <p className="text-xs text-rose-300 font-semibold">
+              <p className="text-xs text-rose-600 dark:text-rose-300 font-semibold">
                 This action safely archives the course from all student workspaces.
               </p>
             </div>
 
-            <div className="bg-[#15233A] p-4 rounded-2xl border border-white/5 space-y-2 text-xs text-[#9BAAC2]">
+            <div className="bg-slate-50 dark:bg-[#15233A] p-4 rounded-2xl border border-slate-200 dark:border-white/5 space-y-2 text-xs text-slate-700 dark:text-[#9BAAC2]">
               <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>Removes course availability from student interface and homepage catalog.</span>
               </div>
               <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>Revokes student visibility of all associated Drive videos, PPTs, and quizzes.</span>
               </div>
               <div className="flex items-start gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                 <span>Safely retains historical quiz submissions and audit log entries.</span>
               </div>
             </div>
@@ -1018,7 +1063,7 @@ Module 3: Distributed Systems & Backend
                   setShowDeleteModal(false);
                   setCourseToDelete(null);
                 }}
-                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A] hover:text-white"
+                className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-[#9BAAC2] bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -1038,22 +1083,27 @@ Module 3: Distributed Systems & Backend
 
       {/* Modal 4: Add Module Modal */}
       {showAddModuleModal && selectedCourse && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 animate-scaleUp">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1F2E47]">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowAddModuleModal(false);
+          }}
+        >
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#1F2E47]">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#00D4B8]/15 text-[#00D4B8] flex items-center justify-center border border-[#00D4B8]/30">
+                <div className="w-9 h-9 rounded-xl bg-cyan-100 dark:bg-[#00D4B8]/15 text-cyan-700 dark:text-[#00D4B8] flex items-center justify-center border border-cyan-200 dark:border-[#00D4B8]/30">
                   <FolderPlus className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-[#F0F5FF]">Add Curriculum Module</h3>
-                  <p className="text-[11px] text-[#9BAAC2]">{selectedCourse.title}</p>
+                  <h3 className="text-base font-black text-slate-900 dark:text-[#F0F5FF]">Add Curriculum Module</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-[#9BAAC2]">{selectedCourse.title}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAddModuleModal(false)}
-                className="text-[#9BAAC2] hover:text-white transition"
+                className="text-slate-400 hover:text-slate-800 dark:text-[#9BAAC2] dark:hover:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1061,7 +1111,7 @@ Module 3: Distributed Systems & Backend
 
             <form onSubmit={handleSaveNewModule} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#77B4FF] uppercase tracking-wider block mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-[#77B4FF] uppercase tracking-wider block mb-1.5">
                   Module Title *
                 </label>
                 <input
@@ -1070,12 +1120,12 @@ Module 3: Distributed Systems & Backend
                   placeholder="e.g. Module 1: Python Core Foundations & Internals"
                   value={moduleTitle}
                   onChange={(e) => setModuleTitle(e.target.value)}
-                  className="w-full bg-[#15233A] text-xs text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-[#1F2E47] outline-none focus:border-[#00D4B8] transition font-semibold"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] text-xs text-slate-900 dark:text-[#F0F5FF] placeholder-slate-400 dark:placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#1F2E47] outline-none focus:border-[#176BFF] transition font-semibold"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#77B4FF] uppercase tracking-wider block mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-[#77B4FF] uppercase tracking-wider block mb-1.5">
                   Module Description / Key Objectives
                 </label>
                 <textarea
@@ -1083,12 +1133,12 @@ Module 3: Distributed Systems & Backend
                   placeholder="e.g. Memory models, bytecode disassembly, decorators, generator pipelines..."
                   value={moduleDescription}
                   onChange={(e) => setModuleDescription(e.target.value)}
-                  className="w-full bg-[#15233A] text-xs text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-[#1F2E47] outline-none focus:border-[#00D4B8] transition"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] text-xs text-slate-900 dark:text-[#F0F5FF] placeholder-slate-400 dark:placeholder-slate-500 px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#1F2E47] outline-none focus:border-[#176BFF] transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#77B4FF] uppercase tracking-wider block mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-[#77B4FF] uppercase tracking-wider block mb-1.5">
                   Order Index (Sequence)
                 </label>
                 <input
@@ -1096,12 +1146,12 @@ Module 3: Distributed Systems & Backend
                   min={1}
                   value={moduleOrder}
                   onChange={(e) => setModuleOrder(Number(e.target.value))}
-                  className="w-full bg-[#15233A] text-xs text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-[#1F2E47] outline-none focus:border-[#00D4B8] transition font-mono"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] text-xs text-slate-900 dark:text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#1F2E47] outline-none focus:border-[#176BFF] transition font-mono"
                 />
               </div>
 
-              <div className="p-3 rounded-xl bg-[#15233A] border border-white/5 text-[11px] text-[#9BAAC2] flex items-start gap-2">
-                <CheckCircle2 className="w-4 h-4 text-[#00D4B8] shrink-0 mt-0.5" />
+              <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#15233A] border border-slate-200 dark:border-white/5 text-[11px] text-slate-700 dark:text-[#9BAAC2] flex items-start gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-[#00D4B8] shrink-0 mt-0.5" />
                 <span>This module will be immediately available in Learning Resources for Drive Videos, PPT slide ranges, Interview DOCs, Flashcards, and Quizzes, and synced to Supabase.</span>
               </div>
 
@@ -1109,7 +1159,7 @@ Module 3: Distributed Systems & Backend
                 <button
                   type="button"
                   onClick={() => setShowAddModuleModal(false)}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A] hover:text-white"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-[#9BAAC2] bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:text-white"
                 >
                   Cancel
                 </button>
@@ -1129,16 +1179,24 @@ Module 3: Distributed Systems & Backend
 
       {/* Modal 5: Edit Module Modal */}
       {showEditModuleModal && editingModule && selectedCourse && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-5 animate-scaleUp">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1F2E47]">
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowEditModuleModal(false);
+              setEditingModule(null);
+            }
+          }}
+        >
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-scaleUp">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#1F2E47]">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#397BFF]/15 text-[#397BFF] flex items-center justify-center border border-[#397BFF]/30">
+                <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-[#397BFF]/15 text-sky-700 dark:text-[#397BFF] flex items-center justify-center border border-sky-200 dark:border-[#397BFF]/30">
                   <Edit className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-black text-[#F0F5FF]">Edit Curriculum Module</h3>
-                  <p className="text-[11px] text-[#9BAAC2]">{selectedCourse.title}</p>
+                  <h3 className="text-base font-black text-slate-900 dark:text-[#F0F5FF]">Edit Curriculum Module</h3>
+                  <p className="text-[11px] text-slate-600 dark:text-[#9BAAC2]">{selectedCourse.title}</p>
                 </div>
               </div>
               <button
@@ -1147,7 +1205,7 @@ Module 3: Distributed Systems & Backend
                   setShowEditModuleModal(false);
                   setEditingModule(null);
                 }}
-                className="text-[#9BAAC2] hover:text-white transition"
+                className="text-slate-400 hover:text-slate-800 dark:text-[#9BAAC2] dark:hover:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1155,7 +1213,7 @@ Module 3: Distributed Systems & Backend
 
             <form onSubmit={handleUpdateModule} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-[#77B4FF] uppercase tracking-wider block mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-[#77B4FF] uppercase tracking-wider block mb-1.5">
                   Module Title *
                 </label>
                 <input
@@ -1163,24 +1221,24 @@ Module 3: Distributed Systems & Backend
                   required
                   value={moduleTitle}
                   onChange={(e) => setModuleTitle(e.target.value)}
-                  className="w-full bg-[#15233A] text-xs text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-[#1F2E47] outline-none focus:border-[#397BFF] transition font-semibold"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] text-xs text-slate-900 dark:text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#1F2E47] outline-none focus:border-[#176BFF] transition font-semibold"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#77B4FF] uppercase tracking-wider block mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-[#77B4FF] uppercase tracking-wider block mb-1.5">
                   Module Description / Key Objectives
                 </label>
                 <textarea
                   rows={3}
                   value={moduleDescription}
                   onChange={(e) => setModuleDescription(e.target.value)}
-                  className="w-full bg-[#15233A] text-xs text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-[#1F2E47] outline-none focus:border-[#397BFF] transition"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] text-xs text-slate-900 dark:text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#1F2E47] outline-none focus:border-[#176BFF] transition"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-[#77B4FF] uppercase tracking-wider block mb-1.5">
+                <label className="text-xs font-bold text-slate-800 dark:text-[#77B4FF] uppercase tracking-wider block mb-1.5">
                   Order Index (Sequence)
                 </label>
                 <input
@@ -1188,7 +1246,7 @@ Module 3: Distributed Systems & Backend
                   min={1}
                   value={moduleOrder}
                   onChange={(e) => setModuleOrder(Number(e.target.value))}
-                  className="w-full bg-[#15233A] text-xs text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-[#1F2E47] outline-none focus:border-[#397BFF] transition font-mono"
+                  className="w-full bg-slate-50 dark:bg-[#15233A] text-xs text-slate-900 dark:text-[#F0F5FF] px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-[#1F2E47] outline-none focus:border-[#176BFF] transition font-mono"
                 />
               </div>
 
@@ -1199,14 +1257,14 @@ Module 3: Distributed Systems & Backend
                     setShowEditModuleModal(false);
                     setEditingModule(null);
                   }}
-                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-[#9BAAC2] bg-[#15233A] hover:text-white"
+                  className="px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-700 dark:text-[#9BAAC2] bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:text-white"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingModule || !moduleTitle.trim()}
-                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-[#397BFF] hover:bg-[#2868ea] text-white shadow-lg shadow-[#397BFF]/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl text-xs font-black bg-[#176BFF] hover:bg-[#1258d4] text-white shadow-lg shadow-[#176BFF]/20 transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   <span>{isSavingModule ? 'Saving...' : 'Update Module in Supabase'}</span>

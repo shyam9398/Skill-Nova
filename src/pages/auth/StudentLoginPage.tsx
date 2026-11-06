@@ -9,7 +9,13 @@ export const StudentLoginPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [searchParams] = React.useMemo(() => [new URLSearchParams(window.location.search)], []);
+  const [error, setError] = useState<string | null>(() => {
+    if (searchParams.get('error') === 'deactivated') {
+      return 'Your student account has been deactivated by an Administrator. Access is revoked.';
+    }
+    return null;
+  });
   const [isLoading, setIsLoading] = useState(false);
   const [showRecoveryModal, setShowRecoveryModal] = useState(false);
   const { login } = useAuth();
@@ -21,8 +27,8 @@ export const StudentLoginPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Username-only authentication (internally resolved by AuthContext)
-      const res = await login(username.trim(), password, 'student');
+      // Exact username & password matching without auto-trimming or capitalization changes
+      const res = await login(username, password, 'student');
       if (res.success) {
         navigate('/student/dashboard');
       } else {
@@ -83,7 +89,7 @@ export const StudentLoginPage: React.FC = () => {
 
       {/* Main Glassmorphic Container */}
       <div className="relative z-20 flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8">
-        <div className="w-full max-w-md rounded-3xl p-8 backdrop-blur-2xl bg-slate-900/65 dark:bg-[#070D1E]/75 border border-white/20 shadow-2xl shadow-black/50 space-y-6 text-white">
+        <div className="dark-card w-full max-w-md rounded-3xl p-8 backdrop-blur-2xl bg-slate-900/65 dark:bg-[#070D1E]/75 border border-white/20 shadow-2xl shadow-black/50 space-y-6 text-white">
           <div className="text-center space-y-2">
             <div className="w-14 h-14 rounded-2xl bg-[#00A8FF]/20 text-[#00E5FF] flex items-center justify-center mx-auto border border-[#00A3FF]/30 shadow-lg shadow-[#00A3FF]/15">
               <GraduationCap className="w-7 h-7 text-[#00E5FF]" />

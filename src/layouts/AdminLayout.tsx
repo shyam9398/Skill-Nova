@@ -3,7 +3,8 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCheck, BookOpen, UploadCloud,
   Briefcase, Calendar, MessageSquare, Rocket, Settings,
-  Shield, Sparkles, Globe, UserPlus, LogOut, ChevronRight, HelpCircle
+  Shield, Sparkles, Globe, UserPlus, LogOut, ChevronRight, HelpCircle,
+  ShieldCheck, Activity
 } from 'lucide-react';
 import { Header } from '../components/common/Header';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +23,7 @@ export const AdminLayout: React.FC = () => {
     { label: 'Access Requests', icon: UserPlus, path: '/admin/access-requests', badge: 'Approval' },
     { label: 'Student Management', icon: Users, path: '/admin/students' },
     ...(isSuperAdmin ? [{ label: 'Sub-admin Management', icon: UserCheck, path: '/admin/subadmins' }] : []),
+    { label: 'Audit Logs', icon: ShieldCheck, path: '/admin/audit-logs', badge: 'Live Logs' },
     { label: 'Course Management', icon: BookOpen, path: '/admin/courses' },
     { label: 'Learning Resources', icon: UploadCloud, path: '/admin/resources' },
     { label: 'Quiz Management', icon: HelpCircle, path: '/admin/quizzes', badge: 'Evaluations' },
@@ -32,29 +34,30 @@ export const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F5F9FF] dark:bg-[#050816] text-black dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
+    <div className="h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
       {/* Single, Unified SkillNova Header */}
-      <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      <div className="shrink-0 z-40">
+        <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
+      </div>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Responsive Sidebar */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Responsive Stationary Sidebar */}
         <aside
-          className={`fixed lg:static inset-y-0 left-0 z-30 w-64 bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col transition-transform duration-300 shadow-sm ${
+          className={`fixed lg:relative inset-y-0 left-0 z-30 w-64 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-transform duration-300 shadow-sm ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
-          style={{ top: '64px' }}
         >
           {/* Admin Role Status Card */}
-          <div className="p-4 border-b border-[#DFE9F6] dark:border-white/10">
+          <div className="shrink-0 p-4 border-b border-[#DFE9F6] dark:border-white/10">
             <div className="bg-[#F5F9FF] dark:bg-[#0D1833] rounded-2xl p-3 border border-[#DFE9F6] dark:border-white/10 flex items-center gap-3">
               <div className="p-2 rounded-xl bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] border border-[#00A3FF]/25">
                 <Shield className="w-5 h-5" />
               </div>
               <div className="overflow-hidden">
-                <div className="text-xs font-bold text-black dark:text-[#F4F7FF] truncate">
+                <div className="text-xs font-bold text-slate-900 dark:text-[#F4F7FF] truncate">
                   {isSuperAdmin ? 'Super Administrator' : 'Academic Sub-Admin'}
                 </div>
-                <div className="text-[10px] text-black dark:text-[#9BAAC5] font-semibold flex items-center gap-1">
+                <div className="text-[10px] text-slate-500 dark:text-[#9BAAC5] font-semibold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Full Content Management
                 </div>
@@ -75,7 +78,7 @@ export const AdminLayout: React.FC = () => {
                     `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
                         ? 'bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
-                        : 'text-black dark:text-[#9BAAC5] hover:text-black dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
+                        : 'text-slate-600 dark:text-[#9BAAC5] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
                     }`
                   }
                 >
@@ -94,7 +97,7 @@ export const AdminLayout: React.FC = () => {
           </nav>
 
           {/* Sidebar Footer with Logout Button */}
-          <div className="p-3 border-t border-[#DFE9F6] dark:border-white/10 bg-white dark:bg-[#0B1530] space-y-2">
+          <div className="shrink-0 p-3 border-t border-[#DFE9F6] dark:border-white/10 bg-white dark:bg-[#0B1530] space-y-2">
             <button
               onClick={() => logout()}
               className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/30 transition"
@@ -123,7 +126,7 @@ export const AdminLayout: React.FC = () => {
         )}
 
         {/* Main Content Workspace */}
-        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] transition-colors duration-300">
+        <main className="flex-1 h-full overflow-y-auto p-3 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] transition-colors duration-300">
           <Outlet />
         </main>
       </div>

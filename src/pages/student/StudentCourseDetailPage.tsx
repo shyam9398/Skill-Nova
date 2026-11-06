@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Layers, Video, FileText, Sparkles,
   CheckCircle2, Clock, Play, ExternalLink,
   Presentation as PresIcon, Download, BookOpen,
   ChevronDown, ChevronUp, Lock, Calendar, AlertCircle, Eye, ShieldCheck, Check,
-  HelpCircle, RotateCcw, Circle
+  HelpCircle, RotateCcw, Circle, PlusCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { EmbeddedVideoPlayer } from '../../components/resource/EmbeddedVideoPlayer';
 import { SkillNovaDocumentViewer } from '../../components/resource/SkillNovaDocumentViewer';
 import { DynamicFlashcardViewer } from '../../components/practice/DynamicFlashcardViewer';
-import type { Topic, Presentation, CourseModule, CourseSubModule, Flashcard } from '../../types';
+import type { Topic, Presentation, CourseModule, CourseSubModule, Flashcard, InterviewQuestion } from '../../types';
 
 export const StudentCourseDetailPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
@@ -53,6 +53,72 @@ export const StudentCourseDetailPage: React.FC = () => {
 
   // Active in-page video
   const [activeVideoTopic, setActiveVideoTopic] = useState<Topic | null>(null);
+
+  // Interactive 5s Countdown Interview Questions State
+  const [interviewQuestions, setInterviewQuestions] = useState<InterviewQuestion[]>(() => dataService.getInterviewQuestions());
+  const [currentInterviewIdx, setCurrentInterviewIdx] = useState(0);
+  const [interviewTimeLeft, setInterviewTimeLeft] = useState(5);
+  const [isInterviewAnswerRevealed, setIsInterviewAnswerRevealed] = useState(false);
+  const [isInterviewTimerRunning, setIsInterviewTimerRunning] = useState(true);
+  const interviewTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    void dataService.syncInterviewQuestionsFromSupabase();
+    const unsub = dataService.subscribe(() => {
+      setInterviewQuestions(dataService.getInterviewQuestions());
+    });
+    return () => unsub();
+  }, []);
+
+  const resetInterviewTimer = () => {
+    if (interviewTimerRef.current) window.clearInterval(interviewTimerRef.current);
+    setInterviewTimeLeft(5);
+    setIsInterviewAnswerRevealed(false);
+    setIsInterviewTimerRunning(true);
+  };
+
+  useEffect(() => {
+    resetInterviewTimer();
+    return () => {
+      if (interviewTimerRef.current) window.clearInterval(interviewTimerRef.current);
+    };
+  }, [currentInterviewIdx, selectedModuleId]);
+
+  useEffect(() => {
+    if (!isInterviewTimerRunning || isInterviewAnswerRevealed) {
+      if (interviewTimerRef.current) window.clearInterval(interviewTimerRef.current);
+      return;
+    }
+
+    interviewTimerRef.current = window.setInterval(() => {
+      setInterviewTimeLeft(prev => {
+        if (prev <= 1) {
+          if (interviewTimerRef.current) window.clearInterval(interviewTimerRef.current);
+          setIsInterviewAnswerRevealed(true);
+          setIsInterviewTimerRunning(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (interviewTimerRef.current) window.clearInterval(interviewTimerRef.current);
+    };
+  }, [isInterviewTimerRunning, isInterviewAnswerRevealed]);
+
+  const handleExtendCountdown = () => {
+    setInterviewTimeLeft(prev => prev + 5);
+    setIsInterviewTimerRunning(true);
+    setIsInterviewAnswerRevealed(false);
+  };
+
+  const handleRevealNow = () => {
+    if (interviewTimerRef.current) window.clearInterval(interviewTimerRef.current);
+    setInterviewTimeLeft(0);
+    setIsInterviewAnswerRevealed(true);
+    setIsInterviewTimerRunning(false);
+  };
 
   // Roadmap progress
   const roadmapProgress = dataService.getStudentRoadmapProgress(undefined, course?.id || '');
@@ -104,12 +170,25 @@ export const StudentCourseDetailPage: React.FC = () => {
       t.recording_url || t.recording_link || t.resource_type === 'video' || t.resource_type === 'drive_video'
     );
 
-    // 2. PPT Presentations
+    // 2. PPT Presentations (Strict deduplication by URL and title to prevent double-display)
     const ppts = allPresentations.filter(p => p.module_id === modId);
     const topicPpts = modTopics.filter(t => 
-      (t.resource_type === 'ppt' || t.resource_type === 'ppt_presentation' || t.ppt_url) && 
-      !ppts.some(p => p.id === t.id)
+      (t.resource_type === 'ppt' || t.resource_type === 'ppt_presentation' || Boolean(t.ppt_url)) && 
+      !ppts.some(p => 
+        p.id === t.id || 
+        (p.ppt_url && t.ppt_url && p.ppt_url.trim().toLowerCase() === t.ppt_url.trim().toLowerCase()) ||
+        (p.title && t.title && p.title.trim().toLowerCase() === t.title.trim().toLowerCase())
+      )
     );
+
+    const rawCombinedPpts = [...ppts, ...topicPpts];
+    const seenPptKeys = new Set<string>();
+    const deduplicatedPpts = rawCombinedPpts.filter(p => {
+      const key = (p.ppt_url?.trim() || p.title?.trim() || p.id).toLowerCase();
+      if (seenPptKeys.has(key)) return false;
+      seenPptKeys.add(key);
+      return true;
+    });
 
     // 3. Notes & Documents
     const notes = modTopics.filter(t => 
@@ -128,11 +207,11 @@ export const StudentCourseDetailPage: React.FC = () => {
 
     return {
       videos,
-      ppts: [...ppts, ...topicPpts],
+      ppts: deduplicatedPpts,
       notes,
       interviews,
       flashcards,
-      totalCount: videos.length + ppts.length + topicPpts.length + notes.length + interviews.length + flashcards.length
+      totalCount: videos.length + deduplicatedPpts.length + notes.length + interviews.length + flashcards.length
     };
   };
 
@@ -700,46 +779,208 @@ export const StudentCourseDetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* 4. INTERVIEW QUESTIONS */}
-              {(activeCategory === 'interview' || activeCategory === 'all') && (
-                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center justify-center">
-                        <HelpCircle className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Technical Interview Questions</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">Curated questions, model answers, and sheet guides</p>
-                      </div>
-                    </div>
-                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
-                      {activeModuleResources.interviews.length} Questions
-                    </span>
-                  </div>
+              {/* 4. INTERVIEW QUESTIONS (Embedded 5s Countdown Practice Drill + Question Sheets) */}
+              {(activeCategory === 'interview' || activeCategory === 'all') && (() => {
+                const moduleQAs = interviewQuestions.filter(q => {
+                  if (q.is_published === false) return false;
+                  if (q.scheduled_release_at && new Date(q.scheduled_release_at).getTime() > Date.now()) return false;
+                  if (selectedModuleId !== 'all') {
+                    if (q.topic_id === selectedModuleId) return true;
+                    const curMod = modules.find(m => m.id === selectedModuleId);
+                    if (curMod?.topics?.some(t => t.id === q.topic_id)) return true;
+                    if (q.course_id === course?.id) return true;
+                    return false;
+                  }
+                  return q.course_id === course?.id || !q.course_id;
+                });
 
-                  {activeModuleResources.interviews.length === 0 ? (
-                    <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
-                      No interview question sheets assigned yet for this module.
+                const currentQ = moduleQAs[currentInterviewIdx] || moduleQAs[0];
+
+                return (
+                  <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center justify-center">
+                          <HelpCircle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h4 className="text-base font-bold text-slate-900 dark:text-white">Technical Interview Questions</h4>
+                          <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">Interactive 5s timed drill with industry model explanations</p>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                        {moduleQAs.length} Questions
+                      </span>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 gap-4">
-                      {activeModuleResources.interviews.map(iq => (
-                        <SkillNovaDocumentViewer
-                          key={iq.id}
-                          url={iq.doc_url || iq.drive_notes_link || iq.pdf_url || ''}
-                          title={iq.title}
-                          resourceType="interview"
-                          startRange={iq.slide_start}
-                          endRange={iq.slide_end}
-                          totalRange={iq.total_slides}
-                          rangeUnit="pages"
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+
+                    {moduleQAs.length === 0 && activeModuleResources.interviews.length === 0 ? (
+                      <div className="py-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
+                        No interview questions assigned yet for this module.
+                      </div>
+                    ) : null}
+
+                    {/* INTERACTIVE 5S PRACTICE MODE */}
+                    {moduleQAs.length > 0 && currentQ && (
+                      <div className="space-y-4">
+                        {/* Progress Header */}
+                        <div className="flex items-center justify-between bg-slate-50 dark:bg-[#101A2D] p-3.5 rounded-2xl border border-slate-200 dark:border-white/10 text-xs">
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-mono font-bold text-slate-900 dark:text-[#F0F5FF]">
+                              Question <span className="text-[#00A3FF]">{currentInterviewIdx + 1}</span> of {moduleQAs.length}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                              (currentQ.difficulty || 'medium') === 'hard'
+                                ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/25'
+                                : (currentQ.difficulty || 'medium') === 'medium'
+                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                            }`}>
+                              {currentQ.difficulty || 'medium'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                if (currentInterviewIdx > 0) setCurrentInterviewIdx(prev => prev - 1);
+                              }}
+                              disabled={currentInterviewIdx === 0}
+                              className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#15233A] hover:bg-slate-100 dark:hover:bg-[#1F2E47] text-slate-700 dark:text-white disabled:opacity-40 disabled:cursor-not-allowed border border-slate-200 dark:border-white/10 flex items-center gap-1 transition text-xs font-semibold"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Prev</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (currentInterviewIdx < moduleQAs.length - 1) setCurrentInterviewIdx(prev => prev + 1);
+                              }}
+                              disabled={currentInterviewIdx === moduleQAs.length - 1}
+                              className="px-3 py-1.5 rounded-xl bg-[#176BFF] hover:bg-[#00A3FF] text-white disabled:opacity-40 disabled:cursor-not-allowed font-bold flex items-center gap-1 transition text-xs shadow-md shadow-[#176BFF]/20"
+                            >
+                              <span className="hidden sm:inline">Next</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Question Box */}
+                        <div className="bg-slate-50 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10 rounded-2xl p-5 sm:p-6 space-y-4">
+                          <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-3">
+                            <span className="text-[11px] font-mono text-slate-500 dark:text-[#9BAAC2]">
+                              Module Question Prompt
+                            </span>
+
+                            {/* 5-Second Countdown Indicator */}
+                            {!isInterviewAnswerRevealed ? (
+                              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-600 dark:text-amber-300 font-mono text-xs font-bold animate-pulse">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Revealing answer in: {interviewTimeLeft}s</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-mono text-xs font-bold">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Answer Revealed</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-[#F0F5FF] leading-snug">
+                            {currentQ.question}
+                          </h3>
+
+                          {currentQ.role_category && (
+                            <span className="inline-block text-[11px] font-mono text-[#00A3FF] bg-[#00A3FF]/10 px-2.5 py-0.5 rounded-md border border-[#00A3FF]/20">
+                              Target Role: {currentQ.role_category}
+                            </span>
+                          )}
+
+                          {/* Countdown Controls (Before Reveal) */}
+                          {!isInterviewAnswerRevealed ? (
+                            <div className="p-4 rounded-xl bg-white dark:bg-[#15233A] border border-dashed border-amber-500/40 text-center space-y-3">
+                              <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">
+                                Formulate your thoughts. Auto-revealing in <strong className="text-amber-500 font-mono">{interviewTimeLeft} seconds</strong>.
+                              </p>
+                              <div className="flex flex-wrap items-center justify-center gap-2.5">
+                                <button
+                                  onClick={handleExtendCountdown}
+                                  className="px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-700 dark:text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 transition"
+                                >
+                                  <PlusCircle className="w-3.5 h-3.5" />
+                                  <span>+5s Extend Countdown</span>
+                                </button>
+                                <button
+                                  onClick={handleRevealNow}
+                                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-[#00A3FF]/25 hover:opacity-95 transition"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  <span>Reveal Answer Now</span>
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* Answer Revealed */
+                            <div className="space-y-3 pt-3 border-t border-slate-200 dark:border-white/10 animate-fadeIn">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold uppercase tracking-wider text-[#176BFF] dark:text-[#77B4FF] flex items-center gap-1.5 font-mono">
+                                  <Sparkles className="w-3.5 h-3.5 text-[#176BFF]" />
+                                  Model Answer & Explanation
+                                </span>
+                                <button
+                                  onClick={resetInterviewTimer}
+                                  className="text-[11px] text-slate-500 dark:text-[#9BAAC2] hover:text-slate-800 dark:hover:text-white flex items-center gap-1 font-mono transition"
+                                >
+                                  <RotateCcw className="w-3 h-3" />
+                                  Reset Timer
+                                </button>
+                              </div>
+
+                              <div className="bg-white dark:bg-[#080E1C] border border-slate-200 dark:border-[#397BFF]/30 p-4 sm:p-5 rounded-xl text-xs sm:text-sm text-slate-800 dark:text-[#F0F5FF] leading-relaxed whitespace-pre-line font-sans shadow-inner">
+                                {currentQ.model_answer || currentQ.sampleAnswer || currentQ.answer || 'Detailed answer explanation is being finalized.'}
+                              </div>
+
+                              {currentQ.key_talking_points && currentQ.key_talking_points.length > 0 && (
+                                <div className="p-3.5 rounded-xl bg-slate-100 dark:bg-[#15233A] border border-slate-200 dark:border-white/10 space-y-1.5">
+                                  <span className="text-[10px] font-bold text-slate-600 dark:text-[#9BAAC2] uppercase font-mono block">
+                                    Key Talking Points:
+                                  </span>
+                                  <ul className="list-disc list-inside space-y-1 text-xs text-slate-700 dark:text-slate-200">
+                                    {currentQ.key_talking_points.map((pt, idx) => (
+                                      <li key={idx}>{pt}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Question Sheets / Documents */}
+                    {activeModuleResources.interviews.length > 0 && (
+                      <div className="space-y-3 pt-2">
+                        <span className="text-xs font-bold text-slate-700 dark:text-[#9BAAC5] uppercase tracking-wider font-mono block">
+                          Interview Question Sheets & Reference Guides:
+                        </span>
+                        <div className="grid grid-cols-1 gap-4">
+                          {activeModuleResources.interviews.map(iq => (
+                            <SkillNovaDocumentViewer
+                              key={iq.id}
+                              url={iq.doc_url || iq.drive_notes_link || iq.pdf_url || ''}
+                              title={iq.title}
+                              resourceType="interview"
+                              startRange={iq.slide_start}
+                              endRange={iq.slide_end}
+                              totalRange={iq.total_slides}
+                              rangeUnit="pages"
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* 5. FLASHCARDS */}
               {(activeCategory === 'flashcards' || activeCategory === 'all') && (

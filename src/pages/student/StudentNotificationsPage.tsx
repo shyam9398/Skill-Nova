@@ -36,16 +36,16 @@ export const StudentNotificationsPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn max-w-4xl mx-auto">
-      <div className="flex items-center justify-between pb-4 border-b border-[#DFE9F6]">
+    <div className="space-y-6 animate-fadeIn max-w-4xl mx-auto text-slate-900 dark:text-white">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-white/10">
         <div>
-          <h1 className="text-2xl font-black text-[#15243B] flex items-center gap-2">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
             Notifications Center
-            <span className="text-xs font-bold text-[#176BFF] px-2.5 py-0.5 rounded-full bg-[#EAF3FF] border border-[#00A3FF]/25 font-mono">
+            <span className="text-xs font-bold text-[#176BFF] dark:text-[#00D1FF] px-2.5 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 border border-[#00A3FF]/25 font-mono">
               Real-time
             </span>
           </h1>
-          <p className="text-xs text-[#73839B] mt-0.5">
+          <p className="text-xs text-slate-600 dark:text-[#9BAAC2] mt-0.5">
             Academic updates, published lecture notes, mentor feedback, and opportunity alerts.
           </p>
         </div>
@@ -53,7 +53,7 @@ export const StudentNotificationsPage: React.FC = () => {
         {notifications.length > 0 && (
           <button
             onClick={handleMarkAllRead}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-[#176BFF] bg-[#EAF3FF] hover:bg-[#DFE9F6] border border-[#00A3FF]/25 transition"
+            className="px-4 py-2 rounded-xl text-xs font-bold text-[#176BFF] dark:text-[#00D1FF] bg-[#EAF3FF] dark:bg-[#15233A] hover:bg-[#DFE9F6] dark:hover:bg-[#1F2E47] border border-[#00A3FF]/25 dark:border-white/10 transition"
           >
             Mark All as Read
           </button>
@@ -61,10 +61,10 @@ export const StudentNotificationsPage: React.FC = () => {
       </div>
 
       {notifications.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-[#DFE9F6] p-12 text-center text-xs text-[#73839B] shadow-xs space-y-3">
+        <div className="bg-white dark:bg-[#0B1530] rounded-3xl border border-slate-200 dark:border-white/10 p-12 text-center text-xs text-slate-500 dark:text-[#9BAAC2] shadow-xs space-y-3">
           <Bell className="w-12 h-12 text-[#00A3FF] mx-auto opacity-40" />
-          <h3 className="text-base font-bold text-[#15243B]">All caught up!</h3>
-          <p className="text-xs text-[#73839B] max-w-sm mx-auto">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">All caught up!</h3>
+          <p className="text-xs text-slate-500 dark:text-[#9BAAC2] max-w-sm mx-auto">
             You have no pending notifications. When your faculty publishes new materials or mentors reply to your doubts, they will appear here.
           </p>
         </div>
@@ -75,22 +75,22 @@ export const StudentNotificationsPage: React.FC = () => {
               key={notif.id}
               onClick={() => handleNotificationClick(notif)}
               className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-start gap-4 shadow-xs ${
-                notif.read ? 'bg-white border-[#DFE9F6]' : 'bg-[#EAF3FF]/40 border-[#00A3FF]/30'
-              } hover:border-[#176BFF]`}
+                notif.read ? 'bg-white dark:bg-[#0B1530] border-slate-200 dark:border-white/10' : 'bg-[#EAF3FF]/40 dark:bg-[#15233A]/60 border-[#00A3FF]/30'
+              } hover:border-[#176BFF] dark:hover:border-[#00A3FF]`}
             >
-              <div className="w-9 h-9 rounded-xl bg-[#EAF3FF] text-[#176BFF] flex items-center justify-center shrink-0 mt-0.5">
-                <Bell className="w-4 h-4 text-[#176BFF]" />
+              <div className="w-9 h-9 rounded-xl bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] flex items-center justify-center shrink-0 mt-0.5">
+                <Bell className="w-4 h-4 text-[#176BFF] dark:text-[#00A8FF]" />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between gap-2">
-                  <h3 className="text-xs font-bold text-[#15243B]">{notif.title}</h3>
-                  <span className="text-[10px] text-[#73839B] font-mono">
+                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">{notif.title}</h3>
+                  <span className="text-[10px] text-slate-500 dark:text-[#9BAAC2] font-mono">
                     {new Date(notif.created_at).toLocaleDateString()}
                   </span>
                 </div>
-                <p className="text-xs text-[#73839B] mt-1 leading-relaxed">{notif.message}</p>
+                <p className="text-xs text-slate-600 dark:text-slate-300 mt-1 leading-relaxed">{notif.message}</p>
                 {notif.link && (
-                  <div className="text-[11px] font-bold text-[#176BFF] flex items-center gap-1 mt-2">
+                  <div className="text-[11px] font-bold text-[#176BFF] dark:text-[#00D1FF] flex items-center gap-1 mt-2">
                     <span>View resource</span>
                     <ExternalLink className="w-3 h-3" />
                   </div>

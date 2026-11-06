@@ -338,21 +338,18 @@ export type SaturdaySpecialSession = SaturdaySpecial;
 
 export interface Flashcard {
   id: string;
-
-  topic_id: string;
-
+  topic_id?: string;
   topic_title?: string;
-
   course_id?: string;
-
   question: string;
-
   answer: string;
-
-  difficulty: "easy" | "medium" | "hard";
-
+  difficulty?: "easy" | "medium" | "hard";
   source_ref?: string;
-
+  is_published?: boolean;
+  release_status?: 'released' | 'held' | 'hold' | 'scheduled';
+  scheduled_release_at?: string;
+  order_index?: number;
+  set_title?: string;
   created_at?: string;
 }
 
@@ -560,25 +557,21 @@ export interface StudentRoadmapProgress {
 
 export interface InterviewQuestion {
   id: string;
-
-  topic_id: string;
-
-  role_category: string;
-
+  topic_id?: string;
+  course_id?: string;
+  role_category?: string;
   question: string;
-
-  model_answer: string;
-
+  model_answer?: string;
   sampleAnswer?: string;
-
-  key_talking_points: string[];
-
+  answer?: string;
+  key_talking_points?: string[];
   source_ref?: string;
-
   sourceCitation?: string;
-
   difficulty?: "easy" | "medium" | "hard";
-
+  is_published?: boolean;
+  release_status?: 'released' | 'held' | 'hold' | 'scheduled';
+  scheduled_release_at?: string;
+  released_at?: string;
   created_at?: string;
 }
 
@@ -618,50 +611,31 @@ export interface AIGenerationJob {
 
 export interface SaturdaySpecial {
   id: string;
-
   title: string;
-
-  category:
-    | "Generative AI"
-    | "Agentic AI"
-    | "Large Language Models"
-    | "Cybersecurity"
-    | "Cloud Computing"
-    | "DevOps"
-    | "Robotics"
-    | "Data Science"
-    | "Blockchain"
-    | "IoT"
-    | "Hackathon Prep";
-
+  category: string;
   description: string;
-
   speaker: string;
-
   speaker_role: string;
-
   session_date: string;
-
   date?: string;
-
   cover_image: string;
-
   coverImageUrl?: string;
-
   recording_url?: string;
-
   recordingUrl?: string;
-
   slides_url?: string;
-
+  ppt_url?: string;
+  notes_url?: string;
+  doc_url?: string;
   resources_url?: string;
-
   resourceDocUrl?: string;
-
+  additional_resources_url?: string;
   is_upcoming: boolean;
-
+  is_published?: boolean;
+  release_status?: 'released' | 'held' | 'hold' | 'scheduled';
+  scheduled_release_at?: string;
   attendees_count: number;
   zoom_join_url?: string;
+  created_at?: string;
 }
 
 export interface Opportunity {
@@ -698,6 +672,8 @@ export interface Opportunity {
   stipendOrPrize?: string;
 
   stipend_or_salary?: string;
+
+  stipend?: string;
 
   deadline: string;
 
@@ -939,7 +915,6 @@ export interface MentorRequest {
 
 export interface AuditLogEntry {
   id: string;
-
   action:
     | "publish"
     | "release"
@@ -950,22 +925,38 @@ export interface AuditLogEntry {
     | "create_student"
     | "create_sub_admin"
     | "reset_password"
+    | "delete_student"
+    | "deactivate_student"
+    | "activate_student"
     | "delete_course"
     | "delete_resource"
     | "create_flashcard"
+    | "delete_flashcard"
+    | "LOGIN_SUCCESS"
+    | "LOGIN_FAILED"
+    | "LOGOUT"
+    | "SESSION_EXPIRED"
+    | "SYSTEM_ERROR"
+    | "DB_ERROR"
+    | "API_ERROR"
+    | "RESOURCE_LOAD_FAILURE"
     | string;
-
-  resource_id: string;
-
-  resource_title: string;
-
+  resource_id?: string;
+  resource_title?: string;
   course_id?: string;
-
   performed_by: string;
-
   timestamp: string;
-
   details?: string;
+  user_role?: 'admin' | 'student' | 'sub_admin' | string;
+  username?: string;
+  login_time?: string;
+  logout_time?: string;
+  session_duration?: string;
+  status?: 'active' | 'logged_out' | 'session_expired' | 'failed' | string;
+  entity_type?: string;
+  entity_id?: string;
+  actor_email?: string;
+  metadata?: Record<string, any>;
 }
 
 export interface HomepageSettings {

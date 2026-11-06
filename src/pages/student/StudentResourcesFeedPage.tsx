@@ -62,16 +62,16 @@ export const StudentResourcesFeedPage: React.FC = () => {
           </span>
           <span className="text-xs text-[#9BAAC2] font-mono">Real-time Reactive Feed</span>
         </div>
-        <h1 className="text-2xl lg:text-3xl font-extrabold text-[#F0F5FF]">
+        <h1 className="text-2xl lg:text-3xl font-extrabold text-slate-900 dark:text-white">
           Published Learning Resources
         </h1>
-        <p className="text-sm text-[#9BAAC2]">
+        <p className="text-sm text-slate-600 dark:text-[#9BAAC2]">
           All class recordings, syllabus notes, slide decks, and external references published by mentors—sorted newest first.
         </p>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-[#15233A] p-4 rounded-2xl border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
+      <div className="dark-section dark-card bg-[#15233A] p-4 rounded-2xl border border-white/5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-lg">
         <div className="relative w-full md:w-80">
           <Search className="w-4 h-4 text-[#9BAAC2] absolute left-3.5 top-3" />
           <input
@@ -132,7 +132,7 @@ export const StudentResourcesFeedPage: React.FC = () => {
           filtered.map((item, index) => (
             <div
               key={item.id}
-              className="bg-[#15233A] rounded-2xl border border-white/5 p-5 hover:border-[#397BFF]/40 transition group shadow-md"
+              className="dark-card bg-[#15233A] rounded-2xl border border-white/5 p-5 hover:border-[#397BFF]/40 transition group shadow-md"
             >
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 {/* Left: Info */}

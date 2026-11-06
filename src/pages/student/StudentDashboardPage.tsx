@@ -95,7 +95,7 @@ export const StudentDashboardPage: React.FC = () => {
       />
 
       {/* 1. Welcome & High-Impact Analytics Banner */}
-      <div className="dark-section rounded-3xl bg-gradient-to-r from-[#0E1729] via-[#15233A] to-[#0A101D] border border-white/10 p-6 md:p-8 shadow-2xl relative overflow-hidden">
+      <div className="dark-section dark-card rounded-3xl bg-gradient-to-r from-[#0E1729] via-[#15233A] to-[#0A101D] border border-white/10 p-6 md:p-8 shadow-2xl relative overflow-hidden text-white">
         <div className="absolute top-0 right-0 w-96 h-96 bg-[#00D4B8]/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute bottom-0 left-1/3 w-80 h-80 bg-[#397BFF]/15 rounded-full blur-3xl pointer-events-none" />
 
@@ -114,7 +114,7 @@ export const StudentDashboardPage: React.FC = () => {
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white !text-white">
               Student Learning Command Center
             </h1>
             <p className="text-xs sm:text-sm text-[#9BAAC2] leading-relaxed">
@@ -144,55 +144,55 @@ export const StudentDashboardPage: React.FC = () => {
 
       {/* 2. Primary Learning Metrics (Analytics-First Row) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-[#77B4FF] uppercase tracking-wider block">Progress</span>
           <div className="text-xl font-black text-[#00D4B8]">{overallProgress}%</div>
-          <span className="text-[10px] text-[#9BAAC2] block">Overall track</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Overall track</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block flex items-center gap-1">
             <Flame className="w-3 h-3 fill-amber-400" />
             Current
           </span>
           <div className="text-xl font-black text-amber-300">{currentStreak} Days</div>
-          <span className="text-[10px] text-[#9BAAC2] block">Learning streak</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Learning streak</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-[#77B4FF] uppercase tracking-wider block">Longest</span>
           <div className="text-xl font-black text-white">{longestStreak} Days</div>
-          <span className="text-[10px] text-[#9BAAC2] block">Best record</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Best record</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-[#77B4FF] uppercase tracking-wider block">Active Days</span>
           <div className="text-xl font-black text-[#397BFF]">{activeLearningDays}</div>
-          <span className="text-[10px] text-[#9BAAC2] block">This month</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>This month</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">Completed</span>
           <div className="text-xl font-black text-emerald-300">{completedModulesCount}</div>
-          <span className="text-[10px] text-[#9BAAC2] block">Modules done</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Modules done</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-amber-300 uppercase tracking-wider block">Pending</span>
           <div className="text-xl font-black text-amber-200">{pendingModulesCount}</div>
-          <span className="text-[10px] text-[#9BAAC2] block">In syllabus</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>In syllabus</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-[#77B4FF] uppercase tracking-wider block">Quiz Avg</span>
           <div className="text-xl font-black text-[#00D4B8]">{averageQuizScore}%</div>
-          <span className="text-[10px] text-[#9BAAC2] block">Evaluated drills</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Evaluated drills</span>
         </div>
 
-        <div className="p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
+        <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Skill XP</span>
           <div className="text-xl font-black text-purple-300">{totalXP}</div>
-          <span className="text-[10px] text-[#9BAAC2] block">Level 4 Scholar</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Level 4 Scholar</span>
         </div>
       </div>
 

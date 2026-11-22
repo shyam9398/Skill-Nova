@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { PdfPageAllocation } from '../../types';
 import { dataService } from '../../services/dataService';
+import { SkillNovaPdfViewer } from './SkillNovaPdfViewer';
 
 interface PdfDocumentViewerProps {
   pdfUrl: string;
@@ -203,17 +204,17 @@ export const PdfDocumentViewer: React.FC<PdfDocumentViewerProps> = ({
       {/* Main Document Body */}
       <div className="relative flex-1 bg-[#02050E] overflow-hidden flex items-center justify-center">
         {isAccessible ? (
-          /* AUTHORIZED IN-PAGE EMBEDDED VIEWER */
+          /* AUTHORIZED IN-PAGE EMBEDDED VIEWER (Mobile-safe PDF.js Canvas & Drive) */
           <div className="w-full h-full relative">
-            <iframe
-              src={getEmbeddablePdfUrl(pdfUrl, currentPage)}
+            <SkillNovaPdfViewer
+              source={pdfUrl}
               title={title}
+              subTitle={subModuleTitle}
+              startPage={startPage}
+              endPage={endPage}
+              initialZoom={zoomLevel}
+              showToolbar={false}
               className="w-full h-full border-0"
-              style={{
-                transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined,
-                transformOrigin: 'top center',
-                transition: 'transform 0.2s ease-out'
-              }}
             />
           </div>
         ) : isScheduled ? (

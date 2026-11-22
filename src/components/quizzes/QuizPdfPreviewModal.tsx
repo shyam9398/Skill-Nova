@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { Quiz } from '../../types';
 import { generateQuizPdf, type GeneratedPdfResult } from '../../utils/quizPdfGenerator';
+import { SkillNovaPdfViewer } from '../resource/SkillNovaPdfViewer';
 
 interface QuizPdfPreviewModalProps {
   quiz: Quiz;
@@ -145,33 +146,17 @@ export const QuizPdfPreviewModal: React.FC<QuizPdfPreviewModalProps> = ({
                 <RotateCcw className="w-3.5 h-3.5" /> Retry PDF Generation
               </button>
             </div>
-          ) : pdfResult?.blobUrl ? (
-            // Native Genuine PDF Document Viewer (embedded toolbar suppressed for clean UI)
+          ) : pdfResult ? (
+            /* Reliable Multi-Platform Canvas PDF Viewer (supports Android Chrome, Edge, Safari, Desktop) */
             <div className="w-full h-full rounded-2xl overflow-hidden border border-slate-300 dark:border-white/10 shadow-lg bg-slate-900 flex flex-col">
-              <object
-                data={`${pdfResult.blobUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
-                type="application/pdf"
-                className="w-full h-full flex-1 border-0"
-              >
-                <iframe
-                  src={`${pdfResult.blobUrl}#toolbar=0&navpanes=0`}
-                  className="w-full h-full flex-1 border-0"
-                  title="SkillNova Quiz PDF Preview"
-                >
-                  <div className="h-full flex flex-col items-center justify-center p-8 text-center space-y-4 text-white">
-                    <p className="text-xs text-slate-300">
-                      Your browser does not support inline PDF viewing. You can download the PDF directly.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handleDownload}
-                      className="px-4 py-2 rounded-xl bg-[#176BFF] text-white font-bold text-xs inline-flex items-center gap-2 cursor-pointer"
-                    >
-                      <Download className="w-4 h-4" /> Download PDF
-                    </button>
-                  </div>
-                </iframe>
-              </object>
+              <SkillNovaPdfViewer
+                source={pdfResult.blob}
+                title={`${quiz.title} • Questions & Detailed Explanations`}
+                subTitle="Official SkillNova Study Document • Vector PDF with Watermark & Solutions"
+                onDownload={handleDownload}
+                showToolbar={true}
+                className="w-full h-full"
+              />
             </div>
           ) : null}
         </div>

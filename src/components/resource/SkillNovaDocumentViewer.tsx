@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { resolveResourceUrl } from '../../utils/resourceUrlResolver';
 import { dataService } from '../../services/dataService';
+import { SkillNovaPdfViewer } from './SkillNovaPdfViewer';
 
 interface SkillNovaDocumentViewerProps {
   url: string;
@@ -179,8 +180,20 @@ export const SkillNovaDocumentViewer: React.FC<SkillNovaDocumentViewerProps> = (
           </span>
         </div>
 
-        {/* Iframe View */}
-        {!loadError && resolved.embedUrl ? (
+        {/* Iframe or Mobile-Safe PDF Canvas View */}
+        {!loadError && (resolved.provider === 'direct_pdf' || url.endsWith('.pdf') || url.includes('.pdf?')) ? (
+          <div className="absolute inset-0 w-full h-full bg-slate-950 overflow-hidden">
+            <SkillNovaPdfViewer
+              source={url}
+              title={title}
+              startPage={startRange}
+              endPage={endRange}
+              showToolbar={false}
+              className="w-full h-full border-0"
+              onLoadError={() => setLoadError(true)}
+            />
+          </div>
+        ) : !loadError && resolved.embedUrl ? (
           <iframe
             key={`slide-frame-${currentSlide}`}
             src={getSlideEmbedUrl()}

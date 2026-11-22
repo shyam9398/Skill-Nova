@@ -4,6 +4,7 @@ import {
   ShieldAlert, CheckCircle2, Calendar, Info, Clock, Download
 } from 'lucide-react';
 import type { Topic } from '../../types';
+import { SkillNovaPdfViewer } from './SkillNovaPdfViewer';
 
 interface InAppResourceViewerProps {
   topic: Topic | null;
@@ -161,18 +162,18 @@ export const InAppResourceViewer: React.FC<InAppResourceViewerProps> = ({
               </div>
             </div>
           ) : resourceType === 'pdf' ? (
-            /* Direct In-App PDF Viewer */
-            <div className="h-full flex flex-col space-y-3">
-              <div className="flex-1 rounded-2xl overflow-hidden bg-white border border-[#DFE9F6] shadow-md relative">
-                <iframe
-                  src={topic.pdf_file_url || 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf'}
+            /* Direct In-App PDF Viewer via SkillNovaPdfViewer */
+            <div className="h-full flex flex-col space-y-2">
+              <div className="flex-1 rounded-2xl overflow-hidden border border-[#DFE9F6] dark:border-white/10 shadow-md relative">
+                <SkillNovaPdfViewer
+                  source={topic.pdf_file_url || 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf'}
                   title={`PDF: ${topic.title}`}
-                  className="w-full h-full border-0"
+                  className="w-full h-full"
                 />
               </div>
-              <div className="bg-white p-3 rounded-2xl border border-[#DFE9F6] flex items-center justify-between text-xs text-[#73839B]">
-                <span>SkillNova Native PDF Document Engine</span>
-                <span className="text-[11px] font-mono text-[#176BFF]">Embedded View</span>
+              <div className="bg-white dark:bg-[#0A1224] p-3 rounded-2xl border border-[#DFE9F6] dark:border-white/10 flex items-center justify-between text-xs text-[#73839B]">
+                <span>SkillNova Native In-Platform PDF Canvas Engine</span>
+                <span className="text-[11px] font-mono text-[#176BFF] dark:text-[#00E5FF]">Mobile & Desktop Verified</span>
               </div>
             </div>
           ) : resourceType === 'ppt' ? (

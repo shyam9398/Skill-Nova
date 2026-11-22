@@ -270,9 +270,9 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 pb-20 animate-fadeIn text-slate-900 dark:text-white px-2 sm:px-4">
-      {/* 1. Header & Navigation Controls */}
-      <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-6 md:p-8 shadow-sm space-y-4 relative overflow-hidden">
+    <div className="w-full max-w-5xl mx-auto space-y-6 pb-20 text-slate-900 dark:text-white px-2 sm:px-4">
+      {/* 1. Header & Navigation Controls - Sticky pinned while scrolling */}
+      <div className="sticky top-0 z-30 bg-white/95 dark:bg-[#0A1224]/95 backdrop-blur-md rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-md space-y-4 relative">
         <div className="absolute top-0 right-0 w-72 h-72 bg-[#00A3FF]/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

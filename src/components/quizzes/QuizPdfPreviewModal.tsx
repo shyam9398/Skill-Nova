@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X, Download, FileText, Sparkles, AlertCircle,
   ShieldCheck, RotateCcw
@@ -68,14 +69,14 @@ export const QuizPdfPreviewModal: React.FC<QuizPdfPreviewModalProps> = ({
     pdfResult.doc.save(pdfResult.filename);
   };
 
-  return (
+  return createPortal(
     <div
-      className="modal-overlay skillnova-modal-overlay fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto animate-fadeIn"
+      className="quiz-modal-overlay modal-overlay skillnova-modal-overlay fixed inset-0 z-[9999] bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="modal-content skillnova-modal-content w-full max-w-5xl h-[calc(100dvh-var(--header-height,4rem)-2rem)] flex flex-col bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden relative animate-scaleUp my-auto">
+      <div className="pdf-modal-content quiz-modal-content modal-content skillnova-modal-content w-[min(90vw,1100px)] max-w-5xl h-[calc(100vh-40px)] max-h-[calc(100vh-40px)] flex flex-col bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden relative">
         {/* Top Header Bar */}
         <div className="px-5 py-3.5 border-b border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[#070D1B] flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -193,6 +194,7 @@ export const QuizPdfPreviewModal: React.FC<QuizPdfPreviewModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

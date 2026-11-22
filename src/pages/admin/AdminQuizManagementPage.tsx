@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Sparkles,
   Plus,
@@ -104,7 +105,13 @@ export const AdminQuizManagementPage: React.FC = () => {
   useEffect(() => {
     const isAnyModalOpen = isCreateModalOpen || Boolean(selectedLeaderboardQuiz);
     if (isAnyModalOpen) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
       document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           setIsCreateModalOpen(false);
@@ -113,11 +120,10 @@ export const AdminQuizManagementPage: React.FC = () => {
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => {
-        document.body.style.overflow = 'unset';
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
         window.removeEventListener('keydown', handleKeyDown);
       };
-    } else {
-      document.body.style.overflow = 'unset';
     }
   }, [isCreateModalOpen, selectedLeaderboardQuiz]);
 
@@ -441,14 +447,17 @@ export const AdminQuizManagementPage: React.FC = () => {
       </div>
 
       {/* CREATE / EDIT QUIZ MODAL */}
-      {isCreateModalOpen && (
+      {isCreateModalOpen && createPortal(
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-y-auto animate-fadeIn"
+          className="quiz-modal-overlay modal-overlay skillnova-modal-overlay fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-hidden"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsCreateModalOpen(false);
           }}
         >
-          <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-4xl w-full max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden my-auto">
+          <div 
+            className="quiz-modal-content modal-content skillnova-modal-content bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-4xl w-[min(92vw,950px)] max-h-[calc(100vh-40px)] flex flex-col shadow-2xl relative overflow-hidden my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Pinned Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#080E21]">
               <div>
@@ -645,8 +654,8 @@ export const AdminQuizManagementPage: React.FC = () => {
                                 key={optKey}
                                 onClick={() => handleUpdateQuestion(qIdx, { correct_answer: optKey })}
                                 className={`p-2 rounded-xl border text-xs flex items-center justify-between gap-2 cursor-pointer transition ${isCorrect
-                                    ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold'
-                                    : 'bg-white dark:bg-[#070C18] border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300'
+                                  ? 'bg-emerald-50 dark:bg-emerald-500/15 border-emerald-300 dark:border-emerald-500/40 text-emerald-800 dark:text-emerald-300 font-bold'
+                                  : 'bg-white dark:bg-[#070C18] border-slate-200 dark:border-white/5 text-slate-700 dark:text-slate-300'
                                   }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
@@ -698,7 +707,8 @@ export const AdminQuizManagementPage: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* LEADERBOARD VIEWER MODAL */}
@@ -707,14 +717,22 @@ export const AdminQuizManagementPage: React.FC = () => {
         const top3 = entries.slice(0, 3);
         const remaining = entries.slice(3);
 
-        return (
+        return createPortal(
           <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-y-auto animate-fadeIn"
+            className="quiz-modal-overlay modal-overlay skillnova-modal-overlay fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-hidden"
             onClick={(e) => {
               if (e.target === e.currentTarget) setSelectedLeaderboardQuiz(null);
             }}
           >
-            <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-2xl w-full max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden my-auto">
+            <div 
+              ref={(el) => el?.focus()}
+              tabIndex={0}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${selectedLeaderboardQuiz.title} Official Leaderboard`}
+              className="quiz-leaderboard-floating-box quiz-modal-content modal-content skillnova-modal-content bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 w-[min(90vw,680px)] max-w-2xl max-h-[calc(100vh-40px)] flex flex-col shadow-2xl relative overflow-hidden outline-none focus:outline-none"
+              onClick={(e) => e.stopPropagation()}
+            >
               {/* Pinned Header */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#080E21]">
                 <div className="flex items-center gap-3">
@@ -788,7 +806,8 @@ export const AdminQuizManagementPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
     </div>

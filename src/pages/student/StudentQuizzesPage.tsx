@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Sparkles, 
   Clock, 
@@ -97,7 +98,13 @@ export const StudentQuizzesPage: React.FC = () => {
   // Escape listener and scroll lock for leaderboard viewer modal
   useEffect(() => {
     if (viewingLeaderboardQuizId) {
+      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+      const originalOverflow = document.body.style.overflow;
+      const originalPaddingRight = document.body.style.paddingRight;
       document.body.style.overflow = 'hidden';
+      if (scrollbarWidth > 0) {
+        document.body.style.paddingRight = `${scrollbarWidth}px`;
+      }
       const handleKeyDown = (e: KeyboardEvent) => {
         if (e.key === 'Escape') {
           setViewingLeaderboardQuizId(null);
@@ -105,11 +112,10 @@ export const StudentQuizzesPage: React.FC = () => {
       };
       window.addEventListener('keydown', handleKeyDown);
       return () => {
-        document.body.style.overflow = 'unset';
+        document.body.style.overflow = originalOverflow;
+        document.body.style.paddingRight = originalPaddingRight;
         window.removeEventListener('keydown', handleKeyDown);
       };
-    } else {
-      document.body.style.overflow = 'unset';
     }
   }, [viewingLeaderboardQuizId]);
 
@@ -262,9 +268,9 @@ export const StudentQuizzesPage: React.FC = () => {
         </div>
 
         {/* Prominent Glassmorphic 30-Second Final Countdown */}
-        {remainingSeconds <= 30 && remainingSeconds > 0 && (
-          <div className="fixed bottom-6 right-6 z-50 animate-scaleUp">
-            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/85 backdrop-blur-xl border-2 border-rose-500/70 shadow-[0_0_35px_rgba(244,63,94,0.4)] flex items-center gap-4 text-white">
+        {remainingSeconds <= 30 && remainingSeconds > 0 && createPortal(
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] w-[min(90vw,500px)] flex justify-center pointer-events-none">
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/85 backdrop-blur-xl border-2 border-rose-500/70 shadow-[0_0_35px_rgba(244,63,94,0.4)] flex items-center gap-4 text-white pointer-events-auto">
               <div className="relative w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/50 flex flex-col items-center justify-center shrink-0">
                 <span className="text-2xl font-black font-mono text-rose-300 animate-pulse">
                   {remainingSeconds}s
@@ -291,7 +297,8 @@ export const StudentQuizzesPage: React.FC = () => {
                 Submit Now
               </button>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Question Navigation Bar (1, 2, 3...) */}
@@ -413,9 +420,15 @@ export const StudentQuizzesPage: React.FC = () => {
         ) : null}
 
         {/* Submit Confirmation Modal */}
-        {showSubmitConfirm && (
-          <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-md p-4 flex items-center justify-center">
-            <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-md w-full p-6 md:p-8 space-y-4 shadow-2xl text-center">
+        {showSubmitConfirm && createPortal(
+          <div 
+            className="quiz-modal-overlay modal-overlay skillnova-modal-overlay fixed inset-0 z-[9999] bg-slate-900/60 dark:bg-black/80 backdrop-blur-md p-4 flex items-center justify-center overflow-hidden"
+            onClick={() => setShowSubmitConfirm(false)}
+          >
+            <div 
+              className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 w-[min(90vw,480px)] max-w-md p-6 md:p-8 space-y-4 shadow-2xl text-center relative"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="w-14 h-14 rounded-2xl bg-[#00A3FF]/20 border border-[#00A3FF]/40 text-[#00A3FF] mx-auto flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
@@ -446,7 +459,8 @@ export const StudentQuizzesPage: React.FC = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     );
@@ -704,14 +718,22 @@ export const StudentQuizzesPage: React.FC = () => {
         const lbQuiz = quizzes.find((q) => q.id === viewingLeaderboardQuizId);
         if (!lbQuiz) return null;
 
-        return (
+        return createPortal(
           <div 
-            className="modal-overlay skillnova-modal-overlay fixed inset-0 z-50 bg-slate-900/80 dark:bg-black/85 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-start sm:items-center justify-center overflow-y-auto animate-fadeIn"
+            className="quiz-modal-overlay modal-overlay skillnova-modal-overlay fixed inset-0 z-[9999] bg-slate-900/80 dark:bg-black/85 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-hidden"
             onClick={(e) => {
               if (e.target === e.currentTarget) setViewingLeaderboardQuizId(null);
             }}
           >
-            <div className="w-full max-w-5xl my-auto animate-scaleUp relative">
+            <div 
+              ref={(el) => el?.focus()}
+              tabIndex={0}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`${lbQuiz.title} Official Leaderboard`}
+              className="quiz-leaderboard-floating-box quiz-modal-content modal-content skillnova-modal-content w-[min(90vw,1100px)] max-w-5xl relative bg-white dark:bg-[#070D1B] rounded-3xl border border-slate-200 dark:border-white/10 shadow-2xl overflow-y-auto overflow-x-hidden max-h-[calc(100vh-40px)] overscroll-contain outline-none focus:outline-none"
+              onClick={(e) => e.stopPropagation()}
+            >
               <GlobalQuizLeaderboardView
                 quiz={lbQuiz}
                 currentStudentId={studentId}
@@ -722,7 +744,8 @@ export const StudentQuizzesPage: React.FC = () => {
                 onBackToQuizzes={() => setViewingLeaderboardQuizId(null)}
               />
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 

@@ -1808,7 +1808,7 @@ class DataService {
         .order("order_index");
 
       if (!error && Array.isArray(data)) {
-        const remoteModules = data.map((m: any) => ({
+        const remoteModules: CourseModule[] = data.map((m: any) => ({
           id: m.id,
 
           course_id: m.course_id,
@@ -1820,7 +1820,7 @@ class DataService {
           order_index: m.order_index || 1,
         }));
 
-        const mergedModules = [...remoteModules];
+        const mergedModules: CourseModule[] = [...remoteModules];
         INITIAL_MODULES.forEach(im => {
           if (!mergedModules.some(m => m.id === im.id)) {
             mergedModules.push(im);

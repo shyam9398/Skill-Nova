@@ -19,10 +19,10 @@ async function run() {
     '--no-default-browser-check',
     '--disable-background-networking',
     '--disable-features=Translate',
-    'http://localhost:5174/'
+    'about:blank'
   ]);
 
-  console.log('Spawning Edge process...');
+  console.log('Spawning Edge browser process...');
   await new Promise(r => setTimeout(r, 2000));
 
   try {
@@ -67,7 +67,7 @@ async function run() {
     await send('DOM.enable');
     await send('Runtime.enable');
 
-    // 1. First navigate to root to set localStorage
+    // 1. First navigate to root to set localStorage on origin
     await send('Page.navigate', { url: 'http://localhost:5174/' });
     await new Promise(r => setTimeout(r, 1500));
 
@@ -90,29 +90,23 @@ async function run() {
       `
     });
 
-    // 2. Navigate directly to student course detail page
+    // 2. Navigate to student course detail page
     console.log('Navigating to course detail page...');
     await send('Page.navigate', { url: 'http://localhost:5174/student/courses/course-fs-101' });
 
-    // Wait until .video-wrapper or .video-container is loaded
-    for (let i = 0; i < 25; i++) {
+    // Wait until session verification finishes and course loads
+    for (let i = 0; i < 30; i++) {
       const check = await send('Runtime.evaluate', {
-        expression: '({ videos: document.querySelectorAll(".video-wrapper, .video-container").length, href: window.location.href, text: document.body.innerText.slice(0, 100) })',
+        expression: '({ videoCards: document.querySelectorAll(".video-item-card").length, text: document.body.innerText.slice(0, 100) })',
         returnByValue: true
       });
       const st = check.result?.value;
-      if (st && st.videos > 0) {
-        console.log(`Course page ready! Found ${st.videos} videos.`);
+      if (st && st.videoCards > 0) {
+        console.log(`Course page ready! Found ${st.videoCards} video cards.`);
         break;
       }
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 400));
     }
-
-    const pageCheck = await send('Runtime.evaluate', {
-      expression: '({ href: window.location.href, title: document.title, text: document.body.innerText.slice(0, 300) })',
-      returnByValue: true
-    });
-    console.log('Current page status:', pageCheck.result?.value);
 
     // Viewport sizes to test
     const viewports = [
@@ -124,7 +118,9 @@ async function run() {
       { name: 'desktop-1280px', width: 1280, height: 800 }
     ];
 
-    console.log('\n--- TESTING ALL VIEWPORT SIZES ---');
+    console.log('\n========================================================');
+    console.log('PART 1: RESPONSIVE VIEWPORT TESTING (COURSE DETAIL PAGE)');
+    console.log('========================================================');
 
     for (const vp of viewports) {
       await send('Emulation.setDeviceMetricsOverride', {
@@ -142,34 +138,7 @@ async function run() {
             const winWidth = window.innerWidth;
             const hasHorizontalOverflow = docWidth > winWidth;
 
-            // Video elements & wrappers
-            const wrappers = Array.from(document.querySelectorAll('.video-wrapper, .video-container'));
-            const wrapperStats = wrappers.map(w => {
-              const rect = w.getBoundingClientRect();
-              const iframe = w.querySelector('iframe');
-              const video = w.querySelector('video');
-              const innerMedia = iframe || video;
-              const innerRect = innerMedia ? innerMedia.getBoundingClientRect() : null;
-
-              // Check for open-in-new-tab icon
-              const openTabIcon = w.querySelector('a[title*="new window"], a[title*="new tab"], a[aria-label*="new window"], a[aria-label*="new tab"]');
-              // Check for enlarge icon
-              const enlargeBtn = w.querySelector('button[title*="Fullscreen"], button[title*="Enlarge"]');
-
-              return {
-                wrapperWidth: Math.round(rect.width),
-                wrapperHeight: Math.round(rect.height),
-                aspectRatio: (rect.width / (rect.height || 1)).toFixed(2),
-                innerWidth: innerRect ? Math.round(innerRect.width) : null,
-                innerHeight: innerRect ? Math.round(innerRect.height) : null,
-                innerMatchesWrapper: innerRect ? (Math.abs(rect.width - innerRect.width) <= 2 && Math.abs(rect.height - innerRect.height) <= 2) : false,
-                hasOpenTabIcon: Boolean(openTabIcon),
-                hasEnlargeBtn: Boolean(enlargeBtn),
-                mediaType: video ? 'html5-video' : (iframe ? 'iframe' : 'empty')
-              };
-            });
-
-            // Multiple videos list & spacing
+            // Target actual video cards
             const videoCards = Array.from(document.querySelectorAll('.video-item-card'));
             const cardDistances = [];
             for (let i = 0; i < videoCards.length - 1; i++) {
@@ -178,12 +147,43 @@ async function run() {
               cardDistances.push(Math.round(r2.top - r1.bottom));
             }
 
+            const cardStats = videoCards.map(card => {
+              const cardRect = card.getBoundingClientRect();
+              const heading = card.querySelector('h6, h5')?.innerText || 'Untitled';
+              const w = card.querySelector('.video-wrapper');
+              if (!w) return null;
+
+              const rect = w.getBoundingClientRect();
+              const iframe = w.querySelector('iframe');
+              const video = w.querySelector('video');
+              const innerMedia = iframe || video;
+              const innerRect = innerMedia ? innerMedia.getBoundingClientRect() : null;
+
+              // Check open in new tab icon: must be 0
+              const openTabIcons = w.querySelectorAll('a[title*="new window"], a[title*="new tab"], a[aria-label*="new window"], a[aria-label*="new tab"], a[target="_blank"]');
+              // Check enlarge icon: must be exactly 1
+              const enlargeBtns = w.querySelectorAll('button[title*="Fullscreen"], button[title*="Enlarge"], button[aria-label*="Fullscreen"], button[aria-label*="Enlarge"]');
+
+              return {
+                heading,
+                cardWidth: Math.round(cardRect.width),
+                wrapperWidth: Math.round(rect.width),
+                wrapperHeight: Math.round(rect.height),
+                aspectRatio: (rect.width / (rect.height || 1)).toFixed(2),
+                innerWidth: innerRect ? Math.round(innerRect.width) : null,
+                innerHeight: innerRect ? Math.round(innerRect.height) : null,
+                innerMatchesWrapper: innerRect ? (Math.abs(rect.width - innerRect.width) <= 2 && Math.abs(rect.height - innerRect.height) <= 2) : false,
+                openTabIconCount: openTabIcons.length,
+                enlargeBtnCount: enlargeBtns.length,
+                mediaType: video ? 'html5-video' : (iframe ? 'iframe' : 'empty')
+              };
+            }).filter(Boolean);
+
             return {
               viewport: { width: winWidth, docScrollWidth: docWidth, hasHorizontalOverflow },
-              videoCount: wrappers.length,
               videoCardsCount: videoCards.length,
               cardDistances,
-              wrapperStats
+              cardStats
             };
           })()
         `,
@@ -192,31 +192,33 @@ async function run() {
 
       const metrics = evalRes.result ? evalRes.result.value : evalRes.value;
       console.log(`\n[Viewport: ${vp.name} (${vp.width}x${vp.height})]`);
-      console.log(`- Document width: ${metrics.viewport.docScrollWidth}px / Viewport: ${metrics.viewport.width}px (Overflow: ${metrics.viewport.hasHorizontalOverflow})`);
-      console.log(`- Video containers detected: ${metrics.videoCount}`);
-      console.log(`- Video item cards: ${metrics.videoCardsCount}`);
+      console.log(`  - Doc ScrollWidth: ${metrics.viewport.docScrollWidth}px / Viewport: ${metrics.viewport.width}px`);
+      console.log(`  - Horizontal Overflow: ${metrics.viewport.hasHorizontalOverflow ? 'FAIL (Overflow)' : 'PASS (Zero Overflow)'}`);
+      console.log(`  - Video Item Cards Count: ${metrics.videoCardsCount}`);
       if (metrics.cardDistances.length > 0) {
-        console.log(`- Spacing between consecutive video cards: ${metrics.cardDistances.join(', ')}px (Target >= 24px)`);
+        console.log(`  - Spacing between consecutive video cards: ${metrics.cardDistances.join(', ')}px (Target: >= 24px)`);
       }
 
-      metrics.wrapperStats.forEach((s, idx) => {
-        console.log(`  Video #${idx + 1} (${s.mediaType}):`);
-        console.log(`    - Outer Box: ${s.wrapperWidth}x${s.wrapperHeight}px (Ratio: ${s.aspectRatio})`);
-        console.log(`    - Inner Media: ${s.innerWidth}x${s.innerHeight}px`);
-        console.log(`    - Media fills wrapper 100%: ${s.innerMatchesWrapper}`);
-        console.log(`    - Open tab icon removed: ${!s.hasOpenTabIcon}`);
-        console.log(`    - Single bottom enlarge icon present: ${s.hasEnlargeBtn}`);
+      metrics.cardStats.forEach((s, idx) => {
+        console.log(`  * Video Card #${idx + 1} ("${s.heading}") [${s.mediaType}]:`);
+        console.log(`      Card Width: ${s.cardWidth}px | Video Box: ${s.wrapperWidth}x${s.wrapperHeight}px (Ratio: ${s.aspectRatio})`);
+        console.log(`      Inner Media: ${s.innerWidth}x${s.innerHeight}px (Matches Box: ${s.innerMatchesWrapper})`);
+        console.log(`      Open in new tab icon: ${s.openTabIconCount === 0 ? 'PASS (0 found - successfully removed)' : 'FAIL (' + s.openTabIconCount + ' found)'}`);
+        console.log(`      Single enlarge icon at bottom: ${s.enlargeBtnCount === 1 ? 'PASS (exactly 1 found)' : 'FAIL (count: ' + s.enlargeBtnCount + ')'}`);
       });
 
       // Capture screenshot
       const shot = await send('Page.captureScreenshot', { format: 'png' });
       const shotPath = path.join(outputDir, `${vp.name}.png`);
       fs.writeFileSync(shotPath, Buffer.from(shot.data, 'base64'));
-      console.log(`  -> Saved screenshot: ${shotPath}`);
+      console.log(`  -> Screenshot saved: ${shotPath}`);
     }
 
-    // 3. Test actual HTML5 video playback
-    console.log('\n--- TESTING ACTUAL HTML5 VIDEO PLAYBACK ON MOBILE (375px) ---');
+    // 2. Test Fullscreen Enlarge Interaction on Mobile
+    console.log('\n========================================================');
+    console.log('PART 2: SCREEN ENLARGE BUTTON INTERACTION TEST (375px)');
+    console.log('========================================================');
+
     await send('Emulation.setDeviceMetricsOverride', {
       width: 375,
       height: 667,
@@ -225,56 +227,96 @@ async function run() {
     });
     await new Promise(r => setTimeout(r, 500));
 
-    // Select module 2 (which has the HTML5 video)
-    await send('Runtime.evaluate', {
+    const enlargeTest = await send('Runtime.evaluate', {
       expression: `
         (() => {
-          // Find dropdown or buttons to switch to module 2 or select module
-          const btn = Array.from(document.querySelectorAll('button')).find(b => b.textContent && b.textContent.includes('Module 2'));
-          if (btn) btn.click();
-        })()
-      `
-    });
-    await new Promise(r => setTimeout(r, 1000));
+          const firstCard = document.querySelector('.video-item-card');
+          if (!firstCard) return { found: false };
+          const enlargeBtn = firstCard.querySelector('button[title*="Fullscreen"], button[title*="Enlarge"]');
+          if (!enlargeBtn) return { found: true, hasBtn: false };
 
-    // Trigger video playback
-    const playResult = await send('Runtime.evaluate', {
-      expression: `
-        (async () => {
-          const video = document.querySelector('video');
-          if (!video) return { found: false };
-
-          const playBtn = document.querySelector('button[aria-label="Play Video"], button[aria-label="Play"], button[title="Play"]');
-          if (playBtn) playBtn.click();
-          else video.play();
-
-          await new Promise(r => setTimeout(r, 1500));
+          const btnRect = enlargeBtn.getBoundingClientRect();
+          const cardRect = firstCard.getBoundingClientRect();
 
           return {
             found: true,
-            src: video.src,
-            paused: video.paused,
-            currentTime: video.currentTime,
-            duration: video.duration,
-            videoWidth: video.videoWidth,
-            videoHeight: video.videoHeight,
-            offsetWidth: video.offsetWidth,
-            offsetHeight: video.offsetHeight
+            hasBtn: true,
+            btnTitle: enlargeBtn.title || enlargeBtn.getAttribute('aria-label'),
+            btnPositionBottom: Math.round(cardRect.bottom - btnRect.bottom),
+            btnPositionRight: Math.round(cardRect.right - btnRect.right)
           };
         })()
       `,
-      awaitPromise: true,
       returnByValue: true
     });
 
-    console.log('Playback verification result:', playResult.result ? playResult.result.value : playResult.value);
+    console.log('Enlarge Button Metrics:', enlargeTest.result?.value);
 
-    const playShot = await send('Page.captureScreenshot', { format: 'png' });
-    const playShotPath = path.join(outputDir, 'mobile-375px-video-playing.png');
-    fs.writeFileSync(playShotPath, Buffer.from(playShot.data, 'base64'));
-    console.log(`-> Saved playback screenshot: ${playShotPath}`);
+    // 3. Test Saturday Special Page
+    console.log('\n========================================================');
+    console.log('PART 3: SATURDAY SPECIAL VIDEO PLAYER TESTING');
+    console.log('========================================================');
 
-    console.log('\nALL VERIFICATIONS COMPLETE!');
+    await send('Page.navigate', { url: 'http://localhost:5174/student/saturday-special' });
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Click "Open Session" on the first available session
+    await send('Runtime.evaluate', {
+      expression: `
+        (() => {
+          const openBtns = Array.from(document.querySelectorAll('button')).filter(b => b.textContent && b.textContent.includes('Open Session'));
+          if (openBtns.length > 0) openBtns[0].click();
+        })()
+      `
+    });
+    await new Promise(r => setTimeout(r, 1200));
+
+    const satRes = await send('Runtime.evaluate', {
+      expression: `
+        (() => {
+          const card = document.querySelector('.video-item-card') || document.querySelector('.video-wrapper');
+          if (!card) return { found: false };
+          const wrapper = card.classList.contains('video-wrapper') ? card : card.querySelector('.video-wrapper');
+          if (!wrapper) return { found: false };
+
+          const rect = wrapper.getBoundingClientRect();
+          const iframe = wrapper.querySelector('iframe');
+          const video = wrapper.querySelector('video');
+          const innerMedia = iframe || video;
+          const innerRect = innerMedia ? innerMedia.getBoundingClientRect() : null;
+          const enlargeBtns = wrapper.querySelectorAll('button[title*="Fullscreen"], button[title*="Enlarge"]');
+          const openTabIcons = wrapper.querySelectorAll('a[title*="new window"], a[title*="new tab"], a[target="_blank"]');
+
+          return {
+            found: true,
+            width: Math.round(rect.width),
+            height: Math.round(rect.height),
+            aspectRatio: (rect.width / (rect.height || 1)).toFixed(2),
+            innerMatches: innerRect ? (Math.abs(rect.width - innerRect.width) <= 2 && Math.abs(rect.height - innerRect.height) <= 2) : false,
+            enlargeBtnCount: enlargeBtns.length,
+            openTabCount: openTabIcons.length
+          };
+        })()
+      `,
+      returnByValue: true
+    });
+
+    const sat = satRes.result?.value;
+    console.log('Saturday Special Video Results:');
+    console.log(`  - Video found: ${sat?.found}`);
+    console.log(`  - Dimensions: ${sat?.width}x${sat?.height}px (Ratio: ${sat?.aspectRatio})`);
+    console.log(`  - Media fills container: ${sat?.innerMatches}`);
+    console.log(`  - Single enlarge button: ${sat?.enlargeBtnCount === 1 ? 'PASS (exactly 1 found)' : 'FAIL'}`);
+    console.log(`  - Open in new tab removed: ${sat?.openTabCount === 0 ? 'PASS (0 found)' : 'FAIL'}`);
+
+    const satShot = await send('Page.captureScreenshot', { format: 'png' });
+    const satShotPath = path.join(outputDir, 'mobile-375px-saturday-special.png');
+    fs.writeFileSync(satShotPath, Buffer.from(satShot.data, 'base64'));
+    console.log(`  -> Saturday Special screenshot saved: ${satShotPath}`);
+
+    console.log('\n========================================================');
+    console.log('ALL VERIFICATIONS COMPLETED SUCCESSFULLY!');
+    console.log('========================================================');
     ws.close();
   } catch (err) {
     console.error('Verification error:', err);

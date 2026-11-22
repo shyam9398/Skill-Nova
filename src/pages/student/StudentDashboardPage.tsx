@@ -11,7 +11,7 @@ import { dataService } from '../../services/dataService';
 import { InteractiveDashboardRoadmap } from '../../components/dashboard/InteractiveDashboardRoadmap';
 import { StudentNotificationTicker } from '../../components/dashboard/StudentNotificationTicker';
 import { StudentLiveMeetingBanner } from '../../components/dashboard/StudentLiveMeetingBanner';
-import type { Course, CourseModule, Topic, QuizAttempt, StudentRoadmapProgress, TickerAnnouncement, HomepageSettings } from '../../types';
+import type { Course, CourseModule, Topic, QuizAttempt, StudentRoadmapProgress, TickerAnnouncement, HomepageSettings, StudentDashboardAnalytics } from '../../types';
 
 export const StudentDashboardPage: React.FC = () => {
   const { currentUser } = useAuth();
@@ -26,6 +26,9 @@ export const StudentDashboardPage: React.FC = () => {
   );
   const [tickerAnnouncements, setTickerAnnouncements] = useState<TickerAnnouncement[]>([]);
   const [homepageSettings, setHomepageSettings] = useState<HomepageSettings>(dataService.getHomepageSettings());
+  const [analytics, setAnalytics] = useState<StudentDashboardAnalytics>(() =>
+    dataService.getStudentAnalytics(studentId)
+  );
 
   useEffect(() => {
     void dataService.syncAllFromSupabase();
@@ -44,6 +47,7 @@ export const StudentDashboardPage: React.FC = () => {
       setQuizAttempts(dataService.getQuizAttempts(studentId));
       setTickerAnnouncements(dataService.getStudentTickerAnnouncements(studentId));
       setHomepageSettings(dataService.getHomepageSettings());
+      setAnalytics(dataService.getStudentAnalytics(studentId));
       if (courses.length > 0) {
         setRoadmapProgress(dataService.getStudentRoadmapProgress(studentId, courses[0].id));
       }
@@ -53,32 +57,19 @@ export const StudentDashboardPage: React.FC = () => {
     return dataService.subscribe(load);
   }, [currentUser, studentId]);
 
-  // Real Analytics Calculations
-  const totalModulesCount = Object.values(modulesByCourse).reduce((acc, mods) => acc + mods.length, 0) || 12;
-  const completedLessons = quizAttempts.length || 7;
-  const completedModulesCount = Math.min(totalModulesCount, Math.floor(completedLessons / 2) + 2);
-  const pendingModulesCount = Math.max(0, totalModulesCount - completedModulesCount);
-
-  const averageQuizScore = quizAttempts.length > 0
-    ? Math.round(quizAttempts.reduce((acc, a) => acc + (a.score / (a.total_questions || 10)) * 100, 0) / quizAttempts.length)
-    : 86;
-
-  const currentStreak = 12; // 12-day active learning streak
-  const longestStreak = 21;
-  const activeLearningDays = 19;
-  const totalXP = 2450 + (completedLessons * 120);
-
-  const overallProgress = Math.round(
-    Math.min(100, (completedModulesCount / Math.max(1, totalModulesCount)) * 100)
-  );
-
-  // Generate 84 days (12 weeks) contribution grid
-  const daysInGrid = 84;
-  const activityLevels = [0, 1, 2, 3, 2, 1, 3, 0, 2, 3, 1, 2, 3, 3, 2, 1, 0, 2, 3, 3, 2, 1, 2, 3, 0, 1, 2, 3];
-  const gridBoxes = Array.from({ length: daysInGrid }, (_, i) => {
-    const level = activityLevels[i % activityLevels.length];
-    return { day: i + 1, level };
-  });
+  // Real, Student-Specific Dynamic Calculations
+  const {
+    overallProgress,
+    currentStreak,
+    longestStreak,
+    activeLearningDays,
+    completedModulesCount,
+    pendingModulesCount,
+    averageQuizScore,
+    totalXP,
+    scholarLevel,
+    activityHeatmap,
+  } = analytics;
 
   return (
     <div className="space-y-6 animate-fadeIn max-w-7xl mx-auto pb-16 text-black dark:text-[#F0F5FF]">
@@ -192,7 +183,7 @@ export const StudentDashboardPage: React.FC = () => {
         <div className="dark-section dark-card p-4 rounded-2xl bg-[#101A2D] border border-white/10 space-y-1">
           <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider block">Skill XP</span>
           <div className="text-xl font-black text-purple-300">{totalXP}</div>
-          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>Level 4 Scholar</span>
+          <span className="text-[10px] text-slate-200 dark:text-[#9BAAC2] font-semibold block" style={{ color: '#CBD5E1' }}>{scholarLevel}</span>
         </div>
       </div>
 
@@ -223,7 +214,7 @@ export const StudentDashboardPage: React.FC = () => {
         {/* The Grid of Small Dark Boxes */}
         <div className="p-4 bg-[#0A101D] rounded-2xl border border-white/5 overflow-x-auto">
           <div className="grid grid-flow-col grid-rows-7 gap-1.5 w-max">
-            {gridBoxes.map((box) => {
+            {activityHeatmap.map((box) => {
               const bgClass =
                 box.level === 0
                   ? 'bg-[#15233A] border border-white/5'
@@ -235,8 +226,8 @@ export const StudentDashboardPage: React.FC = () => {
 
               return (
                 <div
-                  key={box.day}
-                  title={`Day ${box.day}: ${box.level > 0 ? `${box.level * 2} learning sessions completed` : 'Rest day'}`}
+                  key={box.dayNumber}
+                  title={`${box.date}: ${box.count > 0 ? `${box.count} learning activity session${box.count > 1 ? 's' : ''} completed` : 'Rest day'}`}
                   className={`w-3.5 h-3.5 rounded-xs transition-transform hover:scale-125 cursor-pointer ${bgClass}`}
                 />
               );

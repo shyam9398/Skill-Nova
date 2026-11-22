@@ -19,11 +19,13 @@ import {
   ShieldAlert,
   User,
   Award,
-  HelpCircle
+  HelpCircle,
+  Download
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useAuth } from '../../context/AuthContext';
 import { GlobalQuizLeaderboardView } from '../../components/quizzes/GlobalQuizLeaderboardView';
+import { QuizPdfPreviewModal } from '../../components/quizzes/QuizPdfPreviewModal';
 import type { Quiz, QuizAttempt, QuizLeaderboardEntry, QuizQuestionItem } from '../../types';
 
 export const StudentQuizzesPage: React.FC = () => {
@@ -34,6 +36,7 @@ export const StudentQuizzesPage: React.FC = () => {
   const [studentAttempts, setStudentAttempts] = useState<QuizAttempt[]>(() => 
     dataService.getQuizAttemptsForStudent(undefined, studentId)
   );
+  const [previewPdfQuiz, setPreviewPdfQuiz] = useState<Quiz | null>(null);
 
   useEffect(() => {
     void dataService.syncQuizzesFromSupabase();
@@ -237,6 +240,39 @@ export const StudentQuizzesPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Prominent Glassmorphic 30-Second Final Countdown */}
+        {remainingSeconds <= 30 && remainingSeconds > 0 && (
+          <div className="fixed bottom-6 right-6 z-50 animate-scaleUp">
+            <div className="p-4 sm:p-5 rounded-3xl bg-slate-950/85 backdrop-blur-xl border-2 border-rose-500/70 shadow-[0_0_35px_rgba(244,63,94,0.4)] flex items-center gap-4 text-white">
+              <div className="relative w-16 h-16 rounded-2xl bg-rose-500/20 border border-rose-500/50 flex flex-col items-center justify-center shrink-0">
+                <span className="text-2xl font-black font-mono text-rose-300 animate-pulse">
+                  {remainingSeconds}s
+                </span>
+                <span className="text-[9px] font-mono uppercase tracking-widest text-rose-400 font-bold">
+                  LEFT
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                <span className="text-xs font-black text-rose-400 flex items-center gap-1.5 uppercase tracking-wider font-mono">
+                  <Clock className="w-3.5 h-3.5 animate-spin-slow" />
+                  Final 30 Seconds!
+                </span>
+                <p className="text-[11px] text-slate-300 max-w-xs leading-tight">
+                  Time is almost up! Quiz will automatically submit when countdown reaches zero.
+                </p>
+              </div>
+
+              <button
+                onClick={() => handleFinalSubmit(false)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-500 to-amber-500 hover:opacity-95 text-white text-xs font-black shadow-lg shadow-rose-500/25 shrink-0 transition"
+              >
+                Submit Now
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Question Navigation Bar (1, 2, 3...) */}
         <div className="rounded-2xl bg-white dark:bg-[#091226] border border-slate-200 dark:border-white/10 p-4 flex items-center justify-between gap-3 overflow-x-auto no-scrollbar shadow-sm">
@@ -614,6 +650,18 @@ export const StudentQuizzesPage: React.FC = () => {
                     <Trophy className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                     <span>Leaderboard</span>
                   </button>
+
+                  {/* PDF Study Guide Button (for closed or attempted quizzes) */}
+                  {(quiz.status === 'closed' || (firstAttempt && !isUpcoming)) && quiz.questions && quiz.questions.length > 0 && (
+                    <button
+                      onClick={() => setPreviewPdfQuiz(quiz)}
+                      className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-[#176BFF]/10 to-[#00A3FF]/15 hover:from-[#176BFF]/20 hover:to-[#00A3FF]/25 text-[#176BFF] dark:text-[#00E5FF] text-xs font-bold transition border border-[#176BFF]/30 flex items-center gap-1.5"
+                      title="Preview & Download Quiz Questions & Explanations PDF"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">PDF Guide</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -647,6 +695,15 @@ export const StudentQuizzesPage: React.FC = () => {
           </div>
         );
       })()}
+
+      {/* Standalone Quiz PDF Preview & Download Modal */}
+      {previewPdfQuiz && (
+        <QuizPdfPreviewModal
+          quiz={previewPdfQuiz}
+          isOpen={Boolean(previewPdfQuiz)}
+          onClose={() => setPreviewPdfQuiz(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1091,3 +1091,45 @@ export interface TickerAnnouncement {
   is_external_link?: boolean;
   priority?: number;
 }
+
+export interface StudentActivity {
+  id: string;
+  student_id: string;
+  course_id?: string;
+  activity_type:
+    | 'video_view'
+    | 'slide_view'
+    | 'pdf_view'
+    | 'quiz_attempt'
+    | 'module_complete'
+    | 'topic_complete'
+    | 'practical_submit';
+  item_id: string;
+  item_title?: string;
+  xp_earned: number;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface HeatmapDay {
+  date: string;
+  dayNumber: number;
+  count: number;
+  level: 0 | 1 | 2 | 3;
+}
+
+export interface StudentDashboardAnalytics {
+  overallProgress: number;
+  currentStreak: number;
+  longestStreak: number;
+  activeLearningDays: number;
+  completedModulesCount: number;
+  pendingModulesCount: number;
+  totalModulesCount: number;
+  averageQuizScore: number;
+  totalXP: number;
+  scholarLevel: string;
+  activityHeatmap: HeatmapDay[];
+  recentActivities: StudentActivity[];
+}
+

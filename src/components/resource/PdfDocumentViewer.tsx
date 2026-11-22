@@ -13,6 +13,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import type { PdfPageAllocation } from '../../types';
+import { dataService } from '../../services/dataService';
 
 interface PdfDocumentViewerProps {
   pdfUrl: string;
@@ -47,6 +48,25 @@ export const PdfDocumentViewer: React.FC<PdfDocumentViewerProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(startPage);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+  const hasRecordedPdfActivity = useRef(false);
+
+  useEffect(() => {
+    if (hasRecordedPdfActivity.current || !isAccessible) return;
+    const timer = window.setTimeout(() => {
+      hasRecordedPdfActivity.current = true;
+      const currentUser = dataService.getCurrentUser();
+      void dataService.recordStudentActivity({
+        student_id: currentUser?.id || 'usr-student-1',
+        course_id: allocation?.course_id,
+        activity_type: 'pdf_view',
+        item_id: allocation?.id || pdfUrl,
+        item_title: title || 'PDF Document',
+        xp_earned: 20,
+        metadata: { subModuleTitle, startPage, endPage },
+      });
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [isAccessible, allocation, pdfUrl, title, subModuleTitle, startPage, endPage]);
 
   // Sync starting page when authorized range changes
   useEffect(() => {

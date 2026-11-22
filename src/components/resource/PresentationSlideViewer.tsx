@@ -55,6 +55,24 @@ export const PresentationSlideViewer: React.FC<PresentationSlideViewerProps> = (
 
   // Current slide index relative to the accessible range (0-indexed: 0 = startSlide)
   const [currentRelativeIndex, setCurrentRelativeIndex] = useState<number>(0);
+  const hasRecordedSlideActivity = useRef(false);
+
+  useEffect(() => {
+    if (hasRecordedSlideActivity.current) return;
+    if (currentRelativeIndex >= Math.min(2, totalAccessible - 1)) {
+      hasRecordedSlideActivity.current = true;
+      const currentUser = dataService.getCurrentUser();
+      void dataService.recordStudentActivity({
+        student_id: currentUser?.id || 'usr-student-1',
+        course_id: presentation.course_id,
+        activity_type: 'slide_view',
+        item_id: presentation.id,
+        item_title: presentation.title || 'Presentation Slides',
+        xp_earned: 20,
+        metadata: { subModuleTitle, slidesViewed: currentRelativeIndex + 1 },
+      });
+    }
+  }, [currentRelativeIndex, totalAccessible, presentation, subModuleTitle]);
 
   const currentGlobalSlide = startSlide + currentRelativeIndex;
 

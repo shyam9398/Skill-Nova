@@ -14,6 +14,7 @@ import {
   Sparkles,
   ExternalLink
 } from 'lucide-react';
+import { dataService } from '../../services/dataService';
 
 interface EmbeddedVideoPlayerProps {
   url: string;
@@ -44,11 +45,36 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
+  const hasRecordedActivityRef = useRef<boolean>(false);
+
+  const recordViewingActivity = () => {
+    if (hasRecordedActivityRef.current) return;
+    hasRecordedActivityRef.current = true;
+    const currentUser = dataService.getCurrentUser();
+    void dataService.recordStudentActivity({
+      student_id: currentUser?.id || 'usr-student-1',
+      activity_type: 'video_view',
+      item_id: url,
+      item_title: title || 'Video Lesson',
+      xp_earned: 25,
+      metadata: { subtitle, duration },
+    });
+  };
 
   // Determine source type
   const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('blob:') || url.startsWith('data:');
   const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
   const isGoogleDrive = url.includes('drive.google.com') || url.includes('docs.google.com');
+
+  // For iframe embeds (YouTube / Drive), automatically record after 15s of interaction
+  useEffect(() => {
+    if (!isDirectVideo) {
+      const timer = window.setTimeout(() => {
+        recordViewingActivity();
+      }, 15000);
+      return () => window.clearTimeout(timer);
+    }
+  }, [isDirectVideo, url]);
 
   // Format Google Drive embed URL
   const getGoogleDriveEmbedUrl = (rawUrl: string): string => {
@@ -94,7 +120,11 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
 
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
-    setCurrentTime(videoRef.current.currentTime);
+    const cur = videoRef.current.currentTime;
+    setCurrentTime(cur);
+    if (videoRef.current.duration > 0 && cur / videoRef.current.duration >= 0.8) {
+      recordViewingActivity();
+    }
   };
 
   const handleLoadedMetadata = () => {
@@ -194,6 +224,7 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
             onLoadedMetadata={handleLoadedMetadata}
             onEnded={() => {
               setIsPlaying(false);
+              recordViewingActivity();
               if (onEnded) onEnded();
             }}
           />

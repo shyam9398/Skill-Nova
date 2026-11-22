@@ -5,6 +5,7 @@ import {
   ChevronLeft, ChevronRight, Maximize2, Minimize2
 } from 'lucide-react';
 import { resolveResourceUrl } from '../../utils/resourceUrlResolver';
+import { dataService } from '../../services/dataService';
 
 interface SkillNovaDocumentViewerProps {
   url: string;
@@ -30,6 +31,24 @@ export const SkillNovaDocumentViewer: React.FC<SkillNovaDocumentViewerProps> = (
   const containerRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const hasRecordedActivityRef = useRef(false);
+
+  useEffect(() => {
+    if (hasRecordedActivityRef.current || !url) return;
+    const timer = window.setTimeout(() => {
+      hasRecordedActivityRef.current = true;
+      const currentUser = dataService.getCurrentUser();
+      void dataService.recordStudentActivity({
+        student_id: currentUser?.id || 'usr-student-1',
+        activity_type: resourceType === 'ppt' ? 'slide_view' : 'pdf_view',
+        item_id: url,
+        item_title: title || 'Learning Resource',
+        xp_earned: 20,
+        metadata: { resourceType, startRange, endRange },
+      });
+    }, 5000);
+    return () => window.clearTimeout(timer);
+  }, [url, title, resourceType, startRange, endRange]);
 
   const minRange = startRange || 1;
   const maxRange = endRange || totalRange || 1;

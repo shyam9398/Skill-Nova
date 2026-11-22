@@ -32,6 +32,9 @@ import type {
   PdfPageAllocation,
   StudentRoadmapProgress,
   TickerAnnouncement,
+  StudentActivity,
+  StudentDashboardAnalytics,
+  HeatmapDay,
 } from "../types";
 
 import {
@@ -1204,6 +1207,8 @@ class DataService {
 
   private roadmapProgress: StudentRoadmapProgress[] = [];
 
+  private studentActivities: StudentActivity[] = [];
+
   private currentTheme: "light" | "dark" = "light";
 
   private interviews: InterviewQuestion[] = INITIAL_INTERVIEWS;
@@ -1323,6 +1328,8 @@ class DataService {
         "roadmapProgress",
         INITIAL_ROADMAP_PROGRESS,
       );
+
+      this.studentActivities = getOrInit("studentActivities", []);
 
       this.currentTheme =
         (localStorage.getItem("skillnova_theme") as "light" | "dark") ||
@@ -1491,6 +1498,7 @@ class DataService {
           this.syncQuizAttemptsFromSupabase(),
           this.syncPdfAllocationsFromSupabase(),
           this.syncRoadmapProgressFromSupabase(),
+          this.syncStudentActivitiesFromSupabase(),
           this.syncOpportunitiesFromSupabase(),
           this.syncSaturdaySpecialsFromSupabase(),
           this.syncNotificationsFromSupabase(),
@@ -1592,6 +1600,11 @@ class DataService {
           "postgres_changes",
           { event: "*", schema: "public", table: "student_progress" },
           () => this.syncRoadmapProgressFromSupabase(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "student_activities" },
+          () => this.syncStudentActivitiesFromSupabase(),
         )
         .on(
           "postgres_changes",
@@ -2280,6 +2293,37 @@ class DataService {
       }
     } catch (e) {
       console.warn("Sync roadmap progress error:", e);
+    }
+  }
+
+  public async syncStudentActivitiesFromSupabase() {
+    if (!isLiveSupabaseConfigured) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("student_activities")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && Array.isArray(data)) {
+        const remoteActivities: StudentActivity[] = data.map((act: any) => ({
+          id: act.id,
+          student_id: act.student_id,
+          course_id: act.course_id,
+          activity_type: act.activity_type,
+          item_id: act.item_id,
+          item_title: act.item_title,
+          xp_earned: Number(act.xp_earned) || 0,
+          metadata: typeof act.metadata === 'string' ? JSON.parse(act.metadata) : (act.metadata || {}),
+          created_at: act.created_at || new Date().toISOString()
+        }));
+
+        this.studentActivities = remoteActivities;
+        this.saveToStorage("studentActivities", this.studentActivities);
+        this.notifySubscribers();
+      }
+    } catch (e) {
+      console.warn("Sync student activities note:", e);
     }
   }
 
@@ -9146,8 +9190,8 @@ Module 3: Production Deployment & System Leadership
           const attempt: QuizAttempt = {
             id: rpcData.attempt_id,
             quiz_id: rpcData.quiz_id,
-            student_id: rpcData.student_id,
-            student_name: rpcData.student_name,
+            student_id: student.id,
+            student_name: rpcData.student_name || student.full_name || "Student Learner",
             score: Number(rpcData.score) || 0,
             total_marks: Number(rpcData.total_marks) || 100,
             total_questions: Number(rpcData.total_questions) || 0,
@@ -9166,6 +9210,14 @@ Module 3: Production Deployment & System Leadership
           this.quizAttemptsList = [attempt, ...this.quizAttemptsList.filter(a => a.id !== attempt.id)];
           this.saveToStorage("quizAttemptsList", this.quizAttemptsList);
           void this.syncQuizAttemptsFromSupabase();
+          await this.recordStudentActivity({
+            student_id: student.id,
+            course_id: quiz?.course_id,
+            activity_type: "quiz_attempt",
+            item_id: data.quiz_id,
+            item_title: quiz?.title || "Quiz Assessment",
+            xp_earned: 50 + Math.round(((attempt.accuracy || 0) / 100) * 50),
+          });
           this.notifySubscribers();
 
           return {
@@ -9246,6 +9298,15 @@ Module 3: Production Deployment & System Leadership
     this.quizAttemptsList.unshift(newAttempt);
     this.saveToStorage("quizAttemptsList", this.quizAttemptsList);
 
+    await this.recordStudentActivity({
+      student_id: newAttempt.student_id,
+      course_id: quiz?.course_id,
+      activity_type: "quiz_attempt",
+      item_id: data.quiz_id,
+      item_title: quiz?.title || "Quiz Assessment",
+      xp_earned: 50 + Math.round(((newAttempt.accuracy || 0) / 100) * 50),
+    });
+
     const leaderboard = this.getQuizLeaderboard(data.quiz_id);
     const myRankIdx = leaderboard.findIndex((e) => e.student_id === student.id);
     const rank = myRankIdx !== -1 ? myRankIdx + 1 : leaderboard.length + 1;
@@ -9267,8 +9328,11 @@ Module 3: Production Deployment & System Leadership
     studentId?: string,
   ): QuizAttempt[] {
     const sId = studentId || this.currentUser?.id || "usr-student-1";
+    const uuidSId = ensureUuid(sId);
 
-    let list = this.quizAttemptsList.filter((a) => a.student_id === sId);
+    let list = this.quizAttemptsList.filter(
+      (a) => a.student_id === sId || a.student_id === uuidSId
+    );
 
     if (quizId) {
       list = list.filter((a) => a.quiz_id === quizId);
@@ -9940,7 +10004,277 @@ Module 3: Production Deployment & System Leadership
     }
 
     this.notifySubscribers();
+
+    if (!allCurrentlyDone) {
+      void this.recordStudentActivity({
+        student_id: sId,
+        course_id: cId,
+        activity_type: "module_complete",
+        item_id: moduleId,
+        item_title: "Module Completed",
+        xp_earned: 100,
+      });
+    }
+
     return record;
+  }
+
+  // --- Student Activity Tracking & Dynamic Analytics ---
+
+  public async recordStudentActivity(
+    activity: Omit<StudentActivity, "id" | "created_at">
+  ): Promise<StudentActivity> {
+    const newAct: StudentActivity = {
+      id: `act-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      student_id: activity.student_id,
+      course_id: activity.course_id,
+      activity_type: activity.activity_type,
+      item_id: activity.item_id,
+      item_title: activity.item_title,
+      xp_earned: activity.xp_earned || 20,
+      metadata: activity.metadata || {},
+      created_at: new Date().toISOString(),
+    };
+
+    this.studentActivities.unshift(newAct);
+    this.saveToStorage("studentActivities", this.studentActivities);
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        const studentUid = ensureUuid(newAct.student_id);
+        const courseUid = newAct.course_id ? ensureUuid(newAct.course_id) : null;
+
+        await supabase.from("student_activities").insert({
+          id: ensureUuid(newAct.id),
+          student_id: studentUid,
+          course_id: courseUid,
+          activity_type: newAct.activity_type,
+          item_id: newAct.item_id,
+          item_title: newAct.item_title,
+          xp_earned: newAct.xp_earned,
+          metadata: newAct.metadata,
+          created_at: newAct.created_at,
+        });
+
+        if (courseUid) {
+          await supabase
+            .from("student_progress")
+            .update({ last_activity_at: newAct.created_at })
+            .eq("student_id", studentUid)
+            .eq("course_id", courseUid);
+        }
+      } catch (err) {
+        console.warn("Supabase recordStudentActivity note:", err);
+      }
+    }
+
+    this.notifySubscribers();
+    return newAct;
+  }
+
+  public getStudentActivities(studentId?: string): StudentActivity[] {
+    const sId = studentId || this.currentUser?.id || "usr-student-1";
+    const uuidSId = ensureUuid(sId);
+    return this.studentActivities.filter(
+      (a) => a.student_id === sId || a.student_id === uuidSId
+    );
+  }
+
+  public getStudentAnalytics(studentId?: string): StudentDashboardAnalytics {
+    const sId = studentId || this.currentUser?.id || "usr-student-1";
+    const enrolledCourses = this.getEnrolledCoursesForStudent(sId);
+    const activeCourses = enrolledCourses.length > 0 ? enrolledCourses : this.courses.slice(0, 1);
+
+    // 1. Modules & Progress Calculation
+    let totalModulesCount = 0;
+    let completedModulesCount = 0;
+    const completedSubModuleIds = new Set<string>();
+
+    activeCourses.forEach((c) => {
+      const courseProgress = this.getStudentRoadmapProgress(sId, c.id);
+      (courseProgress.completed_sub_modules || []).forEach((id) => completedSubModuleIds.add(id));
+
+      const modules = this.getModulesForCourse(c.id);
+      totalModulesCount += modules.length;
+
+      modules.forEach((mod) => {
+        const subMods = mod.sub_modules || [];
+        if (subMods.length > 0) {
+          const allDone = subMods.every((sm) => completedSubModuleIds.has(sm.id));
+          if (allDone) completedModulesCount++;
+        } else if (completedSubModuleIds.has(mod.id)) {
+          completedModulesCount++;
+        }
+      });
+    });
+
+    const pendingModulesCount = Math.max(0, totalModulesCount - completedModulesCount);
+
+    // 2. Quiz Attempts & Average
+    const studentQuizzes = this.getQuizAttemptsForStudent(undefined, sId);
+    let averageQuizScore = 0;
+    if (studentQuizzes.length > 0) {
+      const totalPct = studentQuizzes.reduce((acc, a) => {
+        const pct =
+          a.accuracy !== undefined && !isNaN(a.accuracy)
+            ? a.accuracy
+            : a.percentage !== undefined && !isNaN(a.percentage)
+            ? a.percentage
+            : (a.score / (a.total_marks || a.total_questions || 10)) * 100;
+        return acc + pct;
+      }, 0);
+      averageQuizScore = Math.round(totalPct / studentQuizzes.length);
+    }
+
+    // 3. Overall Content Progress %
+    const totalContentUnits = Math.max(1, totalModulesCount + (studentQuizzes.length > 0 ? studentQuizzes.length : 2));
+    const distinctCompletedQuizzes = new Set(studentQuizzes.map((q) => q.quiz_id)).size;
+    const completedContentUnits = completedModulesCount + distinctCompletedQuizzes;
+    const overallProgress = Math.min(100, Math.round((completedContentUnits / totalContentUnits) * 100));
+
+    // 4. Activity Dates Map (for Streak, Active Days & Heatmap)
+    const activities = this.getStudentActivities(sId);
+    const practicals = this.getStudentPracticalSubmissions(sId);
+
+    const dateCountMap = new Map<string, number>();
+
+    const recordDate = (isoString?: string) => {
+      if (!isoString) return;
+      try {
+        const d = new Date(isoString);
+        if (isNaN(d.getTime())) return;
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        const key = `${y}-${m}-${day}`;
+        dateCountMap.set(key, (dateCountMap.get(key) || 0) + 1);
+      } catch {}
+    };
+
+    activities.forEach((act) => recordDate(act.created_at));
+    studentQuizzes.forEach((q) => recordDate(q.completed_at));
+    practicals.forEach((p: any) => recordDate(p.created_at || p.submitted_at));
+    activeCourses.forEach((c) => {
+      const p = this.getStudentRoadmapProgress(sId, c.id);
+      if (p.updated_at && (p.completed_sub_modules?.length || 0) > 0) {
+        recordDate(p.updated_at);
+      }
+    });
+
+    const activeLearningDays = dateCountMap.size;
+
+    // 5. Streaks (Current & Longest)
+    const today = new Date();
+    const formatD = (d: Date) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    const todayStr = formatD(today);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = formatD(yesterday);
+
+    let currentStreak = 0;
+    let checkDate = new Date(today);
+
+    if (dateCountMap.has(todayStr)) {
+      while (dateCountMap.has(formatD(checkDate))) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    } else if (dateCountMap.has(yesterdayStr)) {
+      checkDate = new Date(yesterday);
+      while (dateCountMap.has(formatD(checkDate))) {
+        currentStreak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+    } else {
+      currentStreak = 0;
+    }
+
+    // Longest streak
+    const sortedDates = Array.from(dateCountMap.keys()).sort();
+    let longestStreak = currentStreak;
+    let run = 0;
+    let prevMs: number | null = null;
+
+    for (const dStr of sortedDates) {
+      const parts = dStr.split("-").map(Number);
+      const curMs = new Date(parts[0], parts[1] - 1, parts[2]).getTime();
+      if (prevMs === null) {
+        run = 1;
+      } else {
+        const diffDays = Math.round((curMs - prevMs) / (1000 * 60 * 60 * 24));
+        if (diffDays === 1) {
+          run++;
+        } else if (diffDays > 1) {
+          run = 1;
+        }
+      }
+      prevMs = curMs;
+      if (run > longestStreak) {
+        longestStreak = run;
+      }
+    }
+
+    // 6. Skill XP Calculation
+    let totalXP = 0;
+    totalXP += completedModulesCount * 100;
+    totalXP += completedSubModuleIds.size * 25;
+    studentQuizzes.forEach((a) => {
+      const acc = a.accuracy ?? 80;
+      totalXP += 50 + Math.round((acc / 100) * 50);
+    });
+    activities.forEach((act) => {
+      totalXP += act.xp_earned || 20;
+    });
+    practicals.forEach(() => {
+      totalXP += 50;
+    });
+
+    let scholarLevel = "Level 1 Scholar";
+    if (totalXP >= 4000) scholarLevel = "Level 5 Master Scholar";
+    else if (totalXP >= 2500) scholarLevel = "Level 4 Scholar";
+    else if (totalXP >= 1200) scholarLevel = "Level 3 Scholar";
+    else if (totalXP >= 500) scholarLevel = "Level 2 Scholar";
+
+    // 7. 84-Day Heatmap (12 Weeks)
+    const activityHeatmap: HeatmapDay[] = [];
+    for (let i = 83; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dStr = formatD(d);
+      const count = dateCountMap.get(dStr) || 0;
+      let level: 0 | 1 | 2 | 3 = 0;
+      if (count >= 3) level = 3;
+      else if (count === 2) level = 2;
+      else if (count === 1) level = 1;
+
+      activityHeatmap.push({
+        date: dStr,
+        dayNumber: 84 - i,
+        count,
+        level,
+      });
+    }
+
+    return {
+      overallProgress,
+      currentStreak,
+      longestStreak,
+      activeLearningDays,
+      completedModulesCount,
+      pendingModulesCount,
+      totalModulesCount,
+      averageQuizScore,
+      totalXP,
+      scholarLevel,
+      activityHeatmap,
+      recentActivities: activities.slice(0, 10),
+    };
   }
 
 // --- Themes ---

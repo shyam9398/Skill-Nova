@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Trophy, Medal, Award, Crown, Clock, CheckCircle2,
   Search, User as UserIcon, RotateCcw, ArrowLeft,
-  Sparkles, Check, HelpCircle, Flame, Users, Lock, Play, FastForward, ChevronDown
+  Sparkles, Check, HelpCircle, Flame, Users, Lock, Play, FastForward, ChevronDown,
+  Download
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { dataService } from '../../services/dataService';
+import { QuizPdfPreviewModal } from './QuizPdfPreviewModal';
 import type { Quiz, QuizAttempt, QuizLeaderboardEntry } from '../../types';
 
 interface GlobalQuizLeaderboardViewProps {
@@ -33,10 +35,20 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  // Ceremony Animation State (Requirement 13): 'idle' | 'bronze' | 'silver' | 'gold' | 'complete'
-  const [ceremonyStage, setCeremonyStage] = useState<'idle' | 'bronze' | 'silver' | 'gold' | 'complete'>('complete');
+  // Ceremony Animation State: 'idle' | 'countdown' | 'bronze' | 'silver' | 'gold' | 'complete'
+  const ceremonyStorageKey = `skillnova_ceremony_played_${quiz.id}`;
+  const [ceremonyStage, setCeremonyStage] = useState<'idle' | 'countdown' | 'bronze' | 'silver' | 'gold' | 'complete'>(() => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem(ceremonyStorageKey)) {
+      return 'complete';
+    }
+    return 'idle';
+  });
+
+  const [countdownSeconds, setCountdownSeconds] = useState(30);
+  const countdownIntervalRef = useRef<number | null>(null);
   const ceremonyTimerRef = useRef<number | null>(null);
   const [showAnswersReview, setShowAnswersReview] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
 
   // Check if quiz deadline has passed (Requirement 3: hidden until closing time)
   const [isDeadlinePassed, setIsDeadlinePassed] = useState(() =>
@@ -60,9 +72,38 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
     return dataService.subscribe(update);
   }, [quiz.id]);
 
-  // Start Ceremony sequence
-  const startCelebrationCeremony = () => {
+  // Auto-trigger ceremony if deadline has passed and user has not seen it yet
+  useEffect(() => {
+    if (!isDeadlinePassed) return;
+    const viewed = typeof window !== 'undefined' ? sessionStorage.getItem(ceremonyStorageKey) : null;
+    if (!viewed && leaderboard.length > 0 && ceremonyStage === 'idle') {
+      startCelebrationCeremony();
+    } else if (ceremonyStage === 'idle') {
+      setCeremonyStage('complete');
+    }
+  }, [isDeadlinePassed, leaderboard.length, quiz.id]);
+
+  // Start Ceremony sequence with 30-Second Countdown
+  const startCelebrationCeremony = (force = false) => {
     if (ceremonyTimerRef.current) window.clearTimeout(ceremonyTimerRef.current);
+    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
+
+    setCountdownSeconds(30);
+    setCeremonyStage('countdown');
+
+    let remaining = 30;
+    countdownIntervalRef.current = window.setInterval(() => {
+      remaining -= 1;
+      setCountdownSeconds(remaining);
+      if (remaining <= 0) {
+        if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
+        proceedToBronzeReveal();
+      }
+    }, 1000);
+  };
+
+  const proceedToBronzeReveal = () => {
+    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
     setCeremonyStage('bronze');
 
     // Stage 1: Bronze (4.5s) -> Silver
@@ -84,6 +125,9 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
         // Stage 3: Gold (5s) -> Complete full view
         ceremonyTimerRef.current = window.setTimeout(() => {
           setCeremonyStage('complete');
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem(ceremonyStorageKey, 'true');
+          }
         }, 5000);
       }, 4500);
     }, 4500);
@@ -91,12 +135,17 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
 
   const skipCeremony = () => {
     if (ceremonyTimerRef.current) window.clearTimeout(ceremonyTimerRef.current);
+    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
     setCeremonyStage('complete');
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem(ceremonyStorageKey, 'true');
+    }
   };
 
   useEffect(() => {
     return () => {
       if (ceremonyTimerRef.current) window.clearTimeout(ceremonyTimerRef.current);
+      if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
     };
   }, []);
 
@@ -281,6 +330,44 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
           </button>
         </div>
 
+        {/* STAGE 0: 30-SECOND COUNTDOWN TO REVEAL */}
+        {ceremonyStage === 'countdown' && (
+          <div className="space-y-6 py-6 animate-scaleUp">
+            <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-[#00A3FF]/30 animate-ping opacity-20" />
+              <div className="absolute inset-2 rounded-full border-2 border-dashed border-[#00E5FF]/50 animate-spin-slow" />
+              <div className="w-32 h-32 rounded-full bg-slate-900/60 dark:bg-[#070D1B]/80 backdrop-blur-xl border-2 border-[#00A3FF] flex flex-col items-center justify-center shadow-[0_0_30px_rgba(0,163,255,0.3)]">
+                <span className="text-4xl sm:text-5xl font-black font-mono text-white tracking-wider animate-pulse">
+                  {countdownSeconds}
+                </span>
+                <span className="text-[10px] font-mono uppercase tracking-widest text-[#00E5FF] font-bold">
+                  SECONDS
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-w-lg mx-auto">
+              <span className="text-xs font-mono font-black uppercase tracking-widest text-[#176BFF] dark:text-[#00E5FF] bg-sky-500/10 px-3.5 py-1 rounded-full border border-sky-500/30">
+                OFFICIAL PODIUM CEREMONY COUNTDOWN
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                Preparing Podium & Results
+              </h2>
+              <p className="text-xs text-slate-600 dark:text-[#9BAAC2] leading-relaxed">
+                Evaluation window closed! All cohort submissions are verified in Supabase PostgreSQL.
+                The official podium ceremony will reveal 3rd place, 2nd place, and the Grand Champion.
+              </p>
+            </div>
+
+            <div className="max-w-md mx-auto w-full bg-slate-200 dark:bg-white/5 rounded-full h-2.5 overflow-hidden border border-slate-300 dark:border-white/10">
+              <div
+                className="h-full bg-gradient-to-r from-[#176BFF] via-[#00A3FF] to-[#00E5FF] transition-all duration-1000 ease-linear"
+                style={{ width: `${((30 - countdownSeconds) / 30) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {/* STAGE 1: BRONZE (3rd place) */}
         {ceremonyStage === 'bronze' && topThree[2] && (
           <div className="space-y-6 py-8 animate-scaleUp">
@@ -392,10 +479,22 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            {isDeadlinePassed && quiz.questions && quiz.questions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsPdfModalOpen(true)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] hover:opacity-95 text-white text-xs font-black transition flex items-center gap-1.5 shadow-md shadow-[#176BFF]/25"
+                title="Preview & Download Quiz Questions with Explanations (PDF)"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Study Guide PDF</span>
+              </button>
+            )}
+
             {topThree.length > 0 && (
               <button
                 type="button"
-                onClick={startCelebrationCeremony}
+                onClick={() => startCelebrationCeremony(true)}
                 className="px-4 py-2.5 rounded-xl bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-400 text-xs font-bold transition flex items-center gap-1.5 border border-amber-300 dark:border-amber-500/30"
                 title="Replay Podium Ceremony Animation"
               >
@@ -489,24 +588,31 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
 
         {/* Current Student's Official Standing Pill */}
         {studentEntry ? (
-          <div className="p-4 rounded-2xl bg-sky-50 dark:bg-gradient-to-r dark:from-[#00A3FF]/15 dark:via-[#176BFF]/10 dark:to-transparent border border-sky-200 dark:border-[#00A3FF]/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1 rounded-xl bg-[#176BFF] text-white font-mono font-black text-sm shadow-md shadow-[#176BFF]/30">
+          <div className="p-4 sm:p-5 rounded-2xl bg-[#EBF5FF] dark:bg-[#0B1530] border border-[#93C5FD] dark:border-[#00A3FF]/40 shadow-sm dark:shadow-[0_0_20px_rgba(0,163,255,0.12)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
+            <div className="flex items-center gap-3.5">
+              <span className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white font-mono font-black text-sm shadow-md shadow-[#176BFF]/30 shrink-0">
                 Rank #{studentEntry.rank}
               </span>
-              <div>
-                <span className="text-xs font-black text-slate-900 dark:text-white block">
+              <div className="space-y-0.5">
+                <span className="text-xs font-black text-slate-900 dark:text-white block tracking-tight">
                   Your Official Standing on Leaderboard
                 </span>
-                <span className="text-[11px] text-slate-900 dark:text-slate-200 font-bold">
-                  Score: <strong className="text-slate-900 dark:text-[#00E5FF] font-mono font-black">{studentEntry.score}/{studentEntry.total_marks}</strong> • Correct: <strong className="text-emerald-800 dark:text-emerald-400 font-mono font-black">{studentEntry.correct_count}/{studentEntry.total_questions}</strong> • Accuracy: <strong className="text-emerald-800 dark:text-emerald-400 font-mono font-black">{formatAccuracy(studentEntry.accuracy)}</strong> • Time: <strong className="text-slate-900 dark:text-white font-mono font-black">{formatTime(studentEntry.time_spent_seconds)}</strong>
+                <span className="text-xs text-slate-700 dark:text-slate-300 font-medium block">
+                  Score: <strong className="text-[#0369A1] dark:text-[#00E5FF] font-mono font-black">{studentEntry.score}/{studentEntry.total_marks}</strong>
+                  <span className="mx-1.5 text-slate-400">•</span>
+                  Correct: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{studentEntry.correct_count}/{studentEntry.total_questions}</strong>
+                  <span className="mx-1.5 text-slate-400">•</span>
+                  Accuracy: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{formatAccuracy(studentEntry.accuracy)}</strong>
+                  <span className="mx-1.5 text-slate-400">•</span>
+                  Time: <strong className="text-slate-900 dark:text-white font-mono font-black">{formatTime(studentEntry.time_spent_seconds)}</strong>
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 self-start sm:self-auto">
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-mono font-black bg-emerald-100 text-emerald-900 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30 flex items-center gap-1">
-                <Check className="w-3 h-3 text-emerald-700 dark:text-emerald-400" /> Official First Attempt Locked
+            <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+              <span className="px-3 py-1 rounded-lg text-[10px] font-mono font-black bg-emerald-100 dark:bg-emerald-500/20 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-500/40 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />
+                <span>Official First Attempt Locked</span>
               </span>
             </div>
           </div>
@@ -956,6 +1062,13 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
           </div>
         )}
       </div>
+
+      {/* Quiz PDF Preview & Download Modal */}
+      <QuizPdfPreviewModal
+        quiz={quiz}
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+      />
     </div>
   );
 };

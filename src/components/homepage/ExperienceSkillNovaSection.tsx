@@ -74,17 +74,17 @@ export const ExperienceSkillNovaSection: React.FC<{ onOpenAccessRequest?: () => 
 
           {/* Video Player Card */}
           <div className="dark-section dark-card max-w-4xl mx-auto rounded-3xl bg-[#080E1C] border border-[#00D9FF]/30 p-2 sm:p-3 shadow-2xl shadow-[#00A3FF]/20 overflow-hidden">
-            <div className="relative aspect-video rounded-2xl overflow-hidden bg-black flex items-center justify-center">
+            <div className="video-wrapper video-container relative aspect-video rounded-2xl overflow-hidden bg-black w-full">
               {isPlaying ? (
                 <iframe
                   src={embedUrl}
                   title={settings.demo_video_title || 'SkillNova Demo Video'}
-                  className="w-full h-full border-0"
+                  className="absolute inset-0 w-full h-full border-0 block"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               ) : (
-                <div className="relative w-full h-full group cursor-pointer" onClick={() => setIsPlaying(true)}>
+                <div className="absolute inset-0 w-full h-full group cursor-pointer" onClick={() => setIsPlaying(true)}>
                   {/* Poster / Thumbnail */}
                   <img
                     src="https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&auto=format&fit=crop&q=80"
@@ -93,13 +93,13 @@ export const ExperienceSkillNovaSection: React.FC<{ onOpenAccessRequest?: () => 
                   />
 
                   {/* Play Button Overlay */}
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/30 group-hover:bg-black/20 transition">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-[#176BFF] via-[#00A3FF] to-[#00D9FF] p-1 shadow-2xl shadow-[#00A3FF]/50 group-hover:scale-110 transition transform">
-                      <div className="w-full h-full bg-[#080E1C] rounded-full flex items-center justify-center pl-1">
-                        <Play className="w-7 h-7 sm:w-8 sm:h-8 text-white fill-white" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 sm:gap-3 bg-black/30 group-hover:bg-black/20 transition p-4 text-center">
+                    <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-tr from-[#176BFF] via-[#00A3FF] to-[#00D9FF] p-1 shadow-2xl shadow-[#00A3FF]/50 group-hover:scale-110 transition transform shrink-0">
+                      <div className="w-full h-full bg-[#080E1C] rounded-full flex items-center justify-center pl-0.5 sm:pl-1">
+                        <Play className="w-5 h-5 sm:w-7 sm:h-7 md:w-8 md:h-8 text-white fill-white" />
                       </div>
                     </div>
-                    <span className="text-xs sm:text-sm font-bold text-white tracking-wide uppercase font-mono">
+                    <span className="text-[11px] sm:text-xs md:text-sm font-bold text-white tracking-wide uppercase font-mono">
                       Click to Play Demo
                     </span>
                   </div>

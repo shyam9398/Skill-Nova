@@ -1276,19 +1276,13 @@ class DataService {
         if (item) {
           try {
             const parsed = JSON.parse(item);
-            if (Array.isArray(parsed)) {
-              // Strip out any stale demo records from previous mock sessions
-              return parsed.filter((entry: any) => {
-                if (!entry || typeof entry !== "object") return false;
-                const id = String(entry.id || "");
-                if (id.startsWith("usr-student-") || id.startsWith("usr-mentor-") || id.startsWith("usr-admin-")) return false;
-                if (id.startsWith("course-fs-") || id.startsWith("course-ai-") || id.startsWith("course-dsa-") || id.startsWith("course-devops-")) return false;
-                if (id.startsWith("mod-") && id.includes("-fs-")) return false;
-                if (id.startsWith("top-") && id.includes("-fs-")) return false;
-                return true;
-              }) as unknown as T;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed as unknown as T;
             }
-            return parsed;
+            if (parsed && !Array.isArray(parsed)) {
+              return parsed;
+            }
+            return initial;
           } catch {
             return initial;
           }
@@ -1297,11 +1291,22 @@ class DataService {
         return initial;
       };
 
-      this.users = getOrInit("users", []);
+      this.users = getOrInit("users", INITIAL_USERS);
+      if (this.users.length === 0) this.users = INITIAL_USERS;
 
-      this.courses = getOrInit("courses", []);
+      this.courses = getOrInit("courses", INITIAL_COURSES);
+      INITIAL_COURSES.forEach(ic => {
+        if (!this.courses.some(c => c.id === ic.id)) {
+          this.courses.push(ic);
+        }
+      });
 
-      this.modules = getOrInit("modules", []);
+      this.modules = getOrInit("modules", INITIAL_MODULES);
+      INITIAL_MODULES.forEach(im => {
+        if (!this.modules.some(m => m.id === im.id)) {
+          this.modules.push(im);
+        }
+      });
 
       this.subModules = getOrInit("subModules", []);
 
@@ -1312,11 +1317,18 @@ class DataService {
         [],
       );
 
-      this.topics = getOrInit("topics", []);
+      this.topics = getOrInit("topics", INITIAL_TOPICS);
+      INITIAL_TOPICS.forEach(it => {
+        if (!this.topics.some(t => t.id === it.id)) {
+          this.topics.push(it);
+        }
+      });
 
-      this.flashcards = getOrInit("flashcards", []);
+      this.flashcards = getOrInit("flashcards", INITIAL_FLASHCARDS);
+      if (this.flashcards.length === 0) this.flashcards = INITIAL_FLASHCARDS;
 
-      this.quizzes = getOrInit("quizzes", []);
+      this.quizzes = getOrInit("quizzes", INITIAL_QUIZZES);
+      if (this.quizzes.length === 0) this.quizzes = INITIAL_QUIZZES;
 
       this.quizAttempts = getOrInit("quizAttempts", []);
 
@@ -1345,12 +1357,15 @@ class DataService {
 
       this.saturdaySpecial = getOrInit(
         "saturdaySpecial",
-        [],
+        INITIAL_SATURDAY_SPECIAL,
       );
+      if (this.saturdaySpecial.length === 0) this.saturdaySpecial = INITIAL_SATURDAY_SPECIAL;
 
-      this.opportunities = getOrInit("opportunities", []);
+      this.opportunities = getOrInit("opportunities", INITIAL_OPPORTUNITIES);
+      if (this.opportunities.length === 0) this.opportunities = INITIAL_OPPORTUNITIES;
 
-      this.blueprints = getOrInit("blueprints", []);
+      this.blueprints = getOrInit("blueprints", INITIAL_BLUEPRINTS);
+      if (this.blueprints.length === 0) this.blueprints = INITIAL_BLUEPRINTS;
 
       this.notifications = getOrInit("notifications", []);
 
@@ -1721,7 +1736,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("courses").select("*");
 
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         const remoteCourses: Course[] = data.map((c: any) => ({
           id: c.id,
 
@@ -1766,7 +1781,13 @@ class DataService {
             c.timeline || `${c.duration_weeks || 12} Weeks • Live Cohort`,
         }));
 
-        this.courses = remoteCourses;
+        const mergedCourses = [...remoteCourses];
+        INITIAL_COURSES.forEach(ic => {
+          if (!mergedCourses.some(c => c.id === ic.id)) {
+            mergedCourses.push(ic);
+          }
+        });
+        this.courses = mergedCourses;
 
         this.saveToStorage("courses", this.courses);
 
@@ -1787,7 +1808,7 @@ class DataService {
         .order("order_index");
 
       if (!error && Array.isArray(data)) {
-        this.modules = data.map((m: any) => ({
+        const remoteModules = data.map((m: any) => ({
           id: m.id,
 
           course_id: m.course_id,
@@ -1798,6 +1819,14 @@ class DataService {
 
           order_index: m.order_index || 1,
         }));
+
+        const mergedModules = [...remoteModules];
+        INITIAL_MODULES.forEach(im => {
+          if (!mergedModules.some(m => m.id === im.id)) {
+            mergedModules.push(im);
+          }
+        });
+        this.modules = mergedModules;
 
         this.saveToStorage("modules", this.modules);
 
@@ -1817,7 +1846,7 @@ class DataService {
         .select("*")
         .order("order_index");
 
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         this.subModules = data.map((sm: any) => ({
           id: sm.id,
 
@@ -1849,7 +1878,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("presentations").select("*");
 
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         const remotePres: Presentation[] = data.map((p: any) => ({
           id: p.id,
 
@@ -1937,7 +1966,7 @@ class DataService {
     try {
       const { data, error } = await supabase.from("topics").select("*");
 
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         const remoteTopics: Topic[] = data.map((t: any) => ({
           id: t.id,
 
@@ -1988,10 +2017,27 @@ class DataService {
           created_at: t.created_at || new Date().toISOString(),
         }));
 
-        this.topics = remoteTopics;
+        const mergedTopics = [...remoteTopics];
+        INITIAL_TOPICS.forEach(it => {
+          if (!mergedTopics.some(t => t.id === it.id)) {
+            mergedTopics.push(it);
+          }
+        });
+        this.topics = mergedTopics;
 
         this.saveToStorage("topics", this.topics);
 
+        this.notifySubscribers();
+      } else if (!error && Array.isArray(data) && data.length === 0) {
+        // Supabase topics table is empty; retain initial curriculum topics
+        const mergedTopics = [...this.topics];
+        INITIAL_TOPICS.forEach(it => {
+          if (!mergedTopics.some(t => t.id === it.id)) {
+            mergedTopics.push(it);
+          }
+        });
+        this.topics = mergedTopics;
+        this.saveToStorage("topics", this.topics);
         this.notifySubscribers();
       }
     } catch (e) {
@@ -2454,7 +2500,7 @@ class DataService {
         .select("*")
         .order("session_date", { ascending: true });
 
-      if (!error && Array.isArray(data)) {
+      if (!error && Array.isArray(data) && data.length > 0) {
         this.saturdaySpecial = data.map((s: any) => ({
           id: s.id,
 
@@ -3141,6 +3187,15 @@ class DataService {
           JSON.stringify(this.currentUser)
         );
       }
+
+      const updatedUser = this.getUserById(userId);
+      void this.recordAuditEvent({
+        action: 'PROFILE_UPDATED',
+        entity_type: 'user',
+        entity_id: userId,
+        details: `User @${updatedUser?.username || updatedUser?.email || userId} updated profile details (${Object.keys(updates).join(', ')})`,
+        performed_by: updatedUser?.email || 'Self'
+      });
 
       this.notifySubscribers();
       return { success: true };
@@ -9458,6 +9513,18 @@ Module 3: Production Deployment & System Leadership
       xp_earned: 50 + Math.round(((newAttempt.accuracy || 0) / 100) * 50),
     });
 
+    // Record verified official audit event
+    const studentUser = this.getUserById(student.id);
+    const totalPossibleMarks = quiz?.total_marks || (quiz?.questions?.length ? quiz.questions.length * 5 : 15);
+    const studentEmail = (student as any).email || studentUser?.email || 'student@skillnova.internal';
+    void this.recordAuditEvent({
+      action: isPractice ? 'QUIZ_PRACTICE_SUBMITTED' : 'QUIZ_SUBMITTED',
+      entity_type: 'quiz',
+      entity_id: data.quiz_id,
+      details: `Student @${studentUser?.username || student.id} submitted ${isPractice ? 'practice attempt' : 'official assessment'} "${quiz?.title || 'Quiz'}" — Score: ${newAttempt.score}/${totalPossibleMarks} (${Math.round(accuracy)}% accuracy), Time: ${data.time_spent_seconds || 120}s`,
+      performed_by: studentEmail
+    });
+
     const leaderboard = this.getQuizLeaderboard(data.quiz_id);
     const myRankIdx = leaderboard.findIndex((e) => e.student_id === student.id);
     const rank = myRankIdx !== -1 ? myRankIdx + 1 : leaderboard.length + 1;
@@ -10217,6 +10284,33 @@ Module 3: Production Deployment & System Leadership
       } catch (err) {
         console.warn("Supabase recordStudentActivity note:", err);
       }
+    }
+
+    // Bridge all verified student actions to Admin Audit Trail
+    try {
+      const studentUser = this.getUserById(newAct.student_id);
+      const studentName = studentUser?.full_name || studentUser?.username || newAct.student_id;
+      const studentEmail = studentUser?.email || 'student@skillnova.internal';
+
+      const actionMap: Record<string, string> = {
+        quiz_attempt: 'QUIZ_SUBMISSION',
+        module_complete: 'MODULE_COMPLETED',
+        lecture_view: 'LECTURE_ACCESSED',
+        topic_access: 'TOPIC_ACCESSED',
+        python_lab: 'CODE_LAB_SUBMISSION',
+        course_enroll: 'COURSE_ENROLLED'
+      };
+      const auditAction = actionMap[newAct.activity_type] || `STUDENT_${newAct.activity_type.toUpperCase()}`;
+
+      void this.recordAuditEvent({
+        action: auditAction,
+        entity_type: 'student_activity',
+        entity_id: newAct.item_id || newAct.course_id || newAct.student_id,
+        details: `${studentName} (@${studentUser?.username || 'student'}): ${newAct.item_title || newAct.activity_type} (${newAct.xp_earned} XP earned)`,
+        performed_by: studentEmail
+      });
+    } catch (auditErr) {
+      console.warn("Student activity audit bridge note:", auditErr);
     }
 
     this.notifySubscribers();

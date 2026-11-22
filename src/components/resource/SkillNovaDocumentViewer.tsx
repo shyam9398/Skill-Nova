@@ -161,7 +161,7 @@ export const SkillNovaDocumentViewer: React.FC<SkillNovaDocumentViewerProps> = (
       </div>
 
       {/* Main Iframe Container with External-Link Pop-Out Cover Overlay */}
-      <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] min-h-[420px] bg-black">
+      <div className="video-wrapper video-container relative w-full aspect-video bg-black overflow-hidden">
         
         {/* SKILLNOVA POP-OUT COVER OVERLAY (Part A, Requirement 5) */}
         {/* Placed precisely over the top-right corner to cover external "Pop out" / redirect button */}
@@ -185,7 +185,7 @@ export const SkillNovaDocumentViewer: React.FC<SkillNovaDocumentViewerProps> = (
             key={`slide-frame-${currentSlide}`}
             src={getSlideEmbedUrl()}
             title={title}
-            className="w-full h-full border-0"
+            className="absolute inset-0 w-full h-full border-0 block"
             allow="autoplay; fullscreen"
             allowFullScreen
             loading="lazy"

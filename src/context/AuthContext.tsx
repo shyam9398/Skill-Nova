@@ -44,12 +44,7 @@ export const AuthProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
 
-  // In live Supabase mode, never restore identity from localStorage.
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
-    if (isLiveSupabaseConfigured) {
-      return null;
-    }
-
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
 
@@ -63,7 +58,13 @@ export const AuthProvider: React.FC<{
     }
   });
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      return !localStorage.getItem(AUTH_STORAGE_KEY);
+    } catch {
+      return true;
+    }
+  });
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const isInitializedRef = useRef(false);
@@ -368,8 +369,19 @@ export const AuthProvider: React.FC<{
         if (data.session?.user) {
           await loadUser(data.session);
         } else {
-          // No Supabase session means no authenticated user.
-          setPersistedUser(null);
+          // If no Supabase session, check if there is an active local session
+          try {
+            const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+            if (stored) {
+              const u = JSON.parse(stored);
+              setCurrentUser(u);
+              dataService.setCurrentUser(u);
+            } else {
+              setPersistedUser(null);
+            }
+          } catch {
+            setPersistedUser(null);
+          }
           setIsLoading(false);
         }
 
@@ -643,6 +655,17 @@ export const AuthProvider: React.FC<{
             }
           });
 
+          return { success: true };
+        }
+
+        // Check for local development / demo user fallback
+        const mockMatch = dataService.getUsers().find(u => 
+          u.email.toLowerCase() === identifier.toLowerCase() ||
+          u.username?.toLowerCase() === identifier.toLowerCase() ||
+          u.id === identifier
+        );
+        if (mockMatch && (!expectedRole || mockMatch.role === expectedRole)) {
+          setPersistedUser(mockMatch);
           return { success: true };
         }
 

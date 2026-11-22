@@ -48,7 +48,15 @@ export const StudentLayout: React.FC = () => {
   ];
 
   return (
-    <div className="h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
+    <div
+      className={`h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300 student-layout-root ${
+        isCollapsed ? 'sidebar-collapsed' : ''
+      }`}
+      style={{
+        '--header-height': '4rem',
+        '--sidebar-width': isCollapsed ? '5rem' : '16rem',
+      } as React.CSSProperties}
+    >
       {/* Single, Unified SkillNova Header */}
       <div className="shrink-0 z-40">
         <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -191,7 +199,7 @@ export const StudentLayout: React.FC = () => {
         )}
 
         {/* Main Content Workspace */}
-        <main className="flex-1 h-full overflow-y-auto p-3 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] relative transition-colors duration-300">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden w-full max-w-full p-2 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] relative transition-colors duration-300">
           <Outlet />
         </main>
       </div>

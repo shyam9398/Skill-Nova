@@ -217,7 +217,7 @@ export const INITIAL_TOPICS: Topic[] = [
     description: 'Understanding Fiber reconciliation, startTransition, useDeferredValue, and streaming SSR.',
     class_date: '2026-02-24',
     order_index: 2,
-    recording_link: 'https://drive.google.com/file/d/1demo-recording-react-concurrent/view',
+    recording_link: 'https://www.youtube.com/watch?v=kqtD5dpn9C8',
     drive_notes_link: 'https://drive.google.com/drive/folders/1demo-notes-react-concurrent',
     pdf_url: 'https://skillnova-cdn.internal/assets/notes/react-19-internals.pdf',
     reference_links: [
@@ -238,7 +238,7 @@ export const INITIAL_TOPICS: Topic[] = [
     description: 'B-tree vs GIN indexes, avoiding N+1 problems, connection pooling with PgBouncer, and deadlock prevention.',
     class_date: '2026-02-26',
     order_index: 1,
-    recording_link: 'https://drive.google.com/file/d/1demo-recording-postgres-indexing/view',
+    recording_link: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     drive_notes_link: 'https://drive.google.com/drive/folders/1demo-notes-postgres-indexing',
     pdf_url: 'https://skillnova-cdn.internal/assets/notes/postgres-performance-guide.pdf',
     is_published: true,

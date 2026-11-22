@@ -6,13 +6,9 @@ import {
   VolumeX, 
   Maximize, 
   Minimize, 
-  Maximize2,
-  Minimize2,
   RotateCcw, 
-  Tv,
   Film,
-  Sparkles,
-  ExternalLink
+  Sparkles
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 
@@ -42,19 +38,20 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
   const hasRecordedActivityRef = useRef<boolean>(false);
 
+  const cleanUrl = (url || '').trim();
+
   const recordViewingActivity = () => {
-    if (hasRecordedActivityRef.current) return;
+    if (hasRecordedActivityRef.current || !cleanUrl) return;
     hasRecordedActivityRef.current = true;
     const currentUser = dataService.getCurrentUser();
     void dataService.recordStudentActivity({
       student_id: currentUser?.id || 'usr-student-1',
       activity_type: 'video_view',
-      item_id: url,
+      item_id: cleanUrl,
       item_title: title || 'Video Lesson',
       xp_earned: 25,
       metadata: { subtitle, duration },
@@ -62,28 +59,29 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   };
 
   // Determine source type
-  const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url) || url.startsWith('blob:') || url.startsWith('data:');
-  const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
-  const isGoogleDrive = url.includes('drive.google.com') || url.includes('docs.google.com');
+  const isDirectVideo = /\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(cleanUrl) || cleanUrl.startsWith('blob:') || cleanUrl.startsWith('data:');
+  const isYouTube = cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be');
+  const isGoogleDrive = cleanUrl.includes('drive.google.com') || cleanUrl.includes('docs.google.com');
+  const isVimeo = cleanUrl.includes('vimeo.com');
 
-  // For iframe embeds (YouTube / Drive), automatically record after 15s of interaction
+  // For iframe embeds (YouTube / Drive / Vimeo), automatically record after 15s of interaction
   useEffect(() => {
-    if (!isDirectVideo) {
+    if (!isDirectVideo && cleanUrl) {
       const timer = window.setTimeout(() => {
         recordViewingActivity();
       }, 15000);
       return () => window.clearTimeout(timer);
     }
-  }, [isDirectVideo, url]);
+  }, [isDirectVideo, cleanUrl]);
 
   // Format Google Drive embed URL
   const getGoogleDriveEmbedUrl = (rawUrl: string): string => {
     try {
-      const match = rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/id=([a-zA-Z0-9_-]+)/);
+      const match = rawUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/\/d\/([a-zA-Z0-9_-]+)/) || rawUrl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
       if (match && match[1]) {
         return `https://drive.google.com/file/d/${match[1]}/preview`;
       }
-      return rawUrl.replace(/\/view(\?.*)?$/, '/preview');
+      return rawUrl.replace(/\/(view|edit|pub)(\?.*)?$/, '/preview');
     } catch {
       return rawUrl;
     }
@@ -93,8 +91,12 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   const getYouTubeEmbedUrl = (rawUrl: string): string => {
     try {
       let videoId = '';
-      if (rawUrl.includes('youtu.be/')) {
-        videoId = rawUrl.split('youtu.be/')[1]?.split('?')[0] || '';
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+      const match = rawUrl.match(regExp);
+      if (match && match[2].length === 11) {
+        videoId = match[2];
+      } else if (rawUrl.includes('youtu.be/')) {
+        videoId = rawUrl.split('youtu.be/')[1]?.split('?')[0]?.split('&')[0] || '';
       } else if (rawUrl.includes('watch?v=')) {
         videoId = new URL(rawUrl).searchParams.get('v') || '';
       } else if (rawUrl.includes('/embed/')) {
@@ -102,7 +104,22 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
         u.searchParams.set('playsinline', '1');
         return u.toString();
       }
-      return videoId ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1` : rawUrl;
+      return videoId
+        ? `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1`
+        : rawUrl;
+    } catch {
+      return rawUrl;
+    }
+  };
+
+  // Format Vimeo embed URL
+  const getVimeoEmbedUrl = (rawUrl: string): string => {
+    try {
+      const match = rawUrl.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+      if (match && match[1]) {
+        return `https://player.vimeo.com/video/${match[1]}?autoplay=0&playsinline=1`;
+      }
+      return rawUrl;
     } catch {
       return rawUrl;
     }
@@ -203,20 +220,19 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
     <div 
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className={`relative w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 group transition-all duration-300 ${
-        isExpanded ? 'w-full max-w-none min-h-[420px] sm:min-h-[540px] md:min-h-[620px] ring-2 ring-[#00A3FF]/50' : 'aspect-video'
-      } ${className}`}
-      style={isExpanded ? { minHeight: '480px' } : { aspectRatio: '16/9' }}
+      className={`video-wrapper video-container relative w-full max-w-full rounded-2xl overflow-hidden bg-black shadow-2xl border border-white/10 group ${className}`}
+      style={{ aspectRatio: '16/9' }}
     >
       {/* DIRECT MP4 / HTML5 VIDEO PLAYER */}
       {isDirectVideo ? (
         <>
           <video
             ref={videoRef}
-            src={url}
+            src={cleanUrl}
             poster={poster}
             playsInline
-            className="w-full h-full object-contain cursor-pointer"
+            preload="metadata"
+            className="absolute inset-0 w-full h-full object-contain cursor-pointer block bg-black"
             onClick={togglePlay}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
@@ -230,19 +246,19 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
           />
 
           {/* Top Title Overlay */}
-          <div className={`absolute top-0 inset-x-0 p-4 bg-gradient-to-b from-black/80 via-black/40 to-transparent flex items-center justify-between transition-opacity duration-300 pointer-events-none ${
+          <div className={`absolute top-0 inset-x-0 p-3 sm:p-4 bg-gradient-to-b from-black/85 via-black/45 to-transparent flex items-center justify-between transition-opacity duration-300 pointer-events-none z-20 ${
             showControls ? 'opacity-100' : 'opacity-0'
           }`}>
-            <div className="flex items-center gap-2.5">
-              <span className="w-8 h-8 rounded-lg bg-[#00A3FF]/20 border border-[#00A3FF]/40 flex items-center justify-center text-[#00A3FF]">
-                <Film className="w-4 h-4" />
+            <div className="flex items-center gap-2 sm:gap-2.5 overflow-hidden">
+              <span className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#00A3FF]/20 border border-[#00A3FF]/40 flex items-center justify-center text-[#00A3FF] shrink-0">
+                <Film className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </span>
-              <div>
-                <h4 className="text-sm font-semibold text-white truncate max-w-md">{title}</h4>
-                {subtitle && <p className="text-xs text-white/60 truncate">{subtitle}</p>}
+              <div className="truncate min-w-0">
+                <h4 className="text-xs sm:text-sm font-semibold text-white truncate max-w-xs sm:max-w-md">{title}</h4>
+                {subtitle && <p className="text-[10px] sm:text-xs text-white/60 truncate">{subtitle}</p>}
               </div>
             </div>
-            <span className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-md bg-white/10 backdrop-blur-md text-white/80 border border-white/10">
+            <span className="hidden sm:inline-block text-[10px] sm:text-[11px] font-mono font-medium px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-md bg-white/10 backdrop-blur-md text-white/80 border border-white/10 shrink-0">
               HD 1080p
             </span>
           </div>
@@ -250,58 +266,67 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
           {/* Big Center Play Button when paused */}
           {!isPlaying && (
             <button
+              type="button"
               onClick={togglePlay}
-              className="absolute inset-0 m-auto w-16 h-16 rounded-full bg-[#00A3FF] hover:bg-[#176BFF] text-white flex items-center justify-center shadow-lg shadow-[#00A3FF]/40 transition-transform transform hover:scale-110 active:scale-95"
+              className="absolute inset-0 m-auto w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-[#00A3FF] hover:bg-[#176BFF] text-white flex items-center justify-center shadow-lg shadow-[#00A3FF]/40 transition-transform transform hover:scale-110 active:scale-95 z-20"
+              aria-label="Play Video"
             >
-              <Play className="w-7 h-7 ml-1 fill-white" />
+              <Play className="w-5 h-5 sm:w-7 sm:h-7 ml-0.5 sm:ml-1 fill-white" />
             </button>
           )}
 
           {/* Bottom Custom Controls Bar */}
-          <div className={`absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-black/90 via-black/60 to-transparent transition-opacity duration-300 ${
+          <div className={`absolute bottom-0 inset-x-0 p-2.5 sm:p-4 bg-gradient-to-t from-black/95 via-black/70 to-transparent transition-opacity duration-300 z-20 ${
             showControls ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
           }`}>
             {/* Progress Scrubber */}
-            <div className="relative mb-3 flex items-center group/scrub">
+            <div className="relative mb-2 sm:mb-3 flex items-center group/scrub">
               <input
                 type="range"
                 min={0}
                 max={duration || 100}
                 value={currentTime}
                 onChange={handleSeek}
-                className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#00A3FF] hover:h-2.5 transition-all"
+                className="w-full h-1 sm:h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#00A3FF] hover:h-2 transition-all"
+                aria-label="Video scrubber"
               />
             </div>
 
-            <div className="flex items-center justify-between text-white text-xs">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between text-white text-xs gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-3 overflow-hidden">
                 <button 
+                  type="button"
                   onClick={togglePlay} 
-                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                  className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg transition-colors shrink-0"
                   title={isPlaying ? 'Pause' : 'Play'}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
-                  {isPlaying ? <Pause className="w-5 h-5 fill-white" /> : <Play className="w-5 h-5 fill-white" />}
+                  {isPlaying ? <Pause className="w-4 h-4 sm:w-5 sm:h-5 fill-white" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white" />}
                 </button>
 
                 <button 
+                  type="button"
                   onClick={() => {
                     if (videoRef.current) {
                       videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10);
                     }
                   }} 
-                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/80 hover:text-white"
+                  className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/80 hover:text-white shrink-0"
                   title="Rewind 10s"
+                  aria-label="Rewind 10s"
                 >
-                  <RotateCcw className="w-4 h-4" />
+                  <RotateCcw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </button>
 
-                <div className="flex items-center gap-2 group/vol">
+                <div className="flex items-center gap-1 sm:gap-2 group/vol shrink-0">
                   <button 
+                    type="button"
                     onClick={toggleMute}
-                    className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                    className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg transition-colors shrink-0"
                     title={isMuted ? 'Unmute' : 'Mute'}
+                    aria-label={isMuted ? 'Unmute' : 'Mute'}
                   >
-                    {isMuted || volume === 0 ? <VolumeX className="w-5 h-5 text-rose-400" /> : <Volume2 className="w-5 h-5" />}
+                    {isMuted || volume === 0 ? <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 text-rose-400" /> : <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />}
                   </button>
                   <input
                     type="range"
@@ -310,22 +335,26 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
                     step={0.05}
                     value={isMuted ? 0 : volume}
                     onChange={handleVolumeChange}
-                    className="w-16 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#00A3FF]"
+                    className="w-12 sm:w-16 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer accent-[#00A3FF] hidden sm:block"
+                    aria-label="Volume slider"
                   />
                 </div>
 
-                <span className="font-mono text-[11px] text-white/70 ml-2">
+                <span className="font-mono text-[10px] sm:text-[11px] text-white/70 whitespace-nowrap">
                   {formatTime(currentTime)} / {formatTime(duration)}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Single Screen Size Enlarge Icon in bottom of video */}
+              <div className="flex items-center gap-1 shrink-0">
                 <button 
+                  type="button"
                   onClick={toggleFullscreen}
-                  className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
-                  title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                  className="p-1 sm:p-1.5 hover:bg-white/10 rounded-lg transition-colors text-white/90 hover:text-white"
+                  title={isFullscreen ? 'Exit Fullscreen' : 'Enlarge Screen'}
+                  aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enlarge Screen'}
                 >
-                  {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                  {isFullscreen ? <Minimize className="w-4 h-4 sm:w-5 sm:h-5 text-[#00E5FF]" /> : <Maximize className="w-4 h-4 sm:w-5 sm:h-5" />}
                 </button>
               </div>
             </div>
@@ -333,40 +362,51 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
         </>
       ) : isGoogleDrive ? (
         /* GOOGLE DRIVE EMBEDDED PLAYER - Responsive within page */
-        <div className="relative w-full h-full bg-[#050811]">
+        <div className="video-inner-frame absolute inset-0 w-full h-full bg-[#050811] overflow-hidden">
           <iframe
-            src={getGoogleDriveEmbedUrl(url)}
+            src={getGoogleDriveEmbedUrl(cleanUrl)}
             title={title}
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 block"
             allow="autoplay; fullscreen; encrypted-media"
             allowFullScreen
           />
         </div>
       ) : isYouTube ? (
         /* YOUTUBE EMBEDDED PLAYER - Responsive within page */
-        <div className="relative w-full h-full bg-[#050811]">
+        <div className="video-inner-frame absolute inset-0 w-full h-full bg-[#050811] overflow-hidden">
           <iframe
-            src={getYouTubeEmbedUrl(url)}
+            src={getYouTubeEmbedUrl(cleanUrl)}
             title={title}
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 block"
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             allowFullScreen
           />
         </div>
-      ) : url ? (
-        /* GENERIC / FALLBACK IFRAME EMBED */
-        <div className="relative w-full h-full bg-[#050811] flex flex-col items-center justify-center">
+      ) : isVimeo ? (
+        /* VIMEO EMBEDDED PLAYER - Responsive within page */
+        <div className="video-inner-frame absolute inset-0 w-full h-full bg-[#050811] overflow-hidden">
           <iframe
-            src={url}
+            src={getVimeoEmbedUrl(cleanUrl)}
             title={title}
-            className="w-full h-full border-0"
+            className="w-full h-full border-0 block"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : cleanUrl ? (
+        /* GENERIC / FALLBACK IFRAME EMBED */
+        <div className="video-inner-frame absolute inset-0 w-full h-full bg-[#050811] overflow-hidden">
+          <iframe
+            src={cleanUrl}
+            title={title}
+            className="w-full h-full border-0 block"
             allow="autoplay; fullscreen; encrypted-media"
             allowFullScreen
           />
         </div>
       ) : (
         /* Clean SkillNova-branded fallback screen */
-        <div className="relative w-full h-full bg-[#050811] flex flex-col items-center justify-center p-6 text-center space-y-4">
+        <div className="video-inner-frame absolute inset-0 w-full h-full bg-[#050811] flex flex-col items-center justify-center p-6 text-center space-y-4">
           <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#176BFF] to-[#00A3FF] flex items-center justify-center text-white shadow-lg shadow-[#00A3FF]/25">
             <Sparkles className="w-7 h-7" />
           </div>
@@ -380,31 +420,24 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
         </div>
       )}
 
-      {/* Universal Floating Expand / Theatre Mode & Fullscreen Controls (Requirement 18) */}
-      <div className="absolute bottom-3 right-3 z-30 flex items-center gap-1.5 opacity-90 hover:opacity-100 transition-opacity pointer-events-auto">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(prev => !prev);
-          }}
-          className="w-8 h-8 rounded-lg bg-black/80 hover:bg-black text-white/90 hover:text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-          title={isExpanded ? 'Normal Video Size' : 'Expand Video (Theatre Mode)'}
-        >
-          {isExpanded ? <Minimize2 className="w-4 h-4 text-[#00E5FF]" /> : <Maximize2 className="w-4 h-4 text-white" />}
-        </button>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleFullscreen();
-          }}
-          className="w-8 h-8 rounded-lg bg-black/80 hover:bg-black text-white/90 hover:text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        >
-          {isFullscreen ? <Minimize className="w-4 h-4 text-[#00E5FF]" /> : <Maximize className="w-4 h-4 text-white" />}
-        </button>
-      </div>
+      {/* ONLY ONE screen size enlarge icon at the bottom of the video for iframe embeds */}
+      {!isDirectVideo && cleanUrl && (
+        <div className="absolute bottom-2.5 right-2.5 sm:bottom-3 sm:right-3 z-30 pointer-events-auto">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleFullscreen();
+            }}
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-black/80 hover:bg-black text-white/90 hover:text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enlarge Screen'}
+            aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enlarge Screen'}
+          >
+            {isFullscreen ? <Minimize className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#00E5FF]" /> : <Maximize className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
+export default EmbeddedVideoPlayer;

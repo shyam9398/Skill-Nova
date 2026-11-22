@@ -343,58 +343,58 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
         </div>
 
         {/* Evaluation Stats Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-[#00A3FF]/15 text-[#176BFF] dark:text-[#00A3FF] flex items-center justify-center font-black">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 pt-2">
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-sky-100 dark:bg-[#00A3FF]/15 text-[#176BFF] dark:text-[#00A3FF] flex items-center justify-center font-black shrink-0">
               <Users className="w-4 h-4" />
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider">
+            <div className="min-w-0 overflow-hidden">
+              <span className="text-[9px] sm:text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider truncate">
                 Total Participants
               </span>
-              <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono truncate block">
                 {leaderboard.length} Students
               </span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-500 flex items-center justify-center font-black">
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-500 flex items-center justify-center font-black shrink-0">
               <Award className="w-4 h-4" />
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider">
+            <div className="min-w-0 overflow-hidden">
+              <span className="text-[9px] sm:text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider truncate">
                 Max Score
               </span>
-              <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono truncate block">
                 {quiz.total_marks || 15} Marks
               </span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-500 flex items-center justify-center font-black">
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-500 flex items-center justify-center font-black shrink-0">
               <CheckCircle2 className="w-4 h-4" />
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider">
+            <div className="min-w-0 overflow-hidden">
+              <span className="text-[9px] sm:text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider truncate">
                 Total Questions
               </span>
-              <span className="text-base font-black text-slate-900 dark:text-white font-mono">
+              <span className="text-sm sm:text-base font-black text-slate-900 dark:text-white font-mono truncate block">
                 {quiz.questions?.length || 3} Questions
               </span>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400 flex items-center justify-center font-black">
+          <div className="p-2.5 sm:p-3.5 rounded-2xl bg-slate-50 dark:bg-[#060B18] border border-slate-200 dark:border-white/5 flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400 flex items-center justify-center font-black shrink-0">
               <Flame className="w-4 h-4" />
             </div>
-            <div>
-              <span className="text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider">
+            <div className="min-w-0 overflow-hidden">
+              <span className="text-[9px] sm:text-[10px] uppercase font-mono text-slate-900 dark:text-[#9BAAC2] font-black block tracking-wider truncate">
                 Ranking Rule
               </span>
-              <span className="text-xs font-black text-slate-900 dark:text-white font-mono">
+              <span className="text-[11px] sm:text-xs font-black text-slate-900 dark:text-white font-mono truncate block">
                 Score → Acc → Time
               </span>
             </div>
@@ -403,24 +403,24 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
 
         {/* Current Student's Official Standing Pill */}
         {studentEntry ? (
-          <div className="p-4 sm:p-5 rounded-2xl bg-[#EBF5FF] dark:bg-[#0B1530] border border-[#93C5FD] dark:border-[#00A3FF]/40 shadow-sm dark:shadow-[0_0_20px_rgba(0,163,255,0.12)] flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors">
-            <div className="flex items-center gap-3.5">
-              <span className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white font-mono font-black text-sm shadow-md shadow-[#176BFF]/30 shrink-0">
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-[#EBF5FF] dark:bg-[#0B1530] border border-[#93C5FD] dark:border-[#00A3FF]/40 shadow-sm dark:shadow-[0_0_20px_rgba(0,163,255,0.12)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3.5">
+              <span className="px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-xl bg-gradient-to-r from-[#176BFF] to-[#00A3FF] text-white font-mono font-black text-xs sm:text-sm shadow-md shadow-[#176BFF]/30 shrink-0">
                 Rank #{studentEntry.rank}
               </span>
               <div className="space-y-0.5">
                 <span className="text-xs font-black text-slate-900 dark:text-white block tracking-tight">
                   Your Official Standing on Leaderboard
                 </span>
-                <span className="text-xs text-slate-700 dark:text-slate-300 font-medium block">
-                  Score: <strong className="text-[#0369A1] dark:text-[#00E5FF] font-mono font-black">{studentEntry.score}/{studentEntry.total_marks}</strong>
-                  <span className="mx-1.5 text-slate-400">•</span>
-                  Correct: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{studentEntry.correct_count}/{studentEntry.total_questions}</strong>
-                  <span className="mx-1.5 text-slate-400">•</span>
-                  Accuracy: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{formatAccuracy(studentEntry.accuracy)}</strong>
-                  <span className="mx-1.5 text-slate-400">•</span>
-                  Time: <strong className="text-slate-900 dark:text-white font-mono font-black">{formatTime(studentEntry.time_spent_seconds)}</strong>
-                </span>
+                <div className="text-[11px] sm:text-xs text-slate-700 dark:text-slate-300 font-medium flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                  <span>Score: <strong className="text-[#0369A1] dark:text-[#00E5FF] font-mono font-black">{studentEntry.score}/{studentEntry.total_marks}</strong></span>
+                  <span className="text-slate-400">•</span>
+                  <span>Correct: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{studentEntry.correct_count}/{studentEntry.total_questions}</strong></span>
+                  <span className="text-slate-400">•</span>
+                  <span>Accuracy: <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{formatAccuracy(studentEntry.accuracy)}</strong></span>
+                  <span className="text-slate-400">•</span>
+                  <span>Time: <strong className="text-slate-900 dark:text-white font-mono font-black">{formatTime(studentEntry.time_spent_seconds)}</strong></span>
+                </div>
               </div>
             </div>
 

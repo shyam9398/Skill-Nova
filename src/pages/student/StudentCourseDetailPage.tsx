@@ -500,7 +500,7 @@ export const StudentCourseDetailPage: React.FC = () => {
 
                 {/* Module Resources Body */}
                 {isExpanded && (
-                  <div className="px-5 sm:px-6 pb-6 pt-2 border-t border-slate-200 dark:border-white/10 space-y-6 animate-fadeIn">
+                  <div className="px-3.5 sm:px-6 pb-6 pt-2 border-t border-slate-200 dark:border-white/10 space-y-6 animate-fadeIn">
                     {res.totalCount === 0 ? (
                       <div className="p-8 text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-[#060B18] rounded-2xl border border-dashed border-slate-200 dark:border-white/10">
                         No learning resources published for this module yet.
@@ -511,16 +511,33 @@ export const StudentCourseDetailPage: React.FC = () => {
                         {res.videos.length > 0 && (
                           <div className="space-y-3">
                             <h5 className="text-xs font-bold uppercase tracking-wider text-rose-500 flex items-center gap-1.5 font-mono">
-                              <Video className="w-3.5 h-3.5" /> Videos ({res.videos.length})
+                              <Video className="w-3.5 h-3.5 shrink-0" /> Videos ({res.videos.length})
                             </h5>
-                            <div className="space-y-3">
-                              {res.videos.map(v => (
-                                <EmbeddedVideoPlayer
-                                  key={v.id}
-                                  url={v.recording_url || v.recording_link || ''}
-                                  title={v.title}
-                                  subtitle={`Module ${modIdx + 1}: ${mod.title}`}
-                                />
+                            <div className="video-list flex flex-col gap-6 w-full">
+                              {res.videos.map((v, vIdx) => (
+                                <div
+                                  key={v.id || vIdx}
+                                  className="video-item-card bg-slate-50 dark:bg-[#060B18] rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-white/10 shadow-sm space-y-2.5"
+                                >
+                                  <div className="flex items-center justify-between gap-2 px-1">
+                                    <div className="min-w-0">
+                                      <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                        {v.title}
+                                      </h6>
+                                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-[#9BAAC5] truncate">
+                                        Module {modIdx + 1}: {mod.title}
+                                      </p>
+                                    </div>
+                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                                      1080p HD
+                                    </span>
+                                  </div>
+                                  <EmbeddedVideoPlayer
+                                    url={v.recording_url || v.recording_link || ''}
+                                    title={v.title}
+                                    subtitle={`Module ${modIdx + 1}: ${mod.title}`}
+                                  />
+                                </div>
                               ))}
                             </div>
                           </div>
@@ -530,7 +547,7 @@ export const StudentCourseDetailPage: React.FC = () => {
                         {res.ppts.length > 0 && (
                           <div className="space-y-3 pt-2">
                             <h5 className="text-xs font-bold uppercase tracking-wider text-amber-500 flex items-center gap-1.5 font-mono">
-                              <PresIcon className="w-3.5 h-3.5" /> PPT Presentations ({res.ppts.length})
+                              <PresIcon className="w-3.5 h-3.5 shrink-0" /> PPT Presentations ({res.ppts.length})
                             </h5>
                             <div className="grid grid-cols-1 gap-4">
                               {res.ppts.map(p => (
@@ -662,18 +679,18 @@ export const StudentCourseDetailPage: React.FC = () => {
               
               {/* 1. VIDEOS */}
               {(activeCategory === 'videos' || activeCategory === 'all') && (
-                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center justify-center">
-                        <Video className="w-5 h-5" />
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-3.5 sm:p-5 md:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/15 text-rose-500 border border-rose-500/30 flex items-center justify-center shrink-0">
+                        <Video className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Curriculum Video Recordings</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">In-platform video player</p>
+                      <div className="min-w-0">
+                        <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">Curriculum Video Recordings</h4>
+                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-[#9BAAC5] truncate">In-platform video player</p>
                       </div>
                     </div>
-                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                    <span className="text-[11px] sm:text-xs font-mono px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10 shrink-0 whitespace-nowrap">
                       {activeModuleResources.videos.length} Videos
                     </span>
                   </div>
@@ -683,14 +700,31 @@ export const StudentCourseDetailPage: React.FC = () => {
                       No video lectures published yet for this module.
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      {activeModuleResources.videos.map(v => (
-                        <EmbeddedVideoPlayer
-                          key={v.id}
-                          url={v.recording_url || v.recording_link || ''}
-                          title={v.title}
-                          subtitle={activeModule.title}
-                        />
+                    <div className="video-list flex flex-col gap-6 w-full">
+                      {activeModuleResources.videos.map((v, vIdx) => (
+                        <div
+                          key={v.id || vIdx}
+                          className="video-item-card bg-slate-50 dark:bg-[#060B18] rounded-2xl p-2.5 sm:p-4 border border-slate-200 dark:border-white/10 shadow-sm space-y-2.5"
+                        >
+                          <div className="flex items-center justify-between gap-2 px-1">
+                            <div className="min-w-0">
+                              <h5 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                {v.title}
+                              </h5>
+                              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-[#9BAAC5] truncate">
+                                Lesson {vIdx + 1} • {activeModule.title}
+                              </p>
+                            </div>
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                              1080p HD
+                            </span>
+                          </div>
+                          <EmbeddedVideoPlayer
+                            url={v.recording_url || v.recording_link || ''}
+                            title={v.title}
+                            subtitle={activeModule.title}
+                          />
+                        </div>
                       ))}
                     </div>
                   )}
@@ -699,18 +733,18 @@ export const StudentCourseDetailPage: React.FC = () => {
 
               {/* 2. PPT PRESENTATIONS */}
               {(activeCategory === 'ppt' || activeCategory === 'all') && (
-                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center">
-                        <PresIcon className="w-5 h-5" />
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-3.5 sm:p-5 md:p-6 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                      <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/15 text-amber-500 border border-amber-500/30 flex items-center justify-center shrink-0">
+                        <PresIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
-                      <div>
-                        <h4 className="text-base font-bold text-slate-900 dark:text-white">Presentation Decks & Slides</h4>
-                        <p className="text-xs text-slate-500 dark:text-[#9BAAC5]">In-platform viewer with slide restrictions</p>
+                      <div className="min-w-0">
+                        <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white truncate">Presentation Decks & Slides</h4>
+                        <p className="text-[11px] sm:text-xs text-slate-500 dark:text-[#9BAAC5] truncate">In-platform viewer with slide restrictions</p>
                       </div>
                     </div>
-                    <span className="text-xs font-mono px-3 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10">
+                    <span className="text-[11px] sm:text-xs font-mono px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/5 text-slate-600 dark:text-[#9BAAC5] border border-slate-200 dark:border-white/10 shrink-0 whitespace-nowrap">
                       {activeModuleResources.ppts.length} Decks
                     </span>
                   </div>
@@ -740,7 +774,7 @@ export const StudentCourseDetailPage: React.FC = () => {
 
               {/* 3. NOTES & DOCUMENTS */}
               {(activeCategory === 'notes' || activeCategory === 'all') && (
-                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-4">
+                <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-3.5 sm:p-5 md:p-6 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-500 border border-blue-500/30 flex items-center justify-center">
@@ -797,7 +831,7 @@ export const StudentCourseDetailPage: React.FC = () => {
                 const currentQ = moduleQAs[currentInterviewIdx] || moduleQAs[0];
 
                 return (
-                  <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-5 sm:p-6 md:p-8 shadow-sm space-y-6">
+                  <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-3.5 sm:p-5 md:p-6 shadow-sm space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-500 border border-emerald-500/30 flex items-center justify-center">

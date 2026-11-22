@@ -189,7 +189,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-[#0D1833] border border-[#DFE9F6] dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
+            <div className="absolute right-0 mt-2 w-[min(90vw,24rem)] max-w-[calc(100vw-1rem)] bg-white dark:bg-[#0D1833] border border-[#DFE9F6] dark:border-white/10 rounded-2xl shadow-2xl overflow-hidden z-50 animate-fadeIn">
               <div className="p-3.5 bg-[#F5F9FF] dark:bg-[#0B1530] border-b border-[#DFE9F6] dark:border-white/10 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="w-4 h-4 text-[#176BFF] dark:text-[#00A8FF]" />

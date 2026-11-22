@@ -384,11 +384,11 @@ export const StudentQuizzesPage: React.FC = () => {
             </div>
 
             {/* Previous, Next, Submit Controls */}
-            <div className="flex items-center justify-between pt-6 border-t border-slate-200 dark:border-white/10">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-6 border-t border-slate-200 dark:border-white/10">
               <button
                 onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
                 disabled={currentQuestionIndex === 0}
-                className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition ${
+                className={`px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 sm:gap-2 transition ${
                   currentQuestionIndex === 0
                     ? 'opacity-40 cursor-not-allowed bg-slate-100 dark:bg-white/5 text-slate-400'
                     : 'bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:bg-[#1C3266] text-slate-800 dark:text-white'
@@ -401,7 +401,7 @@ export const StudentQuizzesPage: React.FC = () => {
               {currentQuestionIndex < totalQ - 1 ? (
                 <button
                   onClick={() => setCurrentQuestionIndex(prev => Math.min(totalQ - 1, prev + 1))}
-                  className="px-6 py-2.5 rounded-xl bg-[#00A3FF] hover:bg-[#176BFF] text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-[#00A3FF]/20 transition"
+                  className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-[#00A3FF] hover:bg-[#176BFF] text-white text-xs font-bold flex items-center gap-1.5 sm:gap-2 shadow-lg shadow-[#00A3FF]/20 transition"
                 >
                   <span>Next Question</span>
                   <ArrowRight className="w-4 h-4" />
@@ -409,7 +409,7 @@ export const StudentQuizzesPage: React.FC = () => {
               ) : (
                 <button
                   onClick={() => setShowSubmitConfirm(true)}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-[#00A3FF] hover:opacity-95 text-white text-xs font-black flex items-center gap-2 shadow-lg shadow-emerald-500/20 transition"
+                  className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-[#00A3FF] hover:opacity-95 text-white text-xs font-black flex items-center gap-1.5 sm:gap-2 shadow-lg shadow-emerald-500/20 transition"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Submit Quiz</span>

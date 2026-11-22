@@ -67,44 +67,61 @@ export const StudentSaturdaySpecialPage: React.FC = () => {
 
           {/* 1. SESSION RECORDING (EmbeddedVideoPlayer with Expand / Theatre Mode) */}
           {(activeSession.recording_url || activeSession.recordingUrl) && (
-            <div className="dark-card bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-5 sm:p-6 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center">
-                    <Video className="w-5 h-5" />
+            <div className="dark-card bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-3.5 sm:p-5 md:p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center shrink-0">
+                    <Video className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-[#F0F5FF]">Session Masterclass Recording</h3>
-                    <p className="text-xs text-[#9BAAC2]">High-definition full length workshop lecture</p>
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-bold text-[#F0F5FF] truncate">Session Masterclass Recording</h3>
+                    <p className="text-[11px] sm:text-xs text-[#9BAAC2] truncate">High-definition full length workshop lecture</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20">
+                <span className="text-[10px] sm:text-[11px] font-mono px-2.5 py-1 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20 shrink-0 whitespace-nowrap">
                   Full Session
                 </span>
               </div>
 
-              <EmbeddedVideoPlayer
-                url={activeSession.recording_url || activeSession.recordingUrl || ''}
-                title={activeSession.title}
-                subtitle={`${activeSession.category} • Saturday Special`}
-              />
+              <div className="video-list">
+                <div className="video-item-card bg-slate-900/60 dark:bg-[#060B18] rounded-2xl p-2.5 sm:p-4 border border-slate-700/50 dark:border-white/10 shadow-md space-y-2.5">
+                  <div className="flex items-center justify-between gap-2 px-1">
+                    <div className="min-w-0">
+                      <h4 className="text-xs sm:text-sm font-bold text-white truncate">
+                        {activeSession.title}
+                      </h4>
+                      <p className="text-[10px] sm:text-xs text-[#9BAAC2] truncate">
+                        {activeSession.category} • Saturday Special Masterclass
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-300 border border-rose-500/20 shrink-0">
+                      Full Session
+                    </span>
+                  </div>
+                  <EmbeddedVideoPlayer
+                    url={activeSession.recording_url || activeSession.recordingUrl || ''}
+                    title={activeSession.title}
+                    subtitle={`${activeSession.category} • Saturday Special`}
+                  />
+                </div>
+              </div>
             </div>
           )}
 
           {/* 2. PPT SLIDES (SkillNovaDocumentViewer with slide navigation) */}
           {(activeSession.ppt_url || activeSession.slides_url) && (
-            <div className="dark-card bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-5 sm:p-6 space-y-4 shadow-xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
-                    <Presentation className="w-5 h-5" />
+            <div className="dark-card bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-3.5 sm:p-5 md:p-6 space-y-4 shadow-xl">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                    <Presentation className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
-                  <div>
-                    <h3 className="text-base font-bold text-[#F0F5FF]">Presentation Slide Deck</h3>
-                    <p className="text-xs text-[#9BAAC2]">In-platform slide viewer with controls</p>
+                  <div className="min-w-0">
+                    <h3 className="text-sm sm:text-base font-bold text-[#F0F5FF] truncate">Presentation Slide Deck</h3>
+                    <p className="text-[11px] sm:text-xs text-[#9BAAC2] truncate">In-platform slide viewer with controls</p>
                   </div>
                 </div>
-                <span className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                <span className="text-[10px] sm:text-[11px] font-mono px-2.5 py-1 rounded-md bg-amber-500/10 text-amber-300 border border-amber-500/20 shrink-0 whitespace-nowrap">
                   Interactive PPT
                 </span>
               </div>
@@ -119,7 +136,7 @@ export const StudentSaturdaySpecialPage: React.FC = () => {
 
           {/* 3. NOTES / PDF */}
           {(activeSession.notes_url || activeSession.doc_url) && (
-            <div className="dark-card bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-6 space-y-4 shadow-xl">
+            <div className="dark-card bg-[#101A2D] rounded-3xl border border-[#1F2E47] p-3.5 sm:p-5 md:p-6 space-y-4 shadow-xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center">

@@ -132,7 +132,7 @@ export const AdminLayout: React.FC = () => {
         )}
 
         {/* Main Content Workspace */}
-        <main className="flex-1 h-full overflow-y-auto p-3 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] transition-colors duration-300">
+        <main className="flex-1 h-full overflow-y-auto overflow-x-hidden w-full max-w-full p-3 sm:p-4 md:p-8 bg-[#F5F9FF] dark:bg-[#050816] transition-colors duration-300">
           <Outlet />
         </main>
       </div>

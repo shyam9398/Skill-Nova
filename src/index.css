@@ -261,38 +261,138 @@ img[alt*="qr"] {
 
 /* --------------------------------------------------------------------------
    1. GLOBAL LIGHT THEME (html:not(.dark))
-   Strict dark black typography for all elements on light backgrounds
+   High-contrast typography: Primary #111827, Secondary #475569, Background #F8FAFC
    -------------------------------------------------------------------------- */
 
 html:not(.dark) {
-  color: #111111;
-  background-color: #EAF4FE;
+  color: #111827;
+  background-color: #F8FAFC;
 }
 
 html:not(.dark) body {
-  color: #111111;
+  color: #111827;
+  background-color: #F8FAFC;
 }
 
-/* Headings outside dark containers: Solid dark black and bold (#000000) */
-html:not(.dark) :is(h1, h2, h3, h4, h5, h6) {
-  color: #000000 !important;
+/* Headings outside dark surfaces: Crisp Solid #111827 */
+html:not(.dark) :is(h1, h2, h3, h4, h5, h6):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *) {
+  color: #111827 !important;
   font-weight: 700 !important;
 }
 
-/* Paragraphs outside dark containers: Solid dark slate-black (#222222) */
-html:not(.dark) p {
-  color: #222222 !important;
+/* Paragraphs outside dark surfaces: Secondary #475569 (WCAG AA Compliant) */
+html:not(.dark) p:not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *) {
+  color: #475569 !important;
 }
 
-/* Form labels, Navigation labels, Definitions: Deep dark (#111111) */
-html:not(.dark) :is(label, dt, dd, nav a, nav span, .nav-item) {
-  color: #111111 !important;
+/* Form labels, definitions outside dark surfaces: Deep dark (#111827) */
+html:not(.dark) :is(label, dt, dd):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *) {
+  color: #111827 !important;
   font-weight: 600;
 }
 
-/* List items outside dark containers: Deep dark (#222222) */
-html:not(.dark) li {
-  color: #222222 !important;
+/* List items outside dark containers: Slate-800 (#1E293B) */
+html:not(.dark) li:not(.intentional-dark *):not(.dark-card *):not(.dark-section *) {
+  color: #1E293B !important;
+}
+
+/* Student & Admin Sidebar Navigation Items (Light Theme) */
+html:not(.dark) :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .nav-item:not(.active),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+):not(.intentional-dark *):not(.login-navbar *) {
+  color: #1F2937 !important;
+  font-weight: 600;
+}
+
+html:not(.dark) :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .nav-item:not(.active),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+):not(.intentional-dark *):not(.login-navbar *):hover {
+  color: #111827 !important;
+  background-color: #F1F5F9 !important;
+}
+
+html:not(.dark) :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .nav-item:not(.active),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+):not(.intentional-dark *):not(.login-navbar *) :is(span:not(.student-badge):not(.admin-badge):not(.badge):not([class*="bg-"]), svg) {
+  color: #1F2937 !important;
+}
+
+html:not(.dark) :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .nav-item:not(.active),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+):not(.intentional-dark *):not(.login-navbar *):hover :is(span:not(.student-badge):not(.admin-badge):not(.badge):not([class*="bg-"]), svg) {
+  color: #111827 !important;
+}
+
+/* Active Navigation Item in Light Theme: Strong vibrant blue (#176BFF) with pure white (#FFFFFF) text */
+html:not(.dark) :is(
+  nav a.active,
+  nav a[aria-current="page"],
+  .student-nav-item.active,
+  .admin-nav-item.active,
+  .active-nav-item
+) {
+  background-color: #176BFF !important;
+  color: #FFFFFF !important;
+}
+
+html:not(.dark) :is(
+  nav a.active,
+  nav a[aria-current="page"],
+  .student-nav-item.active,
+  .admin-nav-item.active,
+  .active-nav-item
+) :is(span:not(.student-badge):not(.admin-badge):not(.badge), svg, div, strong) {
+  color: #FFFFFF !important;
+  fill: currentColor;
+}
+
+/* Sidebar Badges (Normal / Inactive State in Light Theme) */
+html:not(.dark) :is(.student-badge, .admin-badge, nav .badge) {
+  background-color: #EAF3FF !important;
+  color: #176BFF !important;
+  border-color: rgba(23, 107, 255, 0.25) !important;
+  font-weight: 800 !important;
+}
+
+/* Sidebar Badges on Active Navigation Item */
+html:not(.dark) :is(nav a.active, .student-nav-item.active, .admin-nav-item.active) :is(.student-badge, .admin-badge, .badge) {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  font-weight: 800 !important;
+}
+
+/* Student Profile Card Details in Light Theme */
+html:not(.dark) .student-profile-name {
+  color: #111827 !important;
+}
+html:not(.dark) .student-profile-branch {
+  color: #176BFF !important;
+}
+html:not(.dark) .student-profile-year {
+  color: #475569 !important;
+}
+
+/* Logout Button in Light Theme */
+html:not(.dark) .student-logout-btn,
+html:not(.dark) .student-logout-btn :is(span, svg) {
+  color: #DC2626 !important;
+}
+html:not(.dark) .student-logout-btn:hover {
+  background-color: #FEF2F2 !important;
+  color: #B91C1C !important;
 }
 
 /* Tables outside dark containers */
@@ -646,6 +746,152 @@ html:not(.dark) :is(
   background-color: rgba(244, 63, 94, 0.15) !important;
   color: #FB7185 !important;
   border-color: rgba(244, 63, 94, 0.3) !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. NAVIGATION & SIDEBAR IN DARK THEME
+   Crisp silver inactive links, luminous active links, vibrant badges
+   -------------------------------------------------------------------------- */
+.dark :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+) {
+  color: #CBD5E1 !important;
+}
+
+.dark :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+):hover {
+  color: #FFFFFF !important;
+  background-color: #0D1833 !important;
+}
+
+.dark :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+) :is(span:not(.student-badge):not(.admin-badge):not(.badge), svg) {
+  color: #CBD5E1 !important;
+}
+
+.dark :is(
+  nav a:not(.active):not([aria-current="page"]),
+  .student-nav-item:not(.active),
+  .admin-nav-item:not(.active)
+):hover :is(span:not(.student-badge):not(.admin-badge):not(.badge), svg) {
+  color: #FFFFFF !important;
+}
+
+/* Active Navigation Item in Dark Theme */
+.dark :is(
+  nav a.active,
+  nav a[aria-current="page"],
+  .student-nav-item.active,
+  .admin-nav-item.active,
+  .active-nav-item
+) {
+  background-color: #176BFF !important;
+  color: #FFFFFF !important;
+}
+
+.dark :is(
+  nav a.active,
+  nav a[aria-current="page"],
+  .student-nav-item.active,
+  .admin-nav-item.active,
+  .active-nav-item
+) :is(span:not(.student-badge):not(.admin-badge):not(.badge), svg, div, strong) {
+  color: #FFFFFF !important;
+}
+
+/* Sidebar Badges in Dark Theme */
+.dark :is(.student-badge, .admin-badge, nav .badge) {
+  background-color: rgba(0, 168, 255, 0.15) !important;
+  color: #00E5FF !important;
+  border-color: rgba(0, 168, 255, 0.3) !important;
+  font-weight: 800 !important;
+}
+
+.dark :is(nav a.active, .student-nav-item.active, .admin-nav-item.active) :is(.student-badge, .admin-badge, .badge) {
+  background-color: rgba(255, 255, 255, 0.2) !important;
+  color: #FFFFFF !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  font-weight: 800 !important;
+}
+
+/* Student Profile Details in Dark Theme */
+.dark .student-profile-name {
+  color: #FFFFFF !important;
+}
+.dark .student-profile-branch {
+  color: #00E5FF !important;
+}
+.dark .student-profile-year {
+  color: #CBD5E1 !important;
+}
+
+/* Student Logout in Dark Theme */
+.dark .student-logout-btn,
+.dark .student-logout-btn :is(span, svg) {
+  color: #F87171 !important;
+}
+.dark .student-logout-btn:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. SKILLNOVA AUTH & LOGIN BRANDING (LIGHT & DARK THEMES)
+   Guarantees pure white branding and light-grey tagline on cinematic backgrounds
+   -------------------------------------------------------------------------- */
+.login-navbar,
+html:not(.dark) .login-navbar,
+.dark .login-navbar {
+  background-color: rgba(5, 8, 22, 0.65) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.login-brand-link,
+.login-brand-link:visited,
+html:not(.dark) .login-brand-link,
+.dark .login-brand-link {
+  color: #FFFFFF !important;
+  text-decoration: none !important;
+}
+
+.login-brand-link .brand-title,
+html:not(.dark) .login-brand-link .brand-title,
+.dark .login-brand-link .brand-title {
+  color: #FFFFFF !important;
+  font-weight: 900 !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6) !important;
+}
+
+.login-brand-link .brand-nova,
+html:not(.dark) .login-brand-link .brand-nova,
+.dark .login-brand-link .brand-nova {
+  color: #00D9FF !important;
+  text-shadow: 0 0 12px rgba(0, 217, 255, 0.5) !important;
+}
+
+.login-brand-link .brand-tagline,
+html:not(.dark) .login-brand-link .brand-tagline,
+.dark .login-brand-link .brand-tagline {
+  color: #CBD5E1 !important;
+  letter-spacing: 0.15em !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Exclude login navbar controls from global light text darkening */
+html:not(.dark) .login-navbar a:not(.login-brand-link),
+html:not(.dark) .login-navbar button {
+  color: #FFFFFF !important;
+}
+html:not(.dark) .login-navbar a:not(.login-brand-link) span {
+  color: #FFFFFF !important;
 }
 
 /* Tables in dark mode */

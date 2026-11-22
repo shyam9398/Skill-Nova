@@ -44,19 +44,19 @@ export const AdminLoginPage: React.FC = () => {
       <div className="absolute inset-0 bg-[#050816]/75 dark:bg-[#050816]/85 backdrop-blur-[2px] pointer-events-none" />
 
       {/* Top Navbar */}
-      <nav className="relative z-20 h-20 border-b border-white/10 px-6 md:px-12 flex items-center justify-between bg-black/20 backdrop-blur-md">
-        <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#176BFF] via-[#00A3FF] to-[#00D9FF] p-0.5 shadow-md shadow-[#00A3FF]/20 group-hover:scale-105 transition-transform">
+      <nav className="relative z-20 h-20 border-b border-white/10 px-6 md:px-12 flex items-center justify-between bg-black/20 backdrop-blur-md login-navbar intentional-dark">
+        <Link to="/" className="flex items-center gap-3.5 group login-brand-link">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#176BFF] via-[#00A3FF] to-[#00D9FF] p-0.5 shadow-lg shadow-[#00A3FF]/25 group-hover:scale-105 transition-transform shrink-0">
             <div className="w-full h-full bg-[#0D1833] rounded-[14px] flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-[#00A8FF]" />
+              <Sparkles className="w-5 h-5 text-[#00E5FF]" />
             </div>
           </div>
-          <div>
-            <span className="text-xl font-black tracking-tight text-white">
-              Skill<span className="text-[#00A8FF]">Nova</span>
+          <div className="flex flex-col">
+            <span className="text-2xl font-black tracking-tight text-white drop-shadow-md leading-tight brand-title">
+              Skill<span className="text-[#00D9FF] brand-nova">Nova</span>
             </span>
-            <p className="text-[10px] text-slate-300 font-bold uppercase tracking-wider -mt-0.5">
-              Learn • Build • Explore • Grow
+            <p className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-widest text-[#CBD5E1] -mt-0.5 drop-shadow-xs brand-tagline">
+              LEARN • BUILD • EXPLORE • GROW
             </p>
           </div>
         </Link>

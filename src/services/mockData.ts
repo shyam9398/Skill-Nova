@@ -1,4 +1,4 @@
-import type { User, Course, CourseModule, Topic, SaturdaySpecial, Opportunity, CareerBlueprint, AIGenerationJob, Notification } from '../types';
+import type { User, Course, CourseModule, Topic, SaturdaySpecial, Opportunity, CareerBlueprint, AIGenerationJob, Notification, Project } from '../types';
 
 export const INITIAL_USERS: User[] = [
   {
@@ -931,5 +931,52 @@ export const INITIAL_MENTOR_REQUESTS = [
         created_at: '2026-10-26T12:00:00Z'
       }
     ]
+  }
+];
+
+export const INITIAL_PROJECTS: Project[] = [
+  {
+    id: '00000000-0000-0000-0000-000000000101',
+    title: 'Autonomous Drone Navigation with Computer Vision',
+    description: 'Real-time obstacle avoidance and path planning using deep reinforcement learning and OpenCV on edge hardware with microsecond latency.',
+    image_url: 'https://images.unsplash.com/photo-1527977966376-1c8408f9f108?w=800&auto=format&fit=crop&q=80',
+    project_url: 'https://github.com/skillnova-students/drone-vision',
+    category: 'AI/ML',
+    status: 'published',
+    created_at: '2026-10-15T08:30:00Z',
+    updated_at: '2026-10-15T08:30:00Z'
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000102',
+    title: 'FinTrack: Real-Time Decentralized Expense Ledger',
+    description: 'Full-stack financial analytics workspace built with React 19, FastAPI, PostgreSQL, and high-frequency live charting for micro-transactions.',
+    image_url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop&q=80',
+    project_url: 'https://github.com/skillnova-students/fintrack-ledger',
+    category: 'Web Development',
+    status: 'published',
+    created_at: '2026-10-20T10:15:00Z',
+    updated_at: '2026-10-20T10:15:00Z'
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000103',
+    title: 'PulseCare: Smart Hospital IoT & Patient Telemetry',
+    description: 'Microcontroller-based continuous patient telemetry dashboard transmitting ECG, SpO2, and pulse trends over MQTT to a clinical monitoring portal.',
+    image_url: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800&auto=format&fit=crop&q=80',
+    project_url: 'https://github.com/skillnova-students/pulsecare-iot',
+    category: 'IoT',
+    status: 'published',
+    created_at: '2026-10-25T14:40:00Z',
+    updated_at: '2026-10-25T14:40:00Z'
+  },
+  {
+    id: '00000000-0000-0000-0000-000000000104',
+    title: 'Campus Connect: Peer Mentorship & Collaboration App',
+    description: 'Mobile-first native cross-platform application connecting engineering students with alumni mentors, code review pods, and mock interviews.',
+    image_url: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&auto=format&fit=crop&q=80',
+    project_url: 'https://github.com/skillnova-students/campus-connect',
+    category: 'App Development',
+    status: 'draft',
+    created_at: '2026-11-01T09:00:00Z',
+    updated_at: '2026-11-01T09:00:00Z'
   }
 ];

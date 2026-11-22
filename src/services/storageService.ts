@@ -139,5 +139,93 @@ export const storageService = {
     } catch (e: any) {
       return { success: false, error: e?.message || 'Upload failed' };
     }
+  },
+
+  /**
+   * Upload a student or institutional project showcase image to the 'project-showcase' bucket.
+   */
+  async uploadProjectImage(file: File): Promise<UploadResult> {
+    if (!isLiveSupabaseConfigured) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            success: true,
+            path: `local/projects/${Date.now()}_${file.name}`,
+            url: reader.result as string
+          });
+        };
+        reader.onerror = () => {
+          resolve({
+            success: true,
+            path: `local/projects/${Date.now()}_${file.name}`,
+            url: URL.createObjectURL(file)
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    try {
+      const sanitizedName = file.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      const filePath = `projects/${Date.now()}_${sanitizedName}`;
+
+      // Try project-showcase bucket first
+      let { data, error } = await supabase.storage
+        .from('project-showcase')
+        .upload(filePath, file, {
+          cacheControl: '86400',
+          upsert: true
+        });
+
+      // If project-showcase bucket doesn't exist, fallback to course-roadmaps bucket
+      if (error && error.message?.toLowerCase().includes('bucket not found')) {
+        console.info('[SkillNova Storage] Falling back to course-roadmaps bucket...');
+        const fallbackRes = await supabase.storage
+          .from('course-roadmaps')
+          .upload(filePath, file, { cacheControl: '86400', upsert: true });
+        data = fallbackRes.data;
+        error = fallbackRes.error;
+      }
+
+      if (error) {
+        console.warn('[SkillNova Storage] uploadProjectImage note:', error.message);
+        return new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve({
+              success: true,
+              path: filePath,
+              url: reader.result as string
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const bucketUsed = data?.path && !data.path.startsWith('course-roadmaps') ? 'project-showcase' : 'course-roadmaps';
+      const { data: publicData } = supabase.storage
+        .from(bucketUsed)
+        .getPublicUrl(data?.path || filePath);
+
+      return {
+        success: true,
+        path: data?.path || filePath,
+        url: publicData.publicUrl
+      };
+    } catch (e: any) {
+      console.warn('[SkillNova Storage] uploadProjectImage error:', e);
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          resolve({
+            success: true,
+            path: file.name,
+            url: reader.result as string
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    }
   }
 };

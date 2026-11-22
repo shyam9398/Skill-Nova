@@ -81,10 +81,10 @@ export const AdminLayout: React.FC = () => {
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={({ isActive }) =>
-                    `flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                    `admin-nav-item flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
                       isActive
-                        ? 'bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
-                        : 'text-slate-600 dark:text-[#9BAAC5] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
+                        ? 'active bg-[#176BFF] text-white shadow-md shadow-[#176BFF]/30 font-extrabold'
+                        : 'text-[#1F2937] dark:text-[#CBD5E1] hover:text-[#111827] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
                     }`
                   }
                 >
@@ -93,7 +93,7 @@ export const AdminLayout: React.FC = () => {
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] border border-[#00A3FF]/20">
+                    <span className="admin-badge student-badge text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] border border-[#00A3FF]/25">
                       {item.badge}
                     </span>
                   )}

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { ExperienceSkillNovaSection } from '../components/homepage/ExperienceSkillNovaSection';
+import { ProjectShowcaseSection } from '../components/homepage/ProjectShowcaseSection';
 import { FloatingSocialConnect } from '../components/common/FloatingSocialConnect';
 import { StudentAccessRequestModal } from '../components/homepage/StudentAccessRequestModal';
 import mountainJourneyImg from '../assets/mountain-journey.jpg';
@@ -155,6 +156,9 @@ export const LandingPage: React.FC = () => {
             <a href="#courses" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               Courses
             </a>
+            <a href="#projects" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
+              Projects
+            </a>
             <a href="#contact" className="hover:text-[#176BFF] dark:hover:text-[#00A8FF] transition">
               Contact
             </a>
@@ -254,6 +258,13 @@ export const LandingPage: React.FC = () => {
                 className="py-1.5 hover:text-[#176BFF] dark:hover:text-[#00A8FF]"
               >
                 Courses & Curriculum
+              </a>
+              <a
+                href="#projects"
+                onClick={() => setMobileMenuOpen(false)}
+                className="py-1.5 hover:text-[#176BFF] dark:hover:text-[#00A8FF]"
+              >
+                Student Projects & Innovations
               </a>
               <a
                 href="#contact"
@@ -486,6 +497,9 @@ export const LandingPage: React.FC = () => {
           <ExperienceSkillNovaSection onOpenAccessRequest={() => setShowAccessModal(true)} />
         </div>
       </section>
+
+      {/* 6.1. Student Projects & Innovations (Immediately BELOW Available Programs & Live Tracks) */}
+      <ProjectShowcaseSection />
 
       {/* 6.5. Professional Brand Statement (Pre-Footer) */}
       <section className="py-16 sm:py-20 bg-gradient-to-b from-white to-[#F5F9FF] dark:from-[#050816] dark:to-[#0A0E17] border-t border-[#E2E8F0] dark:border-white/10 text-center relative overflow-hidden transition-colors">

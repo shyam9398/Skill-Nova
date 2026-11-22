@@ -1179,3 +1179,18 @@ export interface QuizParticipationSummary {
   participants: StudentQuizParticipation[];
 }
 
+export type ProjectCategory = 'AI/ML' | 'Web Development' | 'App Development' | 'IoT' | 'Cybersecurity' | 'Cloud Computing' | 'Other' | string;
+export type ProjectStatus = 'draft' | 'published';
+
+export interface Project {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string;
+  project_url?: string | null;
+  category?: ProjectCategory | null;
+  status: ProjectStatus;
+  created_at: string;
+  updated_at: string;
+}
+

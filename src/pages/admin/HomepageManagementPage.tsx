@@ -22,10 +22,11 @@ const LinkedinIcon = ({ className = "w-4 h-4" }: { className?: string }) => (
 );
 import { dataService } from '../../services/dataService';
 import { LiveMeetingManagementCard } from '../../components/admin/LiveMeetingManagementCard';
+import { ProjectShowcaseManagementCard } from '../../components/admin/ProjectShowcaseManagementCard';
 import type { HomepageSettings, HomepageCourse } from '../../types';
 
 export const HomepageManagementPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'meeting' | 'video' | 'courses' | 'whatsapp' | 'instagram' | 'linkedin' | 'preview'>('meeting');
+  const [activeTab, setActiveTab] = useState<'meeting' | 'projects' | 'video' | 'courses' | 'whatsapp' | 'instagram' | 'linkedin' | 'preview'>('meeting');
 
   const [settings, setSettings] = useState<HomepageSettings>(dataService.getHomepageSettings());
   const [courses, setCourses] = useState<HomepageCourse[]>(dataService.getHomepageCourses());
@@ -248,6 +249,18 @@ Module 3: Capstone Deployment
         </button>
 
         <button
+          onClick={() => setActiveTab('projects')}
+          className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
+            activeTab === 'projects'
+              ? 'bg-[#176BFF] text-white shadow-xs'
+              : 'text-[#73839B] hover:text-[#15243B] hover:bg-white'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 text-[#00E5FF]" />
+          <span>Project Showcase</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('video')}
           className={`px-4 py-2.5 rounded-xl text-xs font-bold transition flex items-center gap-2 whitespace-nowrap ${
             activeTab === 'video'
@@ -320,9 +333,17 @@ Module 3: Capstone Deployment
         </button>
       </div>
 
-      {/* Tab 0: Daily Live Meeting */}
+      {/* Tab 0: Daily Live Meeting & Project Showcase Management immediately below */}
       {activeTab === 'meeting' && (
-        <LiveMeetingManagementCard />
+        <div className="space-y-8">
+          <LiveMeetingManagementCard />
+          <ProjectShowcaseManagementCard />
+        </div>
+      )}
+
+      {/* Dedicated Project Showcase Management Tab */}
+      {activeTab === 'projects' && (
+        <ProjectShowcaseManagementCard />
       )}
 
       {/* Tab 1: Demo Video */}

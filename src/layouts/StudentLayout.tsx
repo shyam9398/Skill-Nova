@@ -48,15 +48,7 @@ export const StudentLayout: React.FC = () => {
   ];
 
   return (
-    <div
-      className={`h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300 student-layout-root ${
-        isCollapsed ? 'sidebar-collapsed' : ''
-      }`}
-      style={{
-        '--header-height': '4rem',
-        '--sidebar-width': isCollapsed ? '5rem' : '16rem',
-      } as React.CSSProperties}
-    >
+    <div className="h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
       {/* Single, Unified SkillNova Header */}
       <div className="shrink-0 z-40">
         <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -65,11 +57,9 @@ export const StudentLayout: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Responsive Stationary & Collapsible Sidebar */}
         <aside
-          className={`fixed lg:relative inset-y-0 left-0 z-30 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-all duration-300 shadow-sm ${
-            isCollapsed ? 'w-64 lg:w-20' : 'w-64'
-          } ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-          }`}
+          className={`fixed lg:relative inset-y-0 left-0 z-30 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-all duration-300 shadow-sm ${isCollapsed ? 'w-64 lg:w-20' : 'w-64'
+            } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+            }`}
         >
           {/* Collapse/Expand Toggle Header Button */}
           <div className="hidden lg:flex items-center justify-between px-3.5 py-2.5 border-b border-[#DFE9F6] dark:border-white/10 bg-slate-50/70 dark:bg-[#080E21]">
@@ -81,9 +71,8 @@ export const StudentLayout: React.FC = () => {
             <button
               type="button"
               onClick={toggleCollapsed}
-              className={`p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9BAAC5] hover:text-slate-900 dark:hover:text-white transition ${
-                isCollapsed ? 'mx-auto' : ''
-              }`}
+              className={`p-1.5 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 text-slate-600 dark:text-[#9BAAC5] hover:text-slate-900 dark:hover:text-white transition ${isCollapsed ? 'mx-auto' : ''
+                }`}
               title={isCollapsed ? 'Expand Sidebar (Ctrl+B)' : 'Collapse Sidebar to Icons'}
               aria-label={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             >
@@ -98,9 +87,8 @@ export const StudentLayout: React.FC = () => {
           {/* Student Profile Card */}
           <div className={`shrink-0 border-b border-[#DFE9F6] dark:border-white/10 ${isCollapsed ? 'p-2' : 'p-4'}`}>
             <div
-              className={`bg-[#F5F9FF] dark:bg-[#0D1833] rounded-2xl border border-[#DFE9F6] dark:border-white/10 flex items-center transition-all ${
-                isCollapsed ? 'p-2 justify-center' : 'p-3 gap-3'
-              }`}
+              className={`bg-[#F5F9FF] dark:bg-[#0D1833] rounded-2xl border border-[#DFE9F6] dark:border-white/10 flex items-center transition-all ${isCollapsed ? 'p-2 justify-center' : 'p-3 gap-3'
+                }`}
               title={currentUser?.full_name || 'Enrolled Student'}
             >
               <img
@@ -110,13 +98,13 @@ export const StudentLayout: React.FC = () => {
               />
               {!isCollapsed && (
                 <div className="overflow-hidden min-w-0">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                  <div className="student-profile-name text-xs font-bold text-[#111827] dark:text-white truncate">
                     {currentUser?.full_name || 'Enrolled Student'}
                   </div>
-                  <div className="text-[10px] text-[#176BFF] truncate font-medium">
+                  <div className="student-profile-branch text-[10px] text-[#176BFF] dark:text-[#00E5FF] truncate font-semibold">
                     {currentUser?.branch || 'Computer Science & Eng'}
                   </div>
-                  <div className="text-[10px] text-slate-500 dark:text-[#9BAAC5] font-semibold truncate">
+                  <div className="student-profile-year text-[10px] text-[#475569] dark:text-[#CBD5E1] font-semibold truncate">
                     {currentUser?.year_of_study || 'Batch 2027'}
                   </div>
                 </div>
@@ -135,24 +123,24 @@ export const StudentLayout: React.FC = () => {
                   onClick={() => setSidebarOpen(false)}
                   title={isCollapsed ? `${item.label}${item.badge ? ` (${item.badge})` : ''}` : undefined}
                   className={({ isActive }) =>
-                    `flex items-center rounded-xl text-xs font-bold transition-all group relative ${
+                    `student-nav-item flex items-center rounded-xl text-xs font-bold transition-all group relative ${
                       isCollapsed
                         ? 'justify-center p-3'
                         : 'justify-between px-3.5 py-2.5'
                     } ${
                       isActive
-                        ? 'bg-[#176BFF] text-white shadow-md shadow-[#00A8FF]/25'
-                        : 'text-slate-600 dark:text-[#9BAAC5] hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
+                        ? 'active bg-[#176BFF] text-white shadow-md shadow-[#176BFF]/30 font-extrabold'
+                        : 'text-[#1F2937] dark:text-[#CBD5E1] hover:text-[#111827] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#0D1833]'
                     }`
                   }
                 >
                   <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 min-w-0'}`}>
                     <Icon className="w-4 h-4 shrink-0 transition-transform group-hover:scale-110" />
-                    {!isCollapsed && <span className="truncate">{item.label}</span>}
+                    {!isCollapsed && <span className="truncate student-nav-label">{item.label}</span>}
                   </div>
 
                   {!isCollapsed && item.badge && (
-                    <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] border border-[#00A8FF]/20 shrink-0">
+                    <span className="student-badge text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] border border-[#00A8FF]/30 shrink-0">
                       {item.badge}
                     </span>
                   )}
@@ -170,22 +158,22 @@ export const StudentLayout: React.FC = () => {
           <div className="shrink-0 p-3 border-t border-[#DFE9F6] dark:border-white/10 bg-white dark:bg-[#0B1530] space-y-2">
             <button
               onClick={() => logout()}
-              className={`w-full flex items-center rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/30 transition ${
+              className={`student-logout-btn w-full flex items-center rounded-xl text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 border border-transparent hover:border-red-200 dark:hover:border-red-800/30 transition ${
                 isCollapsed ? 'justify-center p-3' : 'justify-between px-3.5 py-2.5'
               }`}
               title="Sign Out of SkillNova"
             >
               <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-2.5'}`}>
                 <LogOut className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" />
-                {!isCollapsed && <span>Logout</span>}
+                {!isCollapsed && <span className="student-logout-text font-bold">Logout</span>}
               </div>
               {!isCollapsed && <ChevronRight className="w-3.5 h-3.5 text-red-400" />}
             </button>
 
             {!isCollapsed && (
-              <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#73839B] dark:text-[#9BAAC5]">
-                <span className="font-medium">Active Batch 2027</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+              <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#475569] dark:text-[#9BAAC5]">
+                <span className="font-semibold text-slate-700 dark:text-[#CBD5E1]">Active Batch 2027</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   VERIFIED
                 </span>
@@ -198,7 +186,7 @@ export const StudentLayout: React.FC = () => {
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="sidebar-drawer-backdrop fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
+            className="fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
           />
         )}
 

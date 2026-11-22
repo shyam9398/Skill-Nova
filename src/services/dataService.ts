@@ -38,6 +38,8 @@ import type {
   StudentAccountAudit,
   QuizParticipationSummary,
   StudentQuizParticipation,
+  Project,
+  ProjectStatus,
 } from "../types";
 
 import {
@@ -56,6 +58,7 @@ import {
   INITIAL_DISCUSSIONS,
   INITIAL_DISCUSSIONS_REPLIES,
   INITIAL_MENTOR_REQUESTS,
+  INITIAL_PROJECTS,
 } from "./mockData";
 
 import { supabase, supabaseUrl, supabaseAnonKey, isLiveSupabaseConfigured } from "./supabaseClient";
@@ -1240,6 +1243,8 @@ class DataService {
 
   private homepageCourses: HomepageCourse[] = INITIAL_HOMEPAGE_COURSES;
 
+  private projects: Project[] = INITIAL_PROJECTS;
+
   private studentAccessRequests: StudentAccessRequest[] =
     INITIAL_ACCESS_REQUESTS;
 
@@ -1400,6 +1405,11 @@ class DataService {
         [],
       );
 
+      this.projects = getOrInit(
+        "projects",
+        INITIAL_PROJECTS,
+      );
+
       const savedUserId = localStorage.getItem("skillnova_current_user_id");
 
       if (savedUserId) {
@@ -1496,6 +1506,7 @@ class DataService {
           this.syncTopicsFromSupabase(),
           this.syncHomepageFromSupabase(),
           this.syncHomepageCoursesFromSupabase(),
+          this.syncProjectsFromSupabase(),
           this.syncAccessRequestsFromSupabase(),
           this.syncQuizzesFromSupabase(),
           this.syncQuizAttemptsFromSupabase(),
@@ -1578,6 +1589,11 @@ class DataService {
           "postgres_changes",
           { event: "*", schema: "public", table: "homepage_courses" },
           () => this.syncHomepageCoursesFromSupabase(),
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "projects" },
+          () => this.syncProjectsFromSupabase(),
         )
         .on(
           "postgres_changes",
@@ -2023,6 +2039,36 @@ class DataService {
       }
     } catch (e) {
       console.warn("Sync homepage courses error:", e);
+    }
+  }
+
+  public async syncProjectsFromSupabase() {
+    if (!isLiveSupabaseConfigured) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        this.projects = data.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          description: d.description,
+          image_url: d.image_url,
+          project_url: d.project_url || null,
+          category: d.category || "Other",
+          status: (d.status === "draft" ? "draft" : "published") as ProjectStatus,
+          created_at: d.created_at || new Date().toISOString(),
+          updated_at: d.updated_at || new Date().toISOString(),
+        }));
+
+        this.saveToStorage("projects", this.projects);
+        this.notifyListeners();
+      }
+    } catch (e) {
+      console.warn("Sync projects error:", e);
     }
   }
 
@@ -8476,6 +8522,108 @@ Module 3: Production Deployment & System Leadership
         console.warn("Supabase deleteHomepageCourse error:", err);
       }
     }
+  }
+
+  // --- Project Showcase Management Workflow ---
+
+  public getProjects(filterStatus?: 'all' | 'published'): Project[] {
+    const list = [...this.projects];
+    if (filterStatus === 'published') {
+      return list.filter((p) => p.status === 'published');
+    }
+    return list.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
+  public getProjectById(id: string): Project | undefined {
+    return this.projects.find((p) => p.id === id);
+  }
+
+  public async createProject(
+    payload: Omit<Project, 'id' | 'created_at' | 'updated_at'> & { id?: string }
+  ): Promise<Project> {
+    const now = new Date().toISOString();
+    const id = payload.id || ensureUuid(crypto.randomUUID ? crypto.randomUUID() : undefined);
+
+    const newProject: Project = {
+      id,
+      title: payload.title.trim(),
+      description: payload.description.trim(),
+      image_url: payload.image_url.trim(),
+      project_url: payload.project_url ? payload.project_url.trim() : null,
+      category: payload.category || 'Other',
+      status: payload.status || 'published',
+      created_at: now,
+      updated_at: now,
+    };
+
+    this.projects = [newProject, ...this.projects];
+    this.saveToStorage('projects', this.projects);
+    this.notifyListeners();
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        await supabase.from('projects').upsert(newProject);
+      } catch (err) {
+        console.warn('Supabase createProject error:', err);
+      }
+    }
+
+    return newProject;
+  }
+
+  public async updateProject(
+    id: string,
+    updates: Partial<Project>
+  ): Promise<Project | undefined> {
+    let updated: Project | undefined;
+
+    this.projects = this.projects.map((p) => {
+      if (p.id === id) {
+        updated = {
+          ...p,
+          ...updates,
+          updated_at: new Date().toISOString(),
+        };
+        return updated;
+      }
+      return p;
+    });
+
+    this.saveToStorage('projects', this.projects);
+    this.notifyListeners();
+
+    if (isLiveSupabaseConfigured && updated) {
+      try {
+        await supabase.from('projects').update(updated).eq('id', id);
+      } catch (err) {
+        console.warn('Supabase updateProject error:', err);
+      }
+    }
+
+    return updated;
+  }
+
+  public async deleteProject(id: string): Promise<void> {
+    this.projects = this.projects.filter((p) => p.id !== id);
+    this.saveToStorage('projects', this.projects);
+    this.notifyListeners();
+
+    if (isLiveSupabaseConfigured) {
+      try {
+        await supabase.from('projects').delete().eq('id', id);
+      } catch (err) {
+        console.warn('Supabase deleteProject error:', err);
+      }
+    }
+  }
+
+  public async toggleProjectPublishStatus(id: string): Promise<Project | undefined> {
+    const project = this.projects.find((p) => p.id === id);
+    if (!project) return undefined;
+    const nextStatus: ProjectStatus = project.status === 'published' ? 'draft' : 'published';
+    return this.updateProject(id, { status: nextStatus });
   }
 
   // --- Student Access Requests Workflow ---

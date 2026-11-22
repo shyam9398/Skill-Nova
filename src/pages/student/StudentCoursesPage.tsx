@@ -43,12 +43,12 @@ export const StudentCoursesPage: React.FC = () => {
             <BookOpen className="w-3.5 h-3.5 text-[#176BFF] dark:text-[#77B4FF]" />
             Academic Curriculum
           </span>
-          <span className="text-xs text-[#73839B] dark:text-[#9BAAC2] font-mono">{enrolledCourses.length} Enrolled Courses</span>
+          <span className="text-xs text-[#1F2937] dark:text-[#CBD5E1] font-mono font-semibold">{enrolledCourses.length} Enrolled Courses</span>
         </div>
-        <h1 className="text-2xl lg:text-3xl font-black text-[#15243B] dark:text-white">
+        <h1 className="text-2xl lg:text-3xl font-black text-[#111827] dark:text-white">
           My Technology Courses
         </h1>
-        <p className="text-xs md:text-sm text-[#73839B] dark:text-[#9BAAC2]">
+        <p className="text-xs md:text-sm text-[#1F2937] dark:text-[#CBD5E1] font-medium">
           Follow structured modules, access daily recordings, download study notes, and track your topic completion progress.
         </p>
       </div>
@@ -56,18 +56,18 @@ export const StudentCoursesPage: React.FC = () => {
       {/* Search & Filter Bar */}
       <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-[#73839B] dark:text-[#9BAAC2] absolute left-3.5 top-3" />
+          <Search className="w-4 h-4 text-[#1F2937] dark:text-[#CBD5E1] absolute left-3.5 top-3" />
           <input
             type="text"
             placeholder="Search enrolled courses..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-white dark:bg-[#101A2D] border border-[#DFE9F6] dark:border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-[#15243B] dark:text-white placeholder-[#73839B] dark:placeholder-[#9BAAC2] focus:outline-hidden focus:border-[#176BFF] shadow-xs"
+            className="w-full bg-white dark:bg-[#101A2D] border border-[#DFE9F6] dark:border-white/10 rounded-2xl pl-10 pr-4 py-2.5 text-xs text-[#111827] dark:text-white placeholder-[#4B5563] dark:placeholder-[#9BAAC2] font-semibold focus:outline-hidden focus:border-[#176BFF] shadow-xs"
           />
         </div>
 
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <Filter className="w-3.5 h-3.5 text-[#73839B] dark:text-[#9BAAC2] shrink-0" />
+          <Filter className="w-3.5 h-3.5 text-[#1F2937] dark:text-[#CBD5E1] shrink-0" />
           {categories.map((cat) => (
             <button
               key={cat}
@@ -75,7 +75,7 @@ export const StudentCoursesPage: React.FC = () => {
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold capitalize whitespace-nowrap transition ${
                 categoryFilter === cat
                   ? 'bg-[#176BFF] text-white shadow-sm'
-                  : 'bg-white dark:bg-[#101A2D] border border-[#DFE9F6] dark:border-white/10 text-[#73839B] dark:text-[#9BAAC2] hover:text-[#15243B] dark:hover:text-white'
+                  : 'bg-white dark:bg-[#101A2D] border border-[#DFE9F6] dark:border-white/10 text-[#1F2937] dark:text-[#CBD5E1] hover:text-[#111827] dark:hover:text-white'
               }`}
             >
               {cat}
@@ -88,10 +88,10 @@ export const StudentCoursesPage: React.FC = () => {
       {filtered.length === 0 ? (
         <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#101A2D] border border-[#DFE9F6] dark:border-white/10 shadow-xs space-y-3">
           <BookOpen className="w-12 h-12 text-[#00A3FF] mx-auto opacity-40" />
-          <h3 className="text-base font-bold text-[#15243B] dark:text-white">
+          <h3 className="text-base font-extrabold text-[#111827] dark:text-white">
             No courses found
           </h3>
-          <p className="text-xs text-[#73839B] dark:text-[#9BAAC2] max-w-md mx-auto">
+          <p className="text-xs text-[#1F2937] dark:text-[#CBD5E1] max-w-md mx-auto font-medium">
             {search ? 'No enrolled courses match your search criteria.' : 'No courses have been assigned to your account yet.'}
           </p>
         </div>
@@ -120,20 +120,20 @@ export const StudentCoursesPage: React.FC = () => {
 
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
-                    <h3 className="text-base font-bold text-[#15243B] dark:text-white line-clamp-1">
+                    <h3 className="text-base font-extrabold text-[#111827] dark:text-white line-clamp-1">
                       {course.title}
                     </h3>
-                    <p className="text-xs text-[#73839B] dark:text-[#9BAAC2] line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-[#1F2937] dark:text-[#CBD5E1] line-clamp-2 leading-relaxed font-medium">
                       {course.description}
                     </p>
 
-                    <div className="text-[11px] text-[#15243B] dark:text-slate-300 font-medium pt-1">
-                      Assigned Mentor: <strong className="text-[#176BFF] dark:text-[#77B4FF]">{course.mentor_name}</strong>
+                    <div className="text-[11px] text-[#111827] dark:text-slate-300 font-semibold pt-1">
+                      Assigned Mentor: <strong className="text-[#176BFF] dark:text-[#77B4FF] font-bold">{course.mentor_name}</strong>
                     </div>
                   </div>
 
                   <div className="pt-3 border-t border-[#DFE9F6] dark:border-white/10 space-y-3">
-                    <div className="flex items-center justify-between text-[11px] text-[#73839B] dark:text-[#9BAAC2]">
+                    <div className="flex items-center justify-between text-[11px] text-[#1F2937] dark:text-[#CBD5E1] font-semibold">
                       <span className="flex items-center gap-1">
                         <Video className="w-3.5 h-3.5 text-[#176BFF] dark:text-[#77B4FF]" />
                         {recordingsCount} Recordings
@@ -146,7 +146,7 @@ export const StudentCoursesPage: React.FC = () => {
 
                     <Link
                       to={`/student/courses/${course.id}`}
-                      className="w-full py-2.5 px-4 rounded-xl bg-[#EAF3FF] dark:bg-[#15233A] hover:bg-[#176BFF] text-[#176BFF] dark:text-[#77B4FF] hover:text-white text-xs font-bold flex items-center justify-center gap-2 transition"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#EAF3FF] dark:bg-[#15233A] hover:bg-[#176BFF] text-[#176BFF] dark:text-[#77B4FF] hover:text-white text-xs font-black flex items-center justify-center gap-2 transition"
                     >
                       <span>Open Course Workspace</span>
                       <ArrowRight className="w-3.5 h-3.5" />

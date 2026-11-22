@@ -164,18 +164,18 @@ export const StudentCourseDetailPage: React.FC = () => {
   // Helper to get grouped resources for any module
   const getModuleResources = (modId: string) => {
     const modTopics = allTopics.filter(t => t.module_id === modId);
-    
+
     // 1. Videos
-    const videos = modTopics.filter(t => 
+    const videos = modTopics.filter(t =>
       t.recording_url || t.recording_link || t.resource_type === 'video' || t.resource_type === 'drive_video'
     );
 
     // 2. PPT Presentations (Strict deduplication by URL and title to prevent double-display)
     const ppts = allPresentations.filter(p => p.module_id === modId);
-    const topicPpts = modTopics.filter(t => 
-      (t.resource_type === 'ppt' || t.resource_type === 'ppt_presentation' || Boolean(t.ppt_url)) && 
-      !ppts.some(p => 
-        p.id === t.id || 
+    const topicPpts = modTopics.filter(t =>
+      (t.resource_type === 'ppt' || t.resource_type === 'ppt_presentation' || Boolean(t.ppt_url)) &&
+      !ppts.some(p =>
+        p.id === t.id ||
         (p.ppt_url && t.ppt_url && p.ppt_url.trim().toLowerCase() === t.ppt_url.trim().toLowerCase()) ||
         (p.title && t.title && p.title.trim().toLowerCase() === t.title.trim().toLowerCase())
       )
@@ -191,14 +191,14 @@ export const StudentCourseDetailPage: React.FC = () => {
     });
 
     // 3. Notes & Documents
-    const notes = modTopics.filter(t => 
+    const notes = modTopics.filter(t =>
       (t.resource_type === 'notes' || (t.drive_notes_link && !t.ppt_url)) &&
-      t.resource_type !== 'interview' && 
+      t.resource_type !== 'interview' &&
       t.resource_type !== 'doc_questions'
     );
 
     // 4. Interview Questions
-    const interviews = modTopics.filter(t => 
+    const interviews = modTopics.filter(t =>
       t.resource_type === 'interview' || t.resource_type === 'doc_questions'
     );
 
@@ -224,9 +224,9 @@ export const StudentCourseDetailPage: React.FC = () => {
       {/* Back Link */}
       <Link
         to="/student/courses"
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-[#00A3FF] transition"
+        className="inline-flex items-center gap-1.5 text-xs font-extrabold text-[#1F2937] dark:text-slate-300 hover:text-[#176BFF] transition"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+        <ArrowLeft className="w-3.5 h-3.5 text-[#1F2937] dark:text-slate-300" />
         <span>Back to Enrolled Courses</span>
       </Link>
 
@@ -237,21 +237,21 @@ export const StudentCourseDetailPage: React.FC = () => {
             <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#00A3FF]/15 text-[#00A3FF] border border-[#00A3FF]/30 font-mono">
               {course.category}
             </span>
-            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">
+            <span className="text-xs text-[#1F2937] dark:text-slate-300 font-mono font-bold">
               {course.duration_weeks} Weeks Cohort
             </span>
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl md:text-3xl font-black text-[#111827] dark:text-white tracking-tight">
             {course.title}
           </h1>
 
-          <p className="text-xs md:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
+          <p className="text-xs md:text-sm text-[#1F2937] dark:text-slate-300 leading-relaxed font-medium">
             {course.description}
           </p>
 
-          <div className="flex flex-wrap items-center gap-4 text-xs pt-1 text-slate-500 dark:text-slate-400 font-mono">
-            <span>Mentor: <strong className="text-[#00A3FF]">{course.mentor_name}</strong></span>
+          <div className="flex flex-wrap items-center gap-4 text-xs pt-1 text-[#1F2937] dark:text-slate-300 font-mono font-semibold">
+            <span>Mentor: <strong className="text-[#176BFF] dark:text-[#00A3FF] font-bold">{course.mentor_name}</strong></span>
             <span>•</span>
             <span>{modules.length} Modules • {allTopics.length} Learning Resources</span>
           </div>
@@ -259,9 +259,9 @@ export const StudentCourseDetailPage: React.FC = () => {
 
         {/* Syllabus Progress Card */}
         <div className="bg-slate-50 dark:bg-[#060B18] p-5 rounded-2xl border border-slate-200 dark:border-white/10 space-y-2 md:min-w-[220px]">
-          <div className="flex items-center justify-between text-xs font-bold">
-            <span className="text-slate-700 dark:text-slate-200">Course Mastery</span>
-            <span className="text-[#00A3FF] font-mono">{roadmapProgress.progress_percentage}%</span>
+          <div className="flex items-center justify-between text-xs font-extrabold">
+            <span className="text-[#111827] dark:text-slate-200">Course Mastery</span>
+            <span className="text-[#176BFF] dark:text-[#00A3FF] font-mono">{roadmapProgress.progress_percentage}%</span>
           </div>
           <div className="w-full h-2 rounded-full bg-slate-200 dark:bg-white/10 overflow-hidden">
             <div
@@ -269,7 +269,7 @@ export const StudentCourseDetailPage: React.FC = () => {
               style={{ width: `${roadmapProgress.progress_percentage}%` }}
             />
           </div>
-          <div className="text-[10px] text-slate-500 dark:text-slate-400 text-center pt-1 font-mono">
+          <div className="text-[10px] text-[#1F2937] dark:text-slate-400 text-center pt-1 font-mono font-bold">
             {roadmapProgress.completed_sub_modules.length} lessons completed
           </div>
         </div>
@@ -283,10 +283,10 @@ export const StudentCourseDetailPage: React.FC = () => {
               <Layers className="w-5 h-5" />
             </div>
             <div>
-              <label className="text-xs font-mono font-bold text-[#00A3FF] uppercase tracking-wider block">
+              <label className="text-xs font-mono font-bold text-[#176BFF] dark:text-[#00A3FF] uppercase tracking-wider block">
                 Curriculum Module Navigation
               </label>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-[#1F2937] dark:text-slate-400 font-medium">
                 Select a specific module or browse All Modules grouped together
               </span>
             </div>
@@ -334,11 +334,10 @@ export const StudentCourseDetailPage: React.FC = () => {
                     setSelectedModuleId('all');
                     setIsModuleDropdownOpen(false);
                   }}
-                  className={`w-full px-4 py-2.5 text-xs text-left font-bold flex items-center justify-between transition ${
-                    selectedModuleId === 'all'
+                  className={`w-full px-4 py-2.5 text-xs text-left font-bold flex items-center justify-between transition ${selectedModuleId === 'all'
                       ? 'bg-[#00A3FF]/15 text-[#00A3FF]'
                       : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
-                  }`}
+                    }`}
                 >
                   <span className="flex items-center gap-2">
                     <Layers className="w-3.5 h-3.5 text-[#00A3FF]" />
@@ -365,11 +364,10 @@ export const StudentCourseDetailPage: React.FC = () => {
                         setIsModuleDropdownOpen(false);
                         setActiveCategory('all');
                       }}
-                      className={`w-full px-4 py-2.5 text-xs text-left font-semibold flex items-center justify-between transition ${
-                        isSelected
+                      className={`w-full px-4 py-2.5 text-xs text-left font-semibold flex items-center justify-between transition ${isSelected
                           ? 'bg-[#00A3FF]/15 text-[#00A3FF] font-bold'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
-                      }`}
+                        }`}
                     >
                       <span className="truncate pr-3">
                         Module {idx + 1} – {mod.title}
@@ -409,11 +407,10 @@ export const StudentCourseDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleToggleModuleComplete(activeModule)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 self-start sm:self-auto shrink-0 ${
-                isModuleCompleted(activeModule)
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 self-start sm:self-auto shrink-0 ${isModuleCompleted(activeModule)
                   ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/25'
                   : 'bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-white/10'
-              }`}
+                }`}
             >
               {isModuleCompleted(activeModule) ? (
                 <>
@@ -521,14 +518,14 @@ export const StudentCourseDetailPage: React.FC = () => {
                                 >
                                   <div className="flex items-center justify-between gap-2 px-1">
                                     <div className="min-w-0">
-                                      <h6 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                                      <h6 className="text-xs sm:text-sm font-extrabold text-[#111827] dark:text-white truncate">
                                         {v.title}
                                       </h6>
-                                      <p className="text-[10px] sm:text-xs text-slate-500 dark:text-[#9BAAC5] truncate">
+                                      <p className="text-[10px] sm:text-xs text-[#1F2937] dark:text-[#CBD5E1] truncate font-semibold">
                                         Module {modIdx + 1}: {mod.title}
                                       </p>
                                     </div>
-                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 shrink-0 font-bold">
                                       1080p HD
                                     </span>
                                   </div>
@@ -655,17 +652,15 @@ export const StudentCourseDetailPage: React.FC = () => {
                     <button
                       key={cat.id}
                       onClick={() => setActiveCategory(cat.id)}
-                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-2 border ${
-                        isSelected
+                      className={`px-4 py-2.5 rounded-xl text-xs font-semibold shrink-0 transition-all flex items-center gap-2 border ${isSelected
                           ? 'bg-[#00A8FF] text-white border-[#00A8FF] shadow-md shadow-[#00A8FF]/25 font-bold'
                           : 'bg-slate-50 dark:bg-[#060B18] text-slate-600 dark:text-[#9BAAC5] border-slate-200 dark:border-white/10 hover:border-[#00A8FF]/50 hover:text-slate-900 dark:hover:text-white'
-                      }`}
+                        }`}
                     >
                       <Icon className={`w-4 h-4 shrink-0 ${isSelected ? 'text-white' : 'text-[#00A8FF]'}`} />
                       <span>{cat.label}</span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                        isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#9BAAC5]'
-                      }`}>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-[#9BAAC5]'
+                        }`}>
                         {cat.count}
                       </span>
                     </button>
@@ -676,7 +671,7 @@ export const StudentCourseDetailPage: React.FC = () => {
 
             {/* Category Content Area */}
             <div className="space-y-6 animate-fadeIn">
-              
+
               {/* 1. VIDEOS */}
               {(activeCategory === 'videos' || activeCategory === 'all') && (
                 <div className="bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-3.5 sm:p-5 md:p-6 shadow-sm space-y-4">
@@ -708,14 +703,14 @@ export const StudentCourseDetailPage: React.FC = () => {
                         >
                           <div className="flex items-center justify-between gap-2 px-1">
                             <div className="min-w-0">
-                              <h5 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">
+                              <h5 className="text-xs sm:text-sm font-extrabold text-[#111827] dark:text-white truncate">
                                 {v.title}
                               </h5>
-                              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-[#9BAAC5] truncate">
+                              <p className="text-[10px] sm:text-xs text-[#1F2937] dark:text-[#CBD5E1] truncate font-semibold">
                                 Lesson {vIdx + 1} • {activeModule.title}
                               </p>
                             </div>
-                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 shrink-0">
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20 shrink-0 font-bold">
                               1080p HD
                             </span>
                           </div>
@@ -862,13 +857,12 @@ export const StudentCourseDetailPage: React.FC = () => {
                             <span className="font-mono font-bold text-slate-900 dark:text-[#F0F5FF]">
                               Question <span className="text-[#00A3FF]">{currentInterviewIdx + 1}</span> of {moduleQAs.length}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
-                              (currentQ.difficulty || 'medium') === 'hard'
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${(currentQ.difficulty || 'medium') === 'hard'
                                 ? 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/25'
                                 : (currentQ.difficulty || 'medium') === 'medium'
-                                ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
-                                : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
-                            }`}>
+                                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/25'
+                                  : 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25'
+                              }`}>
                               {currentQ.difficulty || 'medium'}
                             </span>
                           </div>

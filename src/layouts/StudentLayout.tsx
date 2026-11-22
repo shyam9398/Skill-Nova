@@ -65,7 +65,7 @@ export const StudentLayout: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Responsive Stationary & Collapsible Sidebar */}
         <aside
-          className={`fixed lg:relative inset-y-0 left-0 z-30 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-all duration-300 shadow-sm ${isCollapsed ? 'w-64 lg:w-20' : 'w-64'
+          className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-30 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-transform duration-300 shadow-2xl lg:shadow-sm ${isCollapsed ? 'w-64 lg:w-20' : 'w-64'
             } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
             }`}
         >
@@ -106,13 +106,13 @@ export const StudentLayout: React.FC = () => {
               />
               {!isCollapsed && (
                 <div className="overflow-hidden min-w-0">
-                  <div className="student-profile-name text-xs font-bold text-[#111827] dark:text-white truncate">
+                  <div className="student-profile-name text-xs font-black text-[#111827] dark:text-white truncate">
                     {currentUser?.full_name || 'Enrolled Student'}
                   </div>
-                  <div className="student-profile-branch text-[10px] text-[#176BFF] dark:text-[#00E5FF] truncate font-semibold">
+                  <div className="student-profile-branch text-[10px] text-[#176BFF] dark:text-[#00E5FF] truncate font-bold">
                     {currentUser?.branch || 'Computer Science & Eng'}
                   </div>
-                  <div className="student-profile-year text-[10px] text-[#475569] dark:text-[#CBD5E1] font-semibold truncate">
+                  <div className="student-profile-year text-[10px] text-[#1F2937] dark:text-[#CBD5E1] font-bold truncate">
                     {currentUser?.year_of_study || 'Batch 2027'}
                   </div>
                 </div>
@@ -179,9 +179,9 @@ export const StudentLayout: React.FC = () => {
             </button>
 
             {!isCollapsed && (
-              <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#475569] dark:text-[#9BAAC5]">
-                <span className="font-semibold text-slate-700 dark:text-[#CBD5E1]">Active Batch 2027</span>
-                <span className="text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1">
+              <div className="px-2 pt-1 text-[11px] flex items-center justify-between text-[#1F2937] dark:text-[#CBD5E1]">
+                <span className="font-bold text-[#111827] dark:text-[#CBD5E1]">Active Batch 2027</span>
+                <span className="text-emerald-700 dark:text-emerald-400 font-extrabold flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   VERIFIED
                 </span>
@@ -194,7 +194,7 @@ export const StudentLayout: React.FC = () => {
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
+            className="sidebar-drawer-backdrop fixed inset-0 bg-[#050816]/70 z-40 lg:hidden"
           />
         )}
 

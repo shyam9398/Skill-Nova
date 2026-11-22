@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Play, 
   Pause, 
@@ -8,7 +9,9 @@ import {
   Minimize, 
   RotateCcw, 
   Film,
-  Sparkles
+  Sparkles,
+  ArrowLeft,
+  X
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 
@@ -41,6 +44,90 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<number | null>(null);
   const hasRecordedActivityRef = useRef<boolean>(false);
+
+  // Mobile Detection and Dedicated Mobile Fullscreen Player State (Requirement 2 & 3)
+  const [isMobile, setIsMobile] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+  const [isMobileFullscreen, setIsMobileFullscreen] = useState(false);
+  const scrollPosRef = useRef<number>(0);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      document.body.style.overflow = '';
+    };
+  }, []);
+
+  const openMobileFullscreen = () => {
+    if (typeof window !== 'undefined') {
+      scrollPosRef.current = window.scrollY;
+      document.body.style.overflow = 'hidden';
+      window.history.pushState({ skillnovaVideoModal: true }, '');
+    }
+    setIsMobileFullscreen(true);
+    recordViewingActivity();
+
+    // Attempt native fullscreen if supported
+    try {
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } catch {}
+  };
+
+  const closeMobileFullscreen = () => {
+    setIsMobileFullscreen(false);
+    if (typeof window !== 'undefined') {
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollPosRef.current);
+      if (window.history.state?.skillnovaVideoModal) {
+        window.history.back();
+      }
+    }
+
+    try {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    } catch {}
+  };
+
+  // Device Back Button & Escape Key Handling for Mobile Fullscreen (Requirement 2)
+  useEffect(() => {
+    const handlePopState = () => {
+      if (isMobileFullscreen) {
+        setIsMobileFullscreen(false);
+        document.body.style.overflow = '';
+        window.scrollTo(0, scrollPosRef.current);
+        try {
+          if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+          }
+        } catch {}
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileFullscreen) {
+        closeMobileFullscreen();
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isMobileFullscreen]);
 
   const cleanUrl = (url || '').trim();
 
@@ -217,6 +304,7 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
   };
 
   return (
+    <>
     <div 
       ref={containerRef}
       onMouseMove={handleMouseMove}
@@ -367,8 +455,9 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
             src={getGoogleDriveEmbedUrl(cleanUrl)}
             title={title}
             className="w-full h-full border-0 block"
-            allow="autoplay; fullscreen; encrypted-media"
+            allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
             allowFullScreen
+            loading="lazy"
           />
         </div>
       ) : isYouTube ? (
@@ -427,7 +516,11 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              toggleFullscreen();
+              if (isMobile) {
+                openMobileFullscreen();
+              } else {
+                toggleFullscreen();
+              }
             }}
             className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-black/80 hover:bg-black text-white/90 hover:text-white border border-white/20 shadow-xl backdrop-blur-md flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
             title={isFullscreen ? 'Exit Fullscreen' : 'Enlarge Screen'}
@@ -437,7 +530,165 @@ export const EmbeddedVideoPlayer: React.FC<EmbeddedVideoPlayerProps> = ({
           </button>
         </div>
       )}
+
+      {/* MOBILE TAP-TO-WATCH FULLSCREEN OVERLAY (Requirement 2) */}
+      {isMobile && cleanUrl && (
+        <div
+          onClick={openMobileFullscreen}
+          className="absolute inset-0 z-20 cursor-pointer bg-gradient-to-t from-black/90 via-black/45 to-black/65 flex flex-col items-center justify-center p-4 text-center select-none group"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openMobileFullscreen();
+            }
+          }}
+          aria-label={`Play ${title} in fullscreen`}
+        >
+          {/* Top Video Header on Mobile Card */}
+          <div className="absolute top-2.5 inset-x-2.5 sm:top-3 sm:inset-x-3 flex items-center justify-between text-left pointer-events-none">
+            <span className="text-[10px] sm:text-xs font-bold text-white/90 truncate max-w-[70%]">
+              {title}
+            </span>
+            <span className="text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/15 text-white border border-white/20">
+              1080p HD
+            </span>
+          </div>
+
+          {/* Central Glowing Play Button */}
+          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-r from-[#176BFF] to-[#00A3FF] hover:from-[#00A3FF] hover:to-[#00E5FF] text-white flex items-center justify-center shadow-2xl shadow-[#00A3FF]/60 transform transition group-hover:scale-110 active:scale-95 mb-2">
+            <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white" />
+          </div>
+
+          <span className="text-xs sm:text-sm font-extrabold text-white tracking-wide">
+            Tap to Watch in Fullscreen
+          </span>
+          {subtitle && (
+            <span className="text-[10px] sm:text-xs text-white/70 font-medium truncate max-w-[85%] mt-0.5">
+              {subtitle}
+            </span>
+          )}
+        </div>
+      )}
     </div>
+
+    {/* DEDICATED MOBILE FULLSCREEN MODAL (Requirement 2) */}
+    {isMobileFullscreen && typeof document !== 'undefined' && createPortal(
+      <div 
+        className="fixed inset-0 z-[99999] bg-black text-white flex flex-col justify-between overflow-hidden select-none"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          width: '100vw',
+          height: '100dvh',
+          zIndex: 99999,
+          backgroundColor: '#000000'
+        }}
+      >
+        {/* Top Header Bar with Close/Back Button, Title, and X Button */}
+        <div className="shrink-0 px-3 py-2.5 sm:px-4 sm:py-3 bg-gradient-to-b from-black/95 via-black/80 to-transparent flex items-center justify-between gap-3 z-30 border-b border-white/10">
+          <button
+            type="button"
+            onClick={closeMobileFullscreen}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white text-xs font-bold border border-white/25 backdrop-blur-md transition shadow-md shrink-0"
+            aria-label="Back to course page"
+          >
+            <ArrowLeft className="w-4 h-4 text-white" />
+            <span>Back</span>
+          </button>
+
+          <div className="truncate text-center px-1 flex-1 min-w-0">
+            <h4 className="text-xs sm:text-sm font-bold text-white truncate">{title}</h4>
+            {subtitle && <p className="text-[10px] text-white/70 truncate">{subtitle}</p>}
+          </div>
+
+          <button
+            type="button"
+            onClick={closeMobileFullscreen}
+            className="p-1.5 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white border border-white/25 backdrop-blur-md transition shadow-md shrink-0"
+            aria-label="Exit fullscreen"
+          >
+            <X className="w-4 h-4 text-white" />
+          </button>
+        </div>
+
+        {/* Centered 16:9 Video Frame: Stays 16:9, Never Stretched or Cropped */}
+        <div className="flex-1 flex items-center justify-center w-full px-2 sm:px-4 min-h-0 relative">
+          <div 
+            className="w-full relative shadow-2xl rounded-2xl overflow-hidden bg-black border border-white/10"
+            style={{
+              aspectRatio: '16 / 9',
+              maxWidth: '100%',
+              maxHeight: 'min(calc(100vh - 110px), calc(100dvh - 110px))'
+            }}
+          >
+            {isDirectVideo ? (
+              <video
+                src={cleanUrl}
+                poster={poster}
+                playsInline
+                controls
+                autoPlay
+                className="w-full h-full object-contain block bg-black"
+              />
+            ) : isGoogleDrive ? (
+              <iframe
+                src={getGoogleDriveEmbedUrl(cleanUrl)}
+                title={title}
+                className="w-full h-full border-0 block"
+                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                allowFullScreen
+              />
+            ) : isYouTube ? (
+              <iframe
+                src={getYouTubeEmbedUrl(cleanUrl)}
+                title={title}
+                className="w-full h-full border-0 block"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+              />
+            ) : isVimeo ? (
+              <iframe
+                src={getVimeoEmbedUrl(cleanUrl)}
+                title={title}
+                className="w-full h-full border-0 block"
+                allow="autoplay; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <iframe
+                src={cleanUrl}
+                title={title}
+                className="w-full h-full border-0 block"
+                allow="autoplay; fullscreen; encrypted-media"
+                allowFullScreen
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Bottom Status / Exit Bar */}
+        <div className="shrink-0 px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-t from-black/95 via-black/80 to-transparent flex items-center justify-between text-xs text-white/80 z-30 border-t border-white/10">
+          <span className="text-[10px] sm:text-xs font-mono text-[#00A3FF]">
+            SkillNova Mobile Cinema
+          </span>
+          <button
+            type="button"
+            onClick={closeMobileFullscreen}
+            className="text-xs text-white/90 hover:text-white font-bold flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-lg border border-white/15"
+          >
+            <Minimize className="w-3.5 h-3.5 text-[#00E5FF]" />
+            <span>Exit Fullscreen</span>
+          </button>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 };
 export default EmbeddedVideoPlayer;

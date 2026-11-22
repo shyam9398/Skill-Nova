@@ -96,6 +96,51 @@
 }
 
 /* ==========================================================================
+   MOBILE SIDEBAR CRISP RENDERING ENGINE (Solid, Sharp, Zero Blur)
+   - Eliminates all unintended blur & filter bleed
+   - Ensures solid 100% opaque background
+   - Keeps sidebar strictly above header and mobile backdrop
+   ========================================================================== */
+.sidebar-drawer-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  background-color: rgba(5, 8, 22, 0.65) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  z-index: 40 !important;
+}
+
+@media (max-width: 1023px) {
+  .student-layout-root aside,
+  .admin-layout-root aside {
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    z-index: 50 !important;
+    background-color: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.25) !important;
+  }
+
+  .dark .student-layout-root aside,
+  .dark .admin-layout-root aside {
+    background-color: #0B1530 !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    box-shadow: 4px 0 28px rgba(0, 0, 0, 0.6) !important;
+  }
+}
+
+/* ==========================================================================
    VIEWPORT-RELATIVE MODAL & FLOATING OVERLAY CENTERING
    Positioned strictly relative to the complete browser viewport (0, 0, 0, 0)
    Backdrop covers full viewport without being shifted by sidebar width or header height.
@@ -410,39 +455,54 @@ img[alt*="qr"] {
 
 /* --------------------------------------------------------------------------
    1. GLOBAL LIGHT THEME (html:not(.dark))
-   High-contrast typography: Primary #111827, Secondary #475569, Background #F8FAFC
+   High-contrast typography: Dark Charcoal #1F2937, Near-Black #111827
+   Font weights: Main headings (700-800), Section headings (600-700), Regular text (500-600)
    -------------------------------------------------------------------------- */
 
 html:not(.dark) {
-  color: #111827;
+  color: #1F2937;
   background-color: #F8FAFC;
 }
 
 html:not(.dark) body {
-  color: #111827;
+  color: #1F2937;
   background-color: #F8FAFC;
 }
 
-/* Headings outside dark surfaces: Crisp Solid #111827 */
-html:not(.dark) :is(h1, h2, h3, h4, h5, h6):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *) {
+/* Main Headings outside dark surfaces: Near-Black #111827, Extra Bold (700-800) */
+html:not(.dark) :is(h1, h2, .text-3xl, .text-2xl):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *):not(.video-wrapper *) {
+  color: #111827 !important;
+  font-weight: 800 !important;
+}
+
+/* Section Headings outside dark surfaces: Near-Black #111827, Bold (600-700) */
+html:not(.dark) :is(h3, h4, .text-xl, .text-lg):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *):not(.video-wrapper *) {
   color: #111827 !important;
   font-weight: 700 !important;
 }
 
-/* Paragraphs outside dark surfaces: Secondary #475569 (WCAG AA Compliant) */
-html:not(.dark) p:not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *) {
-  color: #475569 !important;
+/* Subheadings outside dark surfaces: Dark Charcoal #1F2937, Semi-Bold (600-700) */
+html:not(.dark) :is(h5, h6, .text-base):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *):not(.video-wrapper *) {
+  color: #1F2937 !important;
+  font-weight: 600 !important;
 }
 
-/* Form labels, definitions outside dark surfaces: Deep dark (#111827) */
-html:not(.dark) :is(label, dt, dd):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *) {
+/* Paragraphs & Regular text outside dark surfaces: Dark Charcoal #1F2937, Medium (500-600) */
+html:not(.dark) p:not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *):not(.video-wrapper *) {
+  color: #1F2937 !important;
+  font-weight: 500 !important;
+}
+
+/* Form labels, definitions outside dark surfaces: Deep near-black (#111827), Bold */
+html:not(.dark) :is(label, dt, dd):not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.login-brand-link *):not(.login-navbar *):not(.video-wrapper *) {
   color: #111827 !important;
-  font-weight: 600;
+  font-weight: 700 !important;
 }
 
-/* List items outside dark containers: Slate-800 (#1E293B) */
-html:not(.dark) li:not(.intentional-dark *):not(.dark-card *):not(.dark-section *) {
-  color: #1E293B !important;
+/* List items outside dark containers: Dark Charcoal #1F2937, Medium */
+html:not(.dark) li:not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.video-wrapper *) {
+  color: #1F2937 !important;
+  font-weight: 500 !important;
 }
 
 /* Student & Admin Sidebar Navigation Items (Light Theme) */
@@ -453,7 +513,7 @@ html:not(.dark) :is(
   .admin-nav-item:not(.active)
 ):not(.intentional-dark *):not(.login-navbar *) {
   color: #1F2937 !important;
-  font-weight: 600;
+  font-weight: 700 !important;
 }
 
 html:not(.dark) :is(
@@ -463,7 +523,7 @@ html:not(.dark) :is(
   .admin-nav-item:not(.active)
 ):not(.intentional-dark *):not(.login-navbar *):hover {
   color: #111827 !important;
-  background-color: #F1F5F9 !important;
+  background-color: #E2E8F0 !important;
 }
 
 html:not(.dark) :is(
@@ -473,6 +533,7 @@ html:not(.dark) :is(
   .admin-nav-item:not(.active)
 ):not(.intentional-dark *):not(.login-navbar *) :is(span:not(.student-badge):not(.admin-badge):not(.badge):not([class*="bg-"]), svg) {
   color: #1F2937 !important;
+  stroke: #1F2937 !important;
 }
 
 html:not(.dark) :is(
@@ -482,9 +543,10 @@ html:not(.dark) :is(
   .admin-nav-item:not(.active)
 ):not(.intentional-dark *):not(.login-navbar *):hover :is(span:not(.student-badge):not(.admin-badge):not(.badge):not([class*="bg-"]), svg) {
   color: #111827 !important;
+  stroke: #111827 !important;
 }
 
-/* Active Navigation Item in Light Theme: Strong vibrant blue (#176BFF) with pure white (#FFFFFF) text */
+/* Active Navigation Item in Light Theme: Strong vibrant blue (#176BFF) with pure white (#FFFFFF) text & icon */
 html:not(.dark) :is(
   nav a.active,
   nav a[aria-current="page"],
@@ -504,6 +566,7 @@ html:not(.dark) :is(
   .active-nav-item
 ) :is(span:not(.student-badge):not(.admin-badge):not(.badge), svg, div, strong) {
   color: #FFFFFF !important;
+  stroke: #FFFFFF !important;
   fill: currentColor;
 }
 
@@ -526,18 +589,23 @@ html:not(.dark) :is(nav a.active, .student-nav-item.active, .admin-nav-item.acti
 /* Student Profile Card Details in Light Theme */
 html:not(.dark) .student-profile-name {
   color: #111827 !important;
+  font-weight: 800 !important;
 }
 html:not(.dark) .student-profile-branch {
   color: #176BFF !important;
+  font-weight: 700 !important;
 }
 html:not(.dark) .student-profile-year {
-  color: #475569 !important;
+  color: #1F2937 !important;
+  font-weight: 600 !important;
 }
 
 /* Logout Button in Light Theme */
 html:not(.dark) .student-logout-btn,
 html:not(.dark) .student-logout-btn :is(span, svg) {
   color: #DC2626 !important;
+  stroke: #DC2626 !important;
+  font-weight: 700 !important;
 }
 html:not(.dark) .student-logout-btn:hover {
   background-color: #FEF2F2 !important;
@@ -547,16 +615,17 @@ html:not(.dark) .student-logout-btn:hover {
 /* Tables outside dark containers */
 html:not(.dark) table thead {
   background-color: #F1F5F9 !important;
-  color: #111111 !important;
+  color: #111827 !important;
 }
 
 html:not(.dark) table thead th {
-  color: #000000 !important;
+  color: #111827 !important;
   font-weight: 700 !important;
 }
 
 html:not(.dark) table tbody td {
-  color: #111111 !important;
+  color: #1F2937 !important;
+  font-weight: 500 !important;
 }
 
 html:not(.dark) table tbody tr {
@@ -569,22 +638,24 @@ html:not(.dark) table tbody tr:hover {
 
 /* Form controls outside dark containers */
 html:not(.dark) :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
-  color: #111111 !important;
+  color: #111827 !important;
   background-color: #FFFFFF !important;
   border-color: #CBD5E1 !important;
+  font-weight: 500 !important;
 }
 
 html:not(.dark) input::placeholder,
 html:not(.dark) textarea::placeholder {
-  color: #64748B !important;
+  color: #4B5563 !important;
+  font-weight: 500 !important;
 }
 
 html:not(.dark) select option {
   background-color: #FFFFFF !important;
-  color: #111111 !important;
+  color: #111827 !important;
 }
 
-/* Primary dark text overrides on light surfaces (#000000) */
+/* Primary dark text overrides on light surfaces (#111827) */
 html:not(.dark) :is(
   .text-slate-900, .text-slate-800,
   .text-zinc-900, .text-zinc-800,
@@ -592,27 +663,56 @@ html:not(.dark) :is(
   .text-black,
   .text-\[\#0B1220\], .text-\[\#0A111E\], .text-\[\#15243B\], .text-\[\#15233A\]
 ) {
-  color: #000000 !important;
+  color: #111827 !important;
+  font-weight: 700 !important;
 }
 
-/* Secondary & Description text overrides on light surfaces (#333333) */
+/* Secondary & Description text overrides on light surfaces: Dark Charcoal (#1F2937, font-weight: 500) */
 html:not(.dark) :is(
   .text-slate-700, .text-slate-600,
   .text-zinc-700, .text-zinc-600,
   .text-gray-700, .text-gray-600,
   .text-\[\#475569\], .text-\[\#64748B\], .text-\[\#73839B\]
 ) {
-  color: #333333 !important;
+  color: #1F2937 !important;
+  font-weight: 500 !important;
 }
 
-/* Muted & Secondary info overrides on light surfaces (#444444 - never washed out) */
+/* Muted & Secondary info overrides on light surfaces: Dark Charcoal (#1F2937 - never washed out) */
 html:not(.dark) :is(
   .text-slate-500, .text-slate-400,
   .text-zinc-500, .text-zinc-400,
   .text-gray-500, .text-gray-400,
   .text-\[\#9BAAC2\], .text-\[\#9BAAC5\]
 ) {
-  color: #444444 !important;
+  color: #1F2937 !important;
+  font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   LIGHT THEME ICON COLOR ENGINE (Requirement 2)
+   Change icons in Light Theme to dark navy / charcoal (#1F2937 / #111827).
+   Keep icons consistent with their associated text.
+   Preserve existing blue accent colors for active navigation items, highlights,
+   primary actions, and semantic badges (rose, emerald, amber, purple).
+   ========================================================================== */
+
+/* Universal Light Theme Lucide SVG Icon Rule */
+html:not(.dark) svg:not(.intentional-dark *):not(.dark-card *):not(.dark-section *):not(.video-wrapper *):not(.video-container *):not(.btn-primary *):not([class*="bg-[#176BFF]"] *):not([class*="bg-[#00A3FF]"] *):not([class*="bg-[#00A8FF]"] *):not([class*="bg-blue-"] *):not([class*="bg-emerald-"] *):not([class*="bg-rose-"] *):not([class*="bg-red-"] *):not([class*="bg-purple-"] *):not([class*="text-[#176BFF]"]):not([class*="text-[#00A3FF]"]):not([class*="text-[#00A8FF]"]):not([class*="text-[#00E5FF]"]):not([class*="text-[#00D4B8]"]):not([class*="text-blue-"]):not([class*="text-emerald-"]):not([class*="text-green-"]):not([class*="text-rose-"]):not([class*="text-red-"]):not([class*="text-amber-"]):not([class*="text-yellow-"]):not([class*="text-purple-"]):not([class*="text-indigo-"]):not([class*="text-cyan-"]):not([class*="fill-amber"]):not([class*="fill-emerald"]):not([class*="fill-rose"]):not([class*="fill-red"]):not([class*="fill-purple"]):not([class*="fill-[#"]):not(.student-badge *):not(.admin-badge *):not(.active *) {
+  color: #1F2937 !important;
+  stroke: #1F2937 !important;
+}
+
+/* Neutral buttons and action cards icon color in Light Theme */
+html:not(.dark) :is(button, a):not(.btn-primary):not([class*="bg-[#176BFF]"]):not([class*="bg-[#00A3FF]"]):not([class*="bg-[#00A8FF]"]):not([class*="bg-blue-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-purple-"]):not(.active) svg:not([class*="text-"]):not([class*="fill-"]) {
+  color: #1F2937 !important;
+  stroke: #1F2937 !important;
+}
+
+/* Navigation & Header action icons */
+html:not(.dark) header button:not(.btn-primary) svg:not([class*="text-[#176BFF]"]):not([class*="text-[#00A3FF]"]):not([class*="text-[#00A8FF]"]):not([class*="text-amber"]):not([class*="text-rose"]):not([class*="text-red"]) {
+  color: #1F2937 !important;
+  stroke: #1F2937 !important;
 }
 
 /* --------------------------------------------------------------------------

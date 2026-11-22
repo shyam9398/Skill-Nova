@@ -49,7 +49,7 @@ export const AdminLayout: React.FC = () => {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Responsive Stationary Sidebar */}
         <aside
-          className={`fixed lg:relative inset-y-0 left-0 z-30 w-64 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-transform duration-300 shadow-sm ${
+          className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-30 w-64 h-full bg-white dark:bg-[#0B1530] border-r border-[#DFE9F6] dark:border-white/10 flex flex-col shrink-0 transition-transform duration-300 shadow-2xl lg:shadow-sm ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
           }`}
         >
@@ -127,7 +127,7 @@ export const AdminLayout: React.FC = () => {
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="sidebar-drawer-backdrop fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
+            className="sidebar-drawer-backdrop fixed inset-0 bg-[#050816]/70 z-40 lg:hidden"
           />
         )}
 

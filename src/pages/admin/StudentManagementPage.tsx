@@ -504,8 +504,8 @@ export const StudentManagementPage: React.FC = () => {
 
       {/* Simplified Add Student Modal: ONLY Username, Password, Full Name, Phone Number */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden text-slate-900 dark:text-[#F0F5FF]">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden text-slate-900 dark:text-[#F0F5FF]">
             {/* Modal Header */}
             <div className="p-6 pb-4 border-b border-slate-200 dark:border-[#1F2E47] bg-slate-50 dark:bg-[#0E1626] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
@@ -525,7 +525,7 @@ export const StudentManagementPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateStudent} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={handleCreateStudent} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="p-6 overflow-y-auto flex-1 space-y-4">
                 {formError && (
                   <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
@@ -670,8 +670,8 @@ export const StudentManagementPage: React.FC = () => {
 
       {/* Assign Courses Modal */}
       {showAssignModal && selectedStudent && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-md max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden text-slate-900 dark:text-[#F0F5FF]">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-md max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden text-slate-900 dark:text-[#F0F5FF]">
             <div className="p-6 pb-4 border-b border-slate-200 dark:border-[#1F2E47] bg-slate-50 dark:bg-[#0E1626] flex items-center justify-between shrink-0">
               <h3 className="text-base font-black text-slate-900 dark:text-[#F0F5FF] flex items-center gap-2">
                 <BookOpen className="w-5 h-5 text-[#176BFF] dark:text-[#397BFF]" />
@@ -682,7 +682,7 @@ export const StudentManagementPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
               <p className="text-xs text-slate-600 dark:text-[#9BAAC2]">
                 Select courses accessible to <strong className="text-slate-900 dark:text-white font-bold">{selectedStudent.full_name}</strong>:
               </p>
@@ -737,8 +737,8 @@ export const StudentManagementPage: React.FC = () => {
 
       {/* View Student Details Modal */}
       {showViewModal && viewingStudent && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden text-slate-900 dark:text-[#F0F5FF]">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden text-slate-900 dark:text-[#F0F5FF]">
             <div className="p-6 pb-4 border-b border-slate-200 dark:border-[#1F2E47] bg-slate-50 dark:bg-[#0E1626] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-teal-100 dark:bg-[#00D4B8]/20 text-teal-700 dark:text-[#00D4B8] flex items-center justify-center border border-teal-300 dark:border-[#00D4B8]/30">
@@ -757,7 +757,7 @@ export const StudentManagementPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+            <div className="p-6 overflow-y-auto flex-1 min-h-0 space-y-4">
               <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-[#15233A] border border-slate-200 dark:border-[#1F2E47]">
                 <img
                   src={viewingStudent.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
@@ -841,8 +841,8 @@ export const StudentManagementPage: React.FC = () => {
 
       {/* Edit Student Details Modal */}
       {showEditModal && editingStudent && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4 sm:p-6 overflow-hidden">
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
             {/* Modal Header */}
             <div className="p-6 pb-4 border-b border-slate-200 dark:border-[#1F2E47] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
@@ -864,7 +864,7 @@ export const StudentManagementPage: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateStudent} className="flex flex-col flex-1 overflow-hidden">
+            <form onSubmit={handleUpdateStudent} className="flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="p-6 overflow-y-auto flex-1 space-y-4">
                 <div>
                   <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Full Name</label>
@@ -947,8 +947,8 @@ export const StudentManagementPage: React.FC = () => {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && studentToDelete && (
-        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#101A2D] border border-rose-300 dark:border-rose-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-scaleUp">
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#101A2D] border border-rose-300 dark:border-rose-500/30 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-scaleUp max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <button
               onClick={() => setShowDeleteModal(false)}
               className="absolute top-5 right-5 text-slate-400 hover:text-slate-800 dark:text-[#9BAAC2] dark:hover:text-white"

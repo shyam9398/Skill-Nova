@@ -463,8 +463,8 @@ export const StudentDiscussionPage: React.FC = () => {
 
       {/* New General Discussion Modal */}
       {showNewPostModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 max-w-lg w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <h3 className="text-base font-bold text-slate-900 dark:text-white">Start a Community Discussion</h3>
             <form onSubmit={handleCreatePost} className="space-y-3.5">
               <div>
@@ -527,8 +527,8 @@ export const StudentDiscussionPage: React.FC = () => {
 
       {/* New Mentor Request Modal */}
       {showMentorModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 max-w-lg w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] font-mono">
                 Private Advisory
@@ -609,8 +609,8 @@ export const StudentDiscussionPage: React.FC = () => {
 
       {/* Selected Mentor Request Details Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-slate-200 dark:border-white/10 p-6 max-w-xl w-full shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-white/10">
               <div>
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#EAF3FF] dark:bg-[#00A8FF]/20 text-[#176BFF] dark:text-[#00E5FF] font-mono">

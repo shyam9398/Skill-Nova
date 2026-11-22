@@ -37,10 +37,10 @@ export const InAppResourceViewer: React.FC<InAppResourceViewerProps> = ({
   const isGoogleMeet = resourceType === 'meet' || topic.recording_url?.includes('meet.google.com');
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#15243B]/70 backdrop-blur-md flex items-center justify-center p-3 md:p-6 animate-fadeIn">
-      <div className="bg-white rounded-3xl border border-[#DFE9F6] shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto animate-fadeIn">
+      <div className="bg-white dark:bg-[#0B1530] text-slate-900 dark:text-white rounded-3xl border border-[#DFE9F6] dark:border-white/10 shadow-2xl w-full max-w-5xl h-[90vh] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden my-auto">
         {/* Modal Top Bar */}
-        <div className="h-16 px-6 border-b border-[#DFE9F6] bg-[#F5F9FF] flex items-center justify-between shrink-0">
+        <div className="h-16 px-6 border-b border-[#DFE9F6] dark:border-white/10 bg-[#F5F9FF] dark:bg-[#080E21] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
             <div className="w-9 h-9 rounded-xl bg-[#EAF3FF] text-[#176BFF] flex items-center justify-center border border-[#00A3FF]/20 shrink-0">
               {resourceType === 'recording' || isGoogleMeet ? (
@@ -73,7 +73,7 @@ export const InAppResourceViewer: React.FC<InAppResourceViewerProps> = ({
         </div>
 
         {/* Content Viewer Area */}
-        <div className="flex-1 bg-[#F5F9FF] p-4 md:p-6 overflow-y-auto">
+        <div className="flex-1 min-h-0 bg-[#F5F9FF] dark:bg-[#060B18] p-4 md:p-6 overflow-y-auto">
           {/* Google Meet Scheduled Class */}
           {isGoogleMeet ? (
             <div className="h-full flex flex-col items-center justify-center max-w-xl mx-auto text-center space-y-5 bg-white p-8 rounded-3xl border border-[#DFE9F6] shadow-sm">

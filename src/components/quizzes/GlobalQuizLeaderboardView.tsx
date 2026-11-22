@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Trophy, Medal, Award, Crown, Clock, CheckCircle2,
   Search, User as UserIcon, RotateCcw, ArrowLeft,
-  Sparkles, Check, HelpCircle, Flame, Users, Lock, Play, FastForward, ChevronDown,
-  Download
+  Sparkles, Check, HelpCircle, Flame, Users, Lock, Play, ChevronDown,
+  Download, RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { dataService } from '../../services/dataService';
@@ -35,32 +35,45 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 10;
 
-  // Ceremony Animation State: 'idle' | 'countdown' | 'bronze' | 'silver' | 'gold' | 'complete'
-  const ceremonyStorageKey = `skillnova_ceremony_played_${quiz.id}`;
-  const [ceremonyStage, setCeremonyStage] = useState<'idle' | 'countdown' | 'bronze' | 'silver' | 'gold' | 'complete'>(() => {
-    if (typeof window !== 'undefined' && sessionStorage.getItem(ceremonyStorageKey)) {
-      return 'complete';
-    }
-    return 'idle';
-  });
-
-  const [countdownSeconds, setCountdownSeconds] = useState(30);
-  const countdownIntervalRef = useRef<number | null>(null);
-  const ceremonyTimerRef = useRef<number | null>(null);
   const [showAnswersReview, setShowAnswersReview] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Check if quiz deadline has passed (Requirement 3: hidden until closing time)
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        dataService.syncQuizAttemptsFromSupabase(),
+        dataService.syncQuizzesFromSupabase(),
+      ]);
+      dataService.checkQuizSchedules();
+      setLeaderboard(dataService.getQuizLeaderboard(quiz.id));
+      setParticipantStats(dataService.getQuizParticipantStats(quiz.id));
+    } catch (err) {
+      console.warn('Leaderboard refresh error:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  // Check if quiz deadline has passed or quiz is closed
   const [isDeadlinePassed, setIsDeadlinePassed] = useState(() =>
-    !quiz.end_time || Date.now() >= new Date(quiz.end_time).getTime()
+    quiz.status === 'closed' || !quiz.end_time || Date.now() >= new Date(quiz.end_time).getTime()
   );
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setIsDeadlinePassed(!quiz.end_time || Date.now() >= new Date(quiz.end_time).getTime());
-    }, 1000);
+    const checkDeadline = () => {
+      const closed = quiz.status === 'closed' || !quiz.end_time || Date.now() >= new Date(quiz.end_time).getTime();
+      setIsDeadlinePassed(closed);
+      if (closed && quiz.status !== 'closed') {
+        dataService.checkQuizSchedules();
+      }
+    };
+    checkDeadline();
+    const timer = setInterval(checkDeadline, 1000);
     return () => clearInterval(timer);
-  }, [quiz.end_time]);
+  }, [quiz.end_time, quiz.status]);
 
   // Real-time updates subscription
   useEffect(() => {
@@ -72,82 +85,18 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
     return dataService.subscribe(update);
   }, [quiz.id]);
 
-  // Auto-trigger ceremony if deadline has passed and user has not seen it yet
+  // Non-blocking celebratory confetti burst on verified official leaderboard view
   useEffect(() => {
-    if (!isDeadlinePassed) return;
-    const viewed = typeof window !== 'undefined' ? sessionStorage.getItem(ceremonyStorageKey) : null;
-    if (!viewed && leaderboard.length > 0 && ceremonyStage === 'idle') {
-      startCelebrationCeremony();
-    } else if (ceremonyStage === 'idle') {
-      setCeremonyStage('complete');
+    if (isDeadlinePassed && leaderboard.length > 0) {
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch {}
     }
-  }, [isDeadlinePassed, leaderboard.length, quiz.id]);
-
-  // Start Ceremony sequence with 30-Second Countdown
-  const startCelebrationCeremony = (force = false) => {
-    if (ceremonyTimerRef.current) window.clearTimeout(ceremonyTimerRef.current);
-    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
-
-    setCountdownSeconds(30);
-    setCeremonyStage('countdown');
-
-    let remaining = 30;
-    countdownIntervalRef.current = window.setInterval(() => {
-      remaining -= 1;
-      setCountdownSeconds(remaining);
-      if (remaining <= 0) {
-        if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
-        proceedToBronzeReveal();
-      }
-    }, 1000);
-  };
-
-  const proceedToBronzeReveal = () => {
-    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
-    setCeremonyStage('bronze');
-
-    // Stage 1: Bronze (4.5s) -> Silver
-    ceremonyTimerRef.current = window.setTimeout(() => {
-      setCeremonyStage('silver');
-
-      // Stage 2: Silver (4.5s) -> Gold
-      ceremonyTimerRef.current = window.setTimeout(() => {
-        setCeremonyStage('gold');
-        // Confetti burst on Champion
-        try {
-          confetti({
-            particleCount: 120,
-            spread: 80,
-            origin: { y: 0.6 }
-          });
-        } catch {}
-
-        // Stage 3: Gold (5s) -> Complete full view
-        ceremonyTimerRef.current = window.setTimeout(() => {
-          setCeremonyStage('complete');
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem(ceremonyStorageKey, 'true');
-          }
-        }, 5000);
-      }, 4500);
-    }, 4500);
-  };
-
-  const skipCeremony = () => {
-    if (ceremonyTimerRef.current) window.clearTimeout(ceremonyTimerRef.current);
-    if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
-    setCeremonyStage('complete');
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem(ceremonyStorageKey, 'true');
-    }
-  };
-
-  useEffect(() => {
-    return () => {
-      if (ceremonyTimerRef.current) window.clearTimeout(ceremonyTimerRef.current);
-      if (countdownIntervalRef.current) window.clearInterval(countdownIntervalRef.current);
-    };
-  }, []);
+  }, [isDeadlinePassed, leaderboard.length]);
 
   // Format Helpers
   const formatTime = (seconds: number) => {
@@ -286,6 +235,17 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
 
         {/* Action Controls */}
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:bg-[#1F2E47] text-slate-800 dark:text-white text-xs font-bold transition border border-slate-200 dark:border-white/10 flex items-center gap-2 shadow-xs disabled:opacity-50"
+            title="Refresh Live Evaluation Status"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 text-[#176BFF] dark:text-[#00E5FF] ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span>{isRefreshing ? 'Refreshing...' : 'Refresh Status'}</span>
+          </button>
+
           {onPracticeAgain && (
             <button
               onClick={onPracticeAgain}
@@ -304,150 +264,6 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
               Return to Quizzes
             </button>
           )}
-        </div>
-      </div>
-    );
-  }
-
-  // CEREMONY STAGE ANIMATION MODAL / OVERLAY (Requirement 13)
-  if (ceremonyStage !== 'complete') {
-    return (
-      <div className="max-w-3xl mx-auto my-8 bg-white dark:bg-[#0A1224] rounded-3xl border border-slate-200 dark:border-white/10 p-8 shadow-2xl relative overflow-hidden animate-fadeIn text-center space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 pb-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-500 animate-spin-slow" />
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-amber-500">
-              Official Podium Ceremony
-            </span>
-          </div>
-          <button
-            onClick={skipCeremony}
-            className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:bg-[#1F2E47] text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center gap-1.5 transition border border-slate-200 dark:border-white/10"
-            title="Skip Animation to Final Leaderboard"
-          >
-            <FastForward className="w-3.5 h-3.5" />
-            <span>Skip Ceremony</span>
-          </button>
-        </div>
-
-        {/* STAGE 0: 30-SECOND COUNTDOWN TO REVEAL */}
-        {ceremonyStage === 'countdown' && (
-          <div className="space-y-6 py-6 animate-scaleUp">
-            <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-4 border-[#00A3FF]/30 animate-ping opacity-20" />
-              <div className="absolute inset-2 rounded-full border-2 border-dashed border-[#00E5FF]/50 animate-spin-slow" />
-              <div className="w-32 h-32 rounded-full bg-slate-900/60 dark:bg-[#070D1B]/80 backdrop-blur-xl border-2 border-[#00A3FF] flex flex-col items-center justify-center shadow-[0_0_30px_rgba(0,163,255,0.3)]">
-                <span className="text-4xl sm:text-5xl font-black font-mono text-white tracking-wider animate-pulse">
-                  {countdownSeconds}
-                </span>
-                <span className="text-[10px] font-mono uppercase tracking-widest text-[#00E5FF] font-bold">
-                  SECONDS
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2 max-w-lg mx-auto">
-              <span className="text-xs font-mono font-black uppercase tracking-widest text-[#176BFF] dark:text-[#00E5FF] bg-sky-500/10 px-3.5 py-1 rounded-full border border-sky-500/30">
-                OFFICIAL PODIUM CEREMONY COUNTDOWN
-              </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                Preparing Podium & Results
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-[#9BAAC2] leading-relaxed">
-                Evaluation window closed! All cohort submissions are verified in Supabase PostgreSQL.
-                The official podium ceremony will reveal 3rd place, 2nd place, and the Grand Champion.
-              </p>
-            </div>
-
-            <div className="max-w-md mx-auto w-full bg-slate-200 dark:bg-white/5 rounded-full h-2.5 overflow-hidden border border-slate-300 dark:border-white/10">
-              <div
-                className="h-full bg-gradient-to-r from-[#176BFF] via-[#00A3FF] to-[#00E5FF] transition-all duration-1000 ease-linear"
-                style={{ width: `${((30 - countdownSeconds) / 30) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* STAGE 1: BRONZE (3rd place) */}
-        {ceremonyStage === 'bronze' && topThree[2] && (
-          <div className="space-y-6 py-8 animate-scaleUp">
-            <span className="text-5xl filter drop-shadow">🥉</span>
-            <div className="space-y-2">
-              <span className="text-xs font-mono font-black uppercase tracking-widest text-amber-600 bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/20">
-                STAGE 1 • THIRD PLACE
-              </span>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white">
-                {topThree[2].student_name}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-[#9BAAC2]">
-                Awarded Bronze Medal for outstanding technical speed and accuracy
-              </p>
-            </div>
-
-            <div className="inline-flex items-center gap-4 bg-slate-50 dark:bg-[#060B18] px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 font-mono text-sm">
-              <span>Score: <strong className="text-slate-900 dark:text-[#00E5FF] font-black">{topThree[2].score}/{topThree[2].total_marks}</strong></span>
-              <span>•</span>
-              <span>Accuracy: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatAccuracy(topThree[2].accuracy)}</strong></span>
-              <span>•</span>
-              <span>Time: <strong className="text-slate-900 dark:text-white font-black">{formatTime(topThree[2].time_spent_seconds)}</strong></span>
-            </div>
-          </div>
-        )}
-
-        {/* STAGE 2: SILVER (2nd place) */}
-        {ceremonyStage === 'silver' && topThree[1] && (
-          <div className="space-y-6 py-8 animate-scaleUp">
-            <span className="text-5xl filter drop-shadow">🥈</span>
-            <div className="space-y-2">
-              <span className="text-xs font-mono font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-400/10 px-3 py-1 rounded-full border border-slate-300 dark:border-slate-400/20 font-bold">
-                STAGE 2 • SECOND PLACE
-              </span>
-              <h2 className="text-3xl font-black text-slate-900 dark:text-white">
-                {topThree[1].student_name}
-              </h2>
-              <p className="text-xs text-slate-600 dark:text-[#9BAAC2] font-medium">
-                Awarded Silver Medal for exceptional engineering test performance
-              </p>
-            </div>
-
-            <div className="inline-flex items-center gap-4 bg-slate-50 dark:bg-[#060B18] px-6 py-3 rounded-2xl border border-slate-200 dark:border-white/10 font-mono text-sm">
-              <span>Score: <strong className="text-slate-900 dark:text-[#00E5FF] font-black">{topThree[1].score}/{topThree[1].total_marks}</strong></span>
-              <span>•</span>
-              <span>Accuracy: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatAccuracy(topThree[1].accuracy)}</strong></span>
-              <span>•</span>
-              <span>Time: <strong className="text-slate-900 dark:text-white font-black">{formatTime(topThree[1].time_spent_seconds)}</strong></span>
-            </div>
-          </div>
-        )}
-
-        {/* STAGE 3: GOLD (1st place) */}
-        {ceremonyStage === 'gold' && topThree[0] && (
-          <div className="space-y-6 py-8 animate-scaleUp">
-            <span className="text-6xl filter drop-shadow animate-bounce">👑</span>
-            <div className="space-y-2">
-              <span className="text-xs font-mono font-black uppercase tracking-widest text-amber-800 dark:text-amber-400 bg-amber-400/20 px-3 py-1 rounded-full border border-amber-400/40 font-bold">
-                STAGE 3 • GRAND CHAMPION #1
-              </span>
-              <h2 className="text-4xl font-black text-slate-900 dark:text-white">
-                {topThree[0].student_name}
-              </h2>
-              <p className="text-xs text-amber-800 dark:text-amber-400 font-black">
-                Gold Trophy Winner • Highest Scoring Participant in Cohort
-              </p>
-            </div>
-
-            <div className="inline-flex items-center gap-4 bg-amber-500/10 px-6 py-3 rounded-2xl border border-amber-500/30 font-mono text-sm">
-              <span>Score: <strong className="text-slate-900 dark:text-[#00E5FF] font-black">{topThree[0].score}/{topThree[0].total_marks}</strong></span>
-              <span>•</span>
-              <span>Accuracy: <strong className="text-emerald-700 dark:text-emerald-400 font-black">{formatAccuracy(topThree[0].accuracy)}</strong></span>
-              <span>•</span>
-              <span>Time: <strong className="text-slate-900 dark:text-white font-black">{formatTime(topThree[0].time_spent_seconds)}</strong></span>
-            </div>
-          </div>
-        )}
-
-        <div className="pt-4 border-t border-slate-200 dark:border-white/10 text-xs text-slate-500 font-mono">
-          Finalizing official scores and podium standings...
         </div>
       </div>
     );
@@ -479,6 +295,17 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#15233A] hover:bg-slate-200 dark:hover:bg-[#1F2E47] text-slate-800 dark:text-white text-xs font-bold transition border border-slate-200 dark:border-white/10 flex items-center gap-1.5 shadow-xs disabled:opacity-50"
+              title="Refresh Leaderboard & Participation Data"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#176BFF] dark:text-[#00E5FF] ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
+
             {isDeadlinePassed && quiz.questions && quiz.questions.length > 0 && (
               <button
                 type="button"
@@ -488,18 +315,6 @@ export const GlobalQuizLeaderboardView: React.FC<GlobalQuizLeaderboardViewProps>
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Study Guide PDF</span>
-              </button>
-            )}
-
-            {topThree.length > 0 && (
-              <button
-                type="button"
-                onClick={() => startCelebrationCeremony(true)}
-                className="px-4 py-2.5 rounded-xl bg-amber-100 dark:bg-amber-500/20 hover:bg-amber-200 dark:hover:bg-amber-500/30 text-amber-800 dark:text-amber-400 text-xs font-bold transition flex items-center gap-1.5 border border-amber-300 dark:border-amber-500/30"
-                title="Replay Podium Ceremony Animation"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Replay Ceremony</span>
               </button>
             )}
 

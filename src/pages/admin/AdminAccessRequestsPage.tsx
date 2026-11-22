@@ -245,8 +245,8 @@ export const AdminAccessRequestsPage: React.FC = () => {
 
       {/* Approval Modal */}
       {selectedRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#15243B]/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl border border-[#DFE9F6] p-6 max-w-md w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#15243B]/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[#DFE9F6] p-6 max-w-md w-full shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-[#DFE9F6]">
               <div className="flex items-center gap-2">
                 <UserCheck className="w-5 h-5 text-emerald-600" />
@@ -336,8 +336,8 @@ export const AdminAccessRequestsPage: React.FC = () => {
 
       {/* Rejection Modal */}
       {rejectingRequest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#15243B]/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white rounded-3xl border border-[#DFE9F6] p-6 max-w-sm w-full shadow-2xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-[#15243B]/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-3xl border border-[#DFE9F6] p-6 max-w-sm w-full shadow-2xl space-y-4 max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <div className="flex items-center justify-between pb-2 border-b border-[#DFE9F6]">
               <h3 className="text-base font-bold text-red-600">Reject Access Request</h3>
               <button onClick={() => setRejectingRequest(null)} className="text-[#73839B]">

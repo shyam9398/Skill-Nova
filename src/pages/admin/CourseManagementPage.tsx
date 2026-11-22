@@ -735,12 +735,12 @@ Module 3: Distributed Systems & Backend
       {/* Modal 1: Edit Course with Full Fields */}
       {showEditCourse && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowEditCourse(false);
           }}
         >
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl max-w-2xl w-full max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
             {/* Pinned Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1F2E47] px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#0E1626]">
               <div className="flex items-center gap-3">
@@ -761,7 +761,7 @@ Module 3: Distributed Systems & Backend
             </div>
 
             {/* Scrollable Form Body */}
-            <form id="edit-course-form" onSubmit={handleSaveEditCourse} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <form id="edit-course-form" onSubmit={handleSaveEditCourse} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Course Title *</label>
@@ -887,12 +887,12 @@ Module 3: Distributed Systems & Backend
       {/* Modal 2: Add New Course */}
       {showAddCourse && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowAddCourse(false);
           }}
         >
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl max-w-2xl w-full max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
             {/* Pinned Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-[#1F2E47] px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#0E1626]">
               <div className="flex items-center gap-3">
@@ -913,7 +913,7 @@ Module 3: Distributed Systems & Backend
             </div>
 
             {/* Scrollable Form Body */}
-            <form id="add-course-form" onSubmit={handleCreateCourse} className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+            <form id="add-course-form" onSubmit={handleCreateCourse} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs font-bold text-slate-800 dark:text-[#F0F5FF] block mb-1">Course Title *</label>
@@ -1026,8 +1026,8 @@ Module 3: Distributed Systems & Backend
 
       {/* Modal 3: Safe Transactional Delete Course Confirmation */}
       {showDeleteModal && courseToDelete && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#101A2D] border border-rose-300 dark:border-rose-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white dark:bg-[#101A2D] border border-rose-300 dark:border-rose-500/40 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 animate-scaleUp max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 dark:bg-rose-500/20 dark:text-rose-400 flex items-center justify-center mx-auto border border-rose-200 dark:border-rose-500/30">
               <ShieldAlert className="w-6 h-6" />
             </div>
@@ -1084,12 +1084,12 @@ Module 3: Distributed Systems & Backend
       {/* Modal 4: Add Module Modal */}
       {showAddModuleModal && selectedCourse && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowAddModuleModal(false);
           }}
         >
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-scaleUp">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto shadow-2xl space-y-5 animate-scaleUp">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#1F2E47]">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-cyan-100 dark:bg-[#00D4B8]/15 text-cyan-700 dark:text-[#00D4B8] flex items-center justify-center border border-cyan-200 dark:border-[#00D4B8]/30">
@@ -1180,7 +1180,7 @@ Module 3: Distributed Systems & Backend
       {/* Modal 5: Edit Module Modal */}
       {showEditModuleModal && editingModule && selectedCourse && (
         <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowEditModuleModal(false);
@@ -1188,7 +1188,7 @@ Module 3: Distributed Systems & Backend
             }
           }}
         >
-          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl space-y-5 animate-scaleUp">
+          <div className="bg-white dark:bg-[#101A2D] border border-slate-200 dark:border-[#1F2E47] rounded-3xl p-6 sm:p-8 max-w-md w-full max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto shadow-2xl space-y-5 animate-scaleUp">
             <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-[#1F2E47]">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-sky-100 dark:bg-[#397BFF]/15 text-sky-700 dark:text-[#397BFF] flex items-center justify-center border border-sky-200 dark:border-[#397BFF]/30">

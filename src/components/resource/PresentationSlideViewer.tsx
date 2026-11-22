@@ -259,10 +259,10 @@ export const PresentationSlideViewer: React.FC<PresentationSlideViewerProps> = (
   const slideData = getSlideContent(currentGlobalSlide);
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0B1220]/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-fadeIn">
+    <div className="fixed inset-0 z-50 bg-[#0B1220]/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-y-auto animate-fadeIn">
       <div
         ref={containerRef}
-        className="bg-[#0D1527] rounded-2xl md:rounded-3xl border border-[#1E293B] shadow-2xl w-full max-w-6xl h-[94vh] flex flex-col overflow-hidden text-white"
+        className="bg-[#0D1527] rounded-2xl md:rounded-3xl border border-[#1E293B] shadow-2xl w-full max-w-6xl h-[90vh] max-h-[calc(100dvh-2rem)] flex flex-col overflow-hidden text-white my-auto"
       >
         {/* Top Header Bar */}
         <div className="h-16 px-4 md:px-6 bg-[#0F172A] border-b border-[#1E293B] flex items-center justify-between shrink-0">

@@ -46,6 +46,7 @@ export interface User {
   };
 
   theme_preference?: "light" | "dark";
+  last_login_at?: string;
 }
 
 export interface Course {
@@ -1131,5 +1132,50 @@ export interface StudentDashboardAnalytics {
   scholarLevel: string;
   activityHeatmap: HeatmapDay[];
   recentActivities: StudentActivity[];
+}
+
+export interface StudentAccountAudit {
+  student_id: string;
+  full_name: string;
+  username: string;
+  email: string;
+  created_at: string;
+  status: 'active' | 'inactive';
+  has_logged_in: boolean;
+  last_login_at?: string;
+  login_count: number;
+}
+
+export interface StudentQuizParticipation {
+  student_id: string;
+  student_name: string;
+  username: string;
+  email: string;
+  quiz_id: string;
+  quiz_title: string;
+  course_id?: string;
+  has_attempted: boolean;
+  attempt_status: 'completed' | 'in_progress' | 'not_attempted';
+  score?: number;
+  total_marks?: number;
+  accuracy?: number;
+  completed_at?: string;
+  time_spent_seconds?: number;
+}
+
+export interface QuizParticipationSummary {
+  quiz_id: string;
+  quiz_title: string;
+  course_id?: string;
+  course_title?: string;
+  start_time?: string;
+  end_time?: string;
+  status: 'upcoming' | 'active' | 'closed';
+  total_eligible_students: number;
+  attempted_count: number;
+  not_attempted_count: number;
+  completed_count: number;
+  in_progress_count: number;
+  participants: StudentQuizParticipation[];
 }
 

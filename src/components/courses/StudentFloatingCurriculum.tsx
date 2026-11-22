@@ -107,11 +107,11 @@ export const StudentFloatingCurriculum: React.FC = () => {
 
       {/* 16:9 Ratio Animated Frame Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#080E1C]/85 backdrop-blur-md animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-[#080E1C]/85 backdrop-blur-md overflow-y-auto animate-fadeIn">
           {/* Main 16:9 Frame Container */}
-          <div className="w-full max-w-5xl bg-[#0B1528] rounded-3xl border border-[#00D9FF]/30 shadow-[0_0_50px_rgba(0,163,255,0.25)] overflow-hidden flex flex-col relative animate-scaleUp">
+          <div className="w-full max-w-5xl max-h-[calc(100dvh-2rem)] bg-[#0B1528] rounded-3xl border border-[#00D9FF]/30 shadow-[0_0_50px_rgba(0,163,255,0.25)] overflow-hidden flex flex-col relative animate-scaleUp my-auto">
             {/* Top Toolbar */}
-            <div className="h-14 border-b border-[#1F2E47] px-6 flex items-center justify-between bg-[#101C33]/80">
+            <div className="h-14 border-b border-[#1F2E47] px-4 sm:px-6 flex items-center justify-between bg-[#101C33]/80 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#176BFF] to-[#00D9FF] p-0.5">
                   <div className="w-full h-full bg-[#0B1528] rounded-[10px] flex items-center justify-center">

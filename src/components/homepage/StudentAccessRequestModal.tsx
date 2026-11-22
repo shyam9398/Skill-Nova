@@ -66,8 +66,8 @@ export const StudentAccessRequestModal: React.FC<StudentAccessRequestModalProps>
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#15243B]/65 dark:bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-[#DFE9F6] dark:border-white/10 p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto animate-scaleUp">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 bg-slate-950/70 backdrop-blur-sm overflow-y-auto animate-fadeIn">
+      <div className="bg-white dark:bg-[#0D1833] rounded-3xl border border-[#DFE9F6] dark:border-white/10 p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-6 relative max-h-[calc(100dvh-2rem)] overflow-y-auto my-auto animate-scaleUp">
         <button
           onClick={onClose}
           className="absolute top-5 right-5 p-2 rounded-xl text-[#73839B] dark:text-[#9BAAC5] hover:text-[#15243B] dark:hover:text-white hover:bg-[#F5F9FF] dark:hover:bg-white/10 transition"

@@ -21,6 +21,8 @@
     --electric-blue: #176BFF;
     --fluorescent-blue: #00A8FF;
     --neon-cyan: #00E5FF;
+    --header-height: 4rem;
+    --sidebar-width: 0px;
   }
 
   .dark {
@@ -58,6 +60,59 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', 'Inter', sans-serif;
   }
+}
+
+/* ==========================================================================
+   GLOBAL VIEWPORT & MODAL POSITIONING ARCHITECTURE
+   ========================================================================== */
+
+@media (min-width: 1024px) {
+  .admin-layout-root {
+    --sidebar-width: 16rem;
+  }
+  .student-layout-root {
+    --sidebar-width: 16rem;
+  }
+  .student-layout-root.sidebar-collapsed {
+    --sidebar-width: 5rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  :root,
+  .admin-layout-root,
+  .student-layout-root {
+    --sidebar-width: 0px !important;
+  }
+}
+
+/* Automatically constrain and horizontally center any fixed modal overlay rendered within student or admin workspaces */
+.student-layout-root .fixed.inset-0:not(.sidebar-drawer-backdrop):not(.theme-flash),
+.admin-layout-root .fixed.inset-0:not(.sidebar-drawer-backdrop):not(.theme-flash),
+.modal-overlay,
+.skillnova-modal-overlay {
+  top: var(--header-height, 4rem) !important;
+  left: var(--sidebar-width, 0px) !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  overflow-y: auto !important;
+}
+
+/* Ensure modal content fits within available viewport height below header */
+.student-layout-root .fixed.inset-0:not(.sidebar-drawer-backdrop):not(.theme-flash) > div,
+.admin-layout-root .fixed.inset-0:not(.sidebar-drawer-backdrop):not(.theme-flash) > div,
+.modal-content,
+.skillnova-modal-content {
+  max-height: calc(100dvh - var(--header-height, 4rem) - 2rem) !important;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+
+.modal-body,
+.skillnova-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 /* ==========================================================================

@@ -443,12 +443,12 @@ export const AdminQuizManagementPage: React.FC = () => {
       {/* CREATE / EDIT QUIZ MODAL */}
       {isCreateModalOpen && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) setIsCreateModalOpen(false);
           }}
         >
-          <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+          <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-4xl w-full max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden my-auto">
             {/* Pinned Modal Header */}
             <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#080E21]">
               <div>
@@ -469,7 +469,7 @@ export const AdminQuizManagementPage: React.FC = () => {
             </div>
 
             {/* Scrollable Modal Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6 text-xs">
               {/* Error Banner */}
               {parseError && (
                 <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/30 text-rose-800 dark:text-rose-300 text-xs flex items-center gap-2">
@@ -709,12 +709,12 @@ export const AdminQuizManagementPage: React.FC = () => {
 
         return (
           <div
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-3 sm:p-6 flex items-center justify-center overflow-hidden animate-fadeIn"
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-center justify-center overflow-y-auto animate-fadeIn"
             onClick={(e) => {
               if (e.target === e.currentTarget) setSelectedLeaderboardQuiz(null);
             }}
           >
-            <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+            <div className="bg-white dark:bg-[#0B132B] rounded-3xl border border-slate-200 dark:border-white/10 max-w-2xl w-full max-h-[calc(100dvh-2rem)] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden my-auto">
               {/* Pinned Header */}
               <div className="flex items-center justify-between border-b border-slate-200 dark:border-white/10 px-6 py-4 shrink-0 bg-slate-50 dark:bg-[#080E21]">
                 <div className="flex items-center gap-3">
@@ -735,7 +735,7 @@ export const AdminQuizManagementPage: React.FC = () => {
               </div>
 
               {/* Scrollable Leaderboard Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-5 text-xs">
+              <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-5 text-xs">
                 {/* Podium */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {top3.map((entry, idx) => (

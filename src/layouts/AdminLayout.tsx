@@ -34,7 +34,13 @@ export const AdminLayout: React.FC = () => {
   ];
 
   return (
-    <div className="h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300">
+    <div
+      className="h-screen w-screen max-w-full overflow-hidden bg-[#F5F9FF] dark:bg-[#050816] text-slate-900 dark:text-[#F4F7FF] flex flex-col font-sans selection:bg-[#00A8FF]/20 transition-colors duration-300 admin-layout-root"
+      style={{
+        '--header-height': '4rem',
+        '--sidebar-width': '16rem',
+      } as React.CSSProperties}
+    >
       {/* Single, Unified SkillNova Header */}
       <div className="shrink-0 z-40">
         <Header onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
@@ -121,7 +127,7 @@ export const AdminLayout: React.FC = () => {
         {sidebarOpen && (
           <div
             onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
+            className="sidebar-drawer-backdrop fixed inset-0 bg-[#050816]/70 backdrop-blur-xs z-20 lg:hidden"
           />
         )}
 

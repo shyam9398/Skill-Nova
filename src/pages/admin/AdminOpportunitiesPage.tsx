@@ -393,7 +393,7 @@ export const AdminOpportunitiesPage: React.FC = () => {
       {/* CREATE / EDIT MODAL */}
       {(showAddModal || showEditModal) && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
               setShowAddModal(false);
@@ -401,7 +401,7 @@ export const AdminOpportunitiesPage: React.FC = () => {
             }
           }}
         >
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
+          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl relative animate-scaleUp overflow-hidden">
             {/* Pinned / Fixed Header */}
             <div className="flex items-center justify-between border-b border-[#1F2E47] px-6 py-4 shrink-0 bg-[#0E1626]">
               <div className="flex items-center gap-3">
@@ -427,7 +427,7 @@ export const AdminOpportunitiesPage: React.FC = () => {
             </div>
 
             {/* Scrollable Form Body */}
-            <form onSubmit={showAddModal ? handleCreateOpportunity : handleUpdateOpportunity} className="flex-1 overflow-y-auto px-6 py-5 space-y-4 text-xs">
+            <form onSubmit={showAddModal ? handleCreateOpportunity : handleUpdateOpportunity} className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-4 text-xs">
               <div>
                 <label className="font-bold text-[#F0F5FF] block mb-1">
                   Opportunity Title <span className="text-[#397BFF]">*</span>
@@ -565,12 +565,12 @@ export const AdminOpportunitiesPage: React.FC = () => {
       {/* VIEW MODAL */}
       {showViewModal && selectedOpp && (
         <div 
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-hidden animate-fadeIn"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto animate-fadeIn"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowViewModal(false);
           }}
         >
-          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl animate-scaleUp overflow-hidden">
+          <div className="bg-[#101A2D] border border-[#1F2E47] rounded-3xl w-full max-w-lg max-h-[calc(100dvh-2rem)] my-auto flex flex-col shadow-2xl animate-scaleUp overflow-hidden">
             <div className="flex items-center justify-between border-b border-[#1F2E47] px-6 py-4 shrink-0 bg-[#0E1626]">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-[#00D4B8]/20 text-[#00D4B8] flex items-center justify-center shrink-0">
@@ -586,7 +586,7 @@ export const AdminOpportunitiesPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-3 text-xs">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-3 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-[#15233A] border border-white/5">
                   <span className="text-[10px] text-[#9BAAC2] uppercase font-bold block mb-1">Type</span>
@@ -644,8 +644,8 @@ export const AdminOpportunitiesPage: React.FC = () => {
 
       {/* DELETE MODAL */}
       {showDeleteModal && selectedOpp && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#101A2D] border border-rose-500/30 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl animate-scaleUp space-y-4">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-[#101A2D] border border-rose-500/30 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl animate-scaleUp space-y-4 max-h-[calc(100dvh-2rem)] my-auto overflow-y-auto">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30">
                 <Trash2 className="w-6 h-6" />

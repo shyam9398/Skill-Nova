@@ -20,7 +20,8 @@ import {
   User,
   Award,
   HelpCircle,
-  Download
+  Download,
+  RefreshCw
 } from 'lucide-react';
 import { dataService } from '../../services/dataService';
 import { useAuth } from '../../context/AuthContext';
@@ -37,6 +38,25 @@ export const StudentQuizzesPage: React.FC = () => {
     dataService.getQuizAttemptsForStudent(undefined, studentId)
   );
   const [previewPdfQuiz, setPreviewPdfQuiz] = useState<Quiz | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleRefresh = async () => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        dataService.syncQuizzesFromSupabase(),
+        dataService.syncQuizAttemptsFromSupabase(),
+      ]);
+      dataService.checkQuizSchedules();
+      setQuizzes(dataService.getQuizzesList());
+      setStudentAttempts(dataService.getQuizAttemptsForStudent(undefined, studentId));
+    } catch (err) {
+      console.warn('StudentQuizzesPage refresh error:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     void dataService.syncQuizzesFromSupabase();
@@ -478,6 +498,16 @@ export const StudentQuizzesPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-[#101A2D] hover:bg-slate-200 dark:hover:bg-[#15233A] text-slate-800 dark:text-white text-xs font-bold transition border border-slate-200 dark:border-white/10 flex items-center gap-2 shadow-xs disabled:opacity-50"
+              title="Refresh Quizzes & Submissions"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-[#176BFF] dark:text-[#00E5FF] ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>{isRefreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
             <div className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-[#101A2D] border border-slate-200 dark:border-white/10 text-right">
               <span className="text-[10px] text-slate-700 dark:text-[#9BAAC2] block uppercase font-mono font-bold">Attempted</span>
               <span className="text-lg font-black text-slate-900 dark:text-[#00D1FF] font-mono">{studentAttempts.length} Drills</span>
@@ -676,12 +706,12 @@ export const StudentQuizzesPage: React.FC = () => {
 
         return (
           <div 
-            className="fixed inset-0 z-50 bg-slate-900/80 dark:bg-black/85 backdrop-blur-md p-2 sm:p-6 md:p-8 flex items-start sm:items-center justify-center overflow-y-auto animate-fadeIn"
+            className="modal-overlay skillnova-modal-overlay fixed inset-0 z-50 bg-slate-900/80 dark:bg-black/85 backdrop-blur-md p-2 sm:p-4 md:p-6 flex items-start sm:items-center justify-center overflow-y-auto animate-fadeIn"
             onClick={(e) => {
               if (e.target === e.currentTarget) setViewingLeaderboardQuizId(null);
             }}
           >
-            <div className="w-full max-w-5xl my-4 sm:my-auto animate-scaleUp relative">
+            <div className="w-full max-w-5xl my-auto animate-scaleUp relative">
               <GlobalQuizLeaderboardView
                 quiz={lbQuiz}
                 currentStudentId={studentId}

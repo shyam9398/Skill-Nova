@@ -35,6 +35,9 @@ import type {
   StudentActivity,
   StudentDashboardAnalytics,
   HeatmapDay,
+  StudentAccountAudit,
+  QuizParticipationSummary,
+  StudentQuizParticipation,
 } from "../types";
 
 import {
@@ -10275,6 +10278,152 @@ Module 3: Production Deployment & System Leadership
       activityHeatmap,
       recentActivities: activities.slice(0, 10),
     };
+  }
+
+  // --- Student Account Audit & Quiz Participation Monitoring ---
+
+  public getStudentAccountAudits(): {
+    totalStudents: number;
+    loggedInCount: number;
+    neverLoggedInCount: number;
+    audits: StudentAccountAudit[];
+  } {
+    const students = this.getStudents();
+    const audits: StudentAccountAudit[] = [];
+    let loggedInCount = 0;
+
+    students.forEach((student) => {
+      // Find authentic login success records in audit logs
+      const logins = this.auditLogs.filter(
+        (log) =>
+          (log.action === "LOGIN_SUCCESS" || log.action === "LOGIN") &&
+          (log.entity_id === student.id ||
+            log.actor_email?.toLowerCase() === student.email?.toLowerCase() ||
+            (student.username &&
+              log.username?.toLowerCase() === student.username.toLowerCase()))
+      );
+
+      logins.sort(
+        (a, b) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      const latestLogin =
+        logins[0]?.login_time || logins[0]?.timestamp || student.last_login_at;
+      const hasLoggedIn = Boolean(latestLogin);
+
+      if (hasLoggedIn) {
+        loggedInCount++;
+      }
+
+      audits.push({
+        student_id: student.id,
+        full_name: student.full_name || student.username || "Student",
+        username: student.username || student.email?.split("@")[0] || "",
+        email: student.email,
+        created_at: student.created_at || new Date().toISOString(),
+        status: (student.status as "active" | "inactive") || "active",
+        has_logged_in: hasLoggedIn,
+        last_login_at: latestLogin,
+        login_count: logins.length || (hasLoggedIn ? 1 : 0),
+      });
+    });
+
+    audits.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+
+    return {
+      totalStudents: students.length,
+      loggedInCount,
+      neverLoggedInCount: Math.max(0, students.length - loggedInCount),
+      audits,
+    };
+  }
+
+  public getQuizParticipationSummaries(targetQuizId?: string): QuizParticipationSummary[] {
+    const allQuizzes = this.getQuizzesList();
+    const quizzes = targetQuizId
+      ? allQuizzes.filter((q) => q.id === targetQuizId)
+      : allQuizzes;
+    const students = this.getStudents();
+
+    return quizzes.map((quiz) => {
+      const enrolledStudents = quiz.course_id
+        ? students.filter((s) => {
+            const enrolled = this.getEnrolledCoursesForStudent(s.id);
+            return enrolled.some((c) => c.id === quiz.course_id);
+          })
+        : students;
+
+      const eligibleStudents =
+        enrolledStudents.length > 0 ? enrolledStudents : students;
+
+      const participants: StudentQuizParticipation[] = [];
+      let attemptedCount = 0;
+      let completedCount = 0;
+      let inProgressCount = 0;
+
+      eligibleStudents.forEach((student) => {
+        const attempts = this.getQuizAttemptsForStudent(quiz.id, student.id);
+        const attempt = attempts[0];
+
+        if (attempt) {
+          attemptedCount++;
+          if (attempt.status === "in_progress") {
+            inProgressCount++;
+          } else {
+            completedCount++;
+          }
+
+          participants.push({
+            student_id: student.id,
+            student_name: student.full_name || student.username || "Student",
+            username: student.username || student.email?.split("@")[0] || "",
+            email: student.email,
+            quiz_id: quiz.id,
+            quiz_title: quiz.title,
+            course_id: quiz.course_id,
+            has_attempted: true,
+            attempt_status: attempt.status === "in_progress" ? "in_progress" : "completed",
+            score: attempt.score,
+            total_marks: attempt.total_marks || quiz.total_marks,
+            accuracy: attempt.accuracy,
+            completed_at: attempt.completed_at,
+            time_spent_seconds: attempt.time_spent_seconds,
+          });
+        } else {
+          participants.push({
+            student_id: student.id,
+            student_name: student.full_name || student.username || "Student",
+            username: student.username || student.email?.split("@")[0] || "",
+            email: student.email,
+            quiz_id: quiz.id,
+            quiz_title: quiz.title,
+            course_id: quiz.course_id,
+            has_attempted: false,
+            attempt_status: "not_attempted",
+          });
+        }
+      });
+
+      return {
+        quiz_id: quiz.id,
+        quiz_title: quiz.title,
+        course_id: quiz.course_id,
+        course_title: quiz.course_title,
+        start_time: quiz.start_time,
+        end_time: quiz.end_time,
+        status: quiz.status,
+        total_eligible_students: eligibleStudents.length,
+        attempted_count: attemptedCount,
+        not_attempted_count: Math.max(0, eligibleStudents.length - attemptedCount),
+        completed_count: completedCount,
+        in_progress_count: inProgressCount,
+        participants,
+      };
+    });
   }
 
 // --- Themes ---
